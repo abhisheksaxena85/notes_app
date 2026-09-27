@@ -1,4 +1,5 @@
 package com.example.notes_app.notes.model;
+import com.example.notes_app.auth.model.UserModel;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -27,4 +28,8 @@ public class NotesModel {
 
     @Column(name = "updatedAt")
     String updatedAt;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserModel user;
 }

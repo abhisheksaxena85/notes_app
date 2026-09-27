@@ -13,26 +13,29 @@ import java.util.List;
 public class UserModel {
 
     @Id
-    @Column(name = "id")
+    @Column(name = "id" )
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     long id;
 
-    @Column(name = "name")
+    @Column(name = "name", columnDefinition = "TEXT")
     String name;
 
-    @Column(name = "email")
+    @Column(name = "email", columnDefinition = "TEXT")
     String email;
 
-    @Column(name = "password")
+    @Column(name = "password", columnDefinition = "TEXT")
     String password;
 
-    @Column(name = "gender")
+    @Column(name = "gender", columnDefinition = "TEXT")
     String gender;
 
-    @Column(name = "mobile")
+    @Column(name = "mobile", columnDefinition = "TEXT")
     String mobile;
 
-    @OneToMany(mappedBy = "user_id")
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true
+    )
     private List<NotesModel> articles = new ArrayList<>();
-
 }

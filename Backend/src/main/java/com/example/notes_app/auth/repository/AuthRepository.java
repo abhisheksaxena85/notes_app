@@ -1,4 +1,7 @@
 package com.example.notes_app.auth.repository;
 
-public class AuthRepository {
+import com.example.notes_app.auth.model.UserModel;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface AuthRepository extends JpaRepository<UserModel, Long> {
 }
