@@ -1,0 +1,1 @@
+/Volumes/Crucial_X6/Documents/Projects/Flutter Projects/notes_app/build/app/intermediates/cxx/debug/4d4x3e4r/obj/arm64-v8a
