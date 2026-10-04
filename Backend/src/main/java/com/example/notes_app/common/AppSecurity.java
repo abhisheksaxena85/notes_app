@@ -15,7 +15,10 @@ public class AppSecurity {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/create-user").permitAll()
+                        .requestMatchers("/auth/**", "/notes/**",                 "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml").permitAll()
                         .anyRequest().authenticated()
                 ).httpBasic(Customizer.withDefaults());
         return http.build();

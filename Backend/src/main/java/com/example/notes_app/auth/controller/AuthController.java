@@ -1,5 +1,6 @@
 package com.example.notes_app.auth.controller;
 
+import com.example.notes_app.auth.model.LoginModel;
 import com.example.notes_app.auth.model.UserModel;
 import com.example.notes_app.auth.service.AuthService;
 import com.example.notes_app.common.ApiResponse;
@@ -13,6 +14,11 @@ public class AuthController {
 
     @Autowired
     AuthService service;
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<UserModel>> loginUser(@RequestBody LoginModel loginModel){
+        return service.login(loginModel);
+    }
 
     @PostMapping("/create-user")
     public ResponseEntity<ApiResponse<String>> createNewUser(@RequestBody UserModel newUser){

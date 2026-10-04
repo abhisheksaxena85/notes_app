@@ -1,5 +1,6 @@
 package com.example.notes_app.notes.model;
 import com.example.notes_app.auth.model.UserModel;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -31,5 +32,6 @@ public class NotesModel {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private UserModel user;
 }
