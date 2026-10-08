@@ -10,7 +10,7 @@ import lombok.Data;
 public class NotesModel {
     @Id
     @GeneratedValue(strategy =  GenerationType.IDENTITY)
-    long id;
+    long noteId;
 
     @Column(name = "title")
     String title;

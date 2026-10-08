@@ -1,9 +1,9 @@
-package com.example.notes_app.auth.model;
+package com.example.notes_app.auth.dto.request;
 
 import lombok.Data;
 
 @Data
-public class LoginModel {
+public class LoginRequestDto {
     private String email;
     private String password;
 }
