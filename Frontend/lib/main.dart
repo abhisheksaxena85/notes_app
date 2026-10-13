@@ -1,7 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:notes_app/data/local/shared_preference/preference.dart';
+import 'package:notes_app/utils/services/internet_connection_service.dart';
+import 'package:notes_app/utils/themes/app_theme.dart';
+import 'package:notes_app/views/screens/auth/login/login_screen.dart';
 
-void main() {
-  runApp(const MyApp());
+import 'package:notes_app/data/di/dependency_injection.dart';
+
+GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+bool isInternetConnected = false;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initialize();
+  runApp(ProviderScope(child: MyApp()));
+}
+
+/// Starting important required services
+Future<void> initialize() async {
+  await configureDependencies();
+
+  await Preference.init();
 }
 
 class MyApp extends StatelessWidget {
@@ -9,57 +29,28 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Notes',
-      theme: ThemeData(colorScheme: .fromSeed(seedColor: Colors.deepPurple)),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
+    return ScreenUtilInit(
+      designSize: const Size(412, 892),
+      builder: (context, child) {
+        return MaterialApp(
+          builder: (context, child) {
+            internetStatusListener(context);
+            return GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (ScrollNotification notification) {
+                  return false;
+                },
+                child: child ?? const SizedBox.shrink(),
+              ),
+            );
+          },
+          navigatorKey: navigatorKey,
+          title: 'Notes',
+          theme: AppTheme.defaultAppTheme(),
+          home: LoginScreen(),
+        );
+      },
     );
   }
 }
