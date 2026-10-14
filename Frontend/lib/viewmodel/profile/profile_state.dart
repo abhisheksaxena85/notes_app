@@ -1,9 +1,15 @@
+import 'package:notes_app/data/network/dto/response/profile/profile_response_dto.dart';
+
 class ProfileState {
-  final List<String> drivesList;
+  final ProfileResponseDto? profileData;
 
-  ProfileState({this.drivesList = const []});
+  const ProfileState({this.profileData});
 
-  ProfileState copyWith({List<String>? drivesList, bool? isLoading}) {
-    return ProfileState(drivesList: drivesList ?? this.drivesList);
+  ProfileState copyWith({
+    ProfileResponseDto? profileData,
+  }) {
+    return ProfileState(
+      profileData: profileData ?? this.profileData,
+    );
   }
 }

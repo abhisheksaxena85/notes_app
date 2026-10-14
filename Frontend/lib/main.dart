@@ -7,6 +7,8 @@ import 'package:notes_app/utils/themes/app_theme.dart';
 import 'package:notes_app/views/screens/auth/login/login_screen.dart';
 
 import 'package:notes_app/data/di/dependency_injection.dart';
+import 'package:notes_app/views/screens/dashboard/dashboard_screen.dart';
+import 'package:notes_app/views/screens/home/home_screen.dart';
 
 GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 bool isInternetConnected = false;
@@ -48,7 +50,7 @@ class MyApp extends StatelessWidget {
           navigatorKey: navigatorKey,
           title: 'Notes',
           theme: AppTheme.defaultAppTheme(),
-          home: LoginScreen(),
+          home: DashboardScreen(),
         );
       },
     );
