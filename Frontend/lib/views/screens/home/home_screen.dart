@@ -9,6 +9,7 @@ import 'package:notes_app/views/screens/home/widgets/notes_floating_action_butto
 import 'package:notes_app/views/screens/home/widgets/notes_header_widget.dart';
 import 'package:notes_app/views/screens/home/widgets/notes_list_view.dart';
 import 'package:notes_app/views/screens/home/widgets/notes_loading_widget.dart';
+import 'package:notes_app/views/screens/note_details/note_details_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -22,7 +23,20 @@ class HomeScreen extends ConsumerWidget {
       backgroundColor: AppColors.bgColor,
       floatingActionButton: Padding(
         padding: EdgeInsets.only(bottom: 70.h),
-        child: notesFloatingActionButton(context: context),
+        child: notesFloatingActionButton(
+          context: context,
+          onPressed: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NoteDetailsScreen(),
+              ),
+            );
+            if (result == true) {
+              notifier.getAllNotes();
+            }
+          },
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
@@ -57,6 +71,18 @@ class HomeScreen extends ConsumerWidget {
                     return notesListView(
                       notes: notes,
                       onRefresh: () => notifier.getAllNotes(),
+                      onNoteTap: (note) async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                NoteDetailsScreen(noteId: note.noteId),
+                          ),
+                        );
+                        if (result == true) {
+                          notifier.getAllNotes();
+                        }
+                      },
                     );
                   },
                   loading: () => notesLoadingWidget(),
