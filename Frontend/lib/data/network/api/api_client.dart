@@ -41,4 +41,8 @@ class ApiClient {
   Future<Response> getNoteDetails(int id) async {
     return _dio.get(ApiEndpoints.GET_NOTE_DETAILS, queryParameters: {'id': id});
   }
+
+  Future<Response> deleteNote(int id) async {
+    return _dio.delete(ApiEndpoints.DELETE_NOTE, data: id);
+  }
 }

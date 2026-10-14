@@ -6,4 +6,5 @@ class ApiEndpoints {
   static String CREATE_NOTE = "/notes/create-note";
   static String UPDATE_NOTE = "/notes/update-note";
   static String GET_NOTE_DETAILS = "/notes/get-details-by-noteId";
+  static String DELETE_NOTE = "/notes/delete-note";
 }

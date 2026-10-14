@@ -184,4 +184,41 @@ class NoteDetailsViewmodel extends AsyncNotifier<NoteDetailsState> {
       }
     }
   }
+
+  Future<void> deleteNote(BuildContext context) async {
+    final current = state.value;
+    final noteId = current?.noteId;
+    if (noteId == null) return;
+
+    state = AsyncData(current!.copyWith(isSaving: true));
+    try {
+      log("Deleting note $noteId...");
+      final response = await _noteRepo.deleteNote(noteId);
+      if (response.success == true) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            successSnackBar(response.message ?? "Note deleted successfully!"),
+          );
+          Navigator.pop(context, true);
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            failedSnackBar(response.message ?? "Failed to delete note"),
+          );
+        }
+      }
+    } catch (e) {
+      log("Error while deleting note: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          failedSnackBar("An error occurred: $e"),
+        );
+      }
+    } finally {
+      if (state.value != null) {
+        state = AsyncData(state.value!.copyWith(isSaving: false));
+      }
+    }
+  }
 }

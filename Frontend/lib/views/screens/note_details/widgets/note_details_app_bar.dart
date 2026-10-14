@@ -8,6 +8,7 @@ Widget noteDetailsAppBar({
   required bool isEditMode,
   required bool isPinned,
   required VoidCallback onTogglePin,
+  VoidCallback? onDelete,
 }) {
   return Container(
     padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
@@ -40,14 +41,29 @@ Widget noteDetailsAppBar({
             color: AppColors.neutral100,
           ),
         ),
-        IconButton(
-          onPressed: onTogglePin,
-          tooltip: isPinned ? 'Unpin Note' : 'Pin Note',
-          icon: Icon(
-            isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-            color: isPinned ? AppColors.warningColor : AppColors.neutral60,
-            size: 22.sp,
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              onPressed: onTogglePin,
+              tooltip: isPinned ? 'Unpin Note' : 'Pin Note',
+              icon: Icon(
+                isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                color: isPinned ? AppColors.warningColor : AppColors.neutral60,
+                size: 22.sp,
+              ),
+            ),
+            if (isEditMode && onDelete != null)
+              IconButton(
+                onPressed: onDelete,
+                tooltip: 'Delete Note',
+                icon: Icon(
+                  Icons.delete_outline_rounded,
+                  color: AppColors.errorColor,
+                  size: 22.sp,
+                ),
+              ),
+          ],
         ),
       ],
     ),

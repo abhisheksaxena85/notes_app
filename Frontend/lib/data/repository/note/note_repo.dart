@@ -5,6 +5,7 @@ import 'package:notes_app/data/network/api/api_client.dart';
 import 'package:notes_app/data/network/dto/request/note/create_note_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/note/update_note_request_dto.dart';
 import 'package:notes_app/data/network/dto/response/note/create_note_response_dto.dart';
+import 'package:notes_app/data/network/dto/response/note/delete_note_response_dto.dart';
 import 'package:notes_app/data/network/dto/response/note/note_details_response_dto.dart';
 import 'package:notes_app/data/network/dto/response/note/update_note_response_dto.dart';
 
@@ -49,6 +50,19 @@ class NoteRepo {
       }
     } catch (e) {
       throw Exception("Failed to get note details: $e");
+    }
+  }
+
+  Future<DeleteNoteResponseDto> deleteNote(int id) async {
+    try {
+      var response = await client.deleteNote(id);
+      if (response.statusCode == 200) {
+        return DeleteNoteResponseDto.fromJson(response.data);
+      } else {
+        throw HttpException((response.statusCode ?? 500).toString());
+      }
+    } catch (e) {
+      throw Exception("Failed to delete note: $e");
     }
   }
 }
