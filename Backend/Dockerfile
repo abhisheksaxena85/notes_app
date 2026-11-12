@@ -1,18 +1,34 @@
-# Use a lightweight Alpine JRE runtime
-FROM eclipse-temurin:17-jre-alpine
+# Stage 1: Build the Spring Boot application
+FROM maven:3.9-eclipse-temurin-17 AS build
+
+WORKDIR /workspace
+
+# Copy Maven configuration first
+COPY pom.xml .
+
+# Download dependencies before copying application code
+RUN mvn -B dependency:go-offline
+
+# Copy application source code
+COPY src ./src
+
+# Compile, test and package the application
+RUN mvn clean package -DskipTests
+
+
+# Stage 2: Run the packaged application
+FROM eclipse-temurin:17-jre
+
 WORKDIR /app
 
-# Add a non-root user for security
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
+# Copy the JAR from the build stage
+COPY --from=build /workspace/target/*.jar /app/app.jar
 
-# Copy your locally pre-built JAR file into the image
-# For Maven:
-COPY target/*.jar app.jar
+# Spring Boot will use port 80 inside this container
+ENV PORT=80
 
-# (Uncomment below and comment out Maven if using Gradle)
-# COPY build/libs/*-SNAPSHOT.jar app.jar
+# Document the port used by the application
+EXPOSE 80
 
-EXPOSE 8080
-
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Start the Spring Boot application
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
