@@ -10,7 +10,7 @@ class DioClient {
   factory DioClient.create() {
     final dio = Dio(
       BaseOptions(
-        baseUrl: "http://10.136.4.44:8080",
+        baseUrl: "https://notesapp-production-d43adec7.up.railway.app",
         sendTimeout: const Duration(seconds: 10),
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),

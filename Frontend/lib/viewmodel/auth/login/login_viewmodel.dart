@@ -11,6 +11,7 @@ import 'package:notes_app/data/network/dto/response/login/login_response_dto.dar
 import 'package:notes_app/data/repository/auth/login/login_repo.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/viewmodel/auth/login/login_state.dart';
+import 'package:notes_app/views/screens/dashboard/dashboard_screen.dart';
 
 class LoginViewmodel extends AsyncNotifier<LoginState> {
   /// MARK: Variables
@@ -78,8 +79,16 @@ class LoginViewmodel extends AsyncNotifier<LoginState> {
           PreferenceKeys.USER_ID,
           response.data?.userId ?? 0,
         );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(successSnackBar(response.message ?? ''));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => DashboardScreen()),
+          );
+        }
       }
-      if (context.mounted) {
+      if (context.mounted && response.success == false) {
         ScaffoldMessenger.of(context).showSnackBar(
           failedSnackBar(response.message ?? "Something went wrong!"),
         );

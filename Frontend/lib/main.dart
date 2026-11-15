@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:notes_app/data/local/shared_preference/preference.dart';
+import 'package:notes_app/data/local/shared_preference/preference_keys.dart';
 import 'package:notes_app/utils/services/internet_connection_service.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
 import 'package:notes_app/views/screens/auth/login/login_screen.dart';
@@ -12,6 +13,7 @@ import 'package:notes_app/views/screens/home/home_screen.dart';
 
 GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 bool isInternetConnected = false;
+int USER_ID = 0;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +26,8 @@ Future<void> initialize() async {
   await configureDependencies();
 
   await Preference.init();
+
+  USER_ID = getIt<Preference>().getInt(PreferenceKeys.USER_ID) ?? 0;
 }
 
 class MyApp extends StatelessWidget {
@@ -50,7 +54,7 @@ class MyApp extends StatelessWidget {
           navigatorKey: navigatorKey,
           title: 'Notes',
           theme: AppTheme.defaultAppTheme(),
-          home: DashboardScreen(),
+          home: USER_ID != 0 ? DashboardScreen() : LoginScreen(),
         );
       },
     );
