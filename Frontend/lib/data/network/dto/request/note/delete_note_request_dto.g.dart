@@ -7,13 +7,9 @@ part of 'delete_note_request_dto.dart';
 // **************************************************************************
 
 DeleteNoteRequestDto _$DeleteNoteRequestDtoFromJson(
-        Map<String, dynamic> json) =>
-    DeleteNoteRequestDto(
-      id: (json['id'] as num?)?.toInt(),
-    );
+  Map<String, dynamic> json,
+) => DeleteNoteRequestDto(id: (json['id'] as num?)?.toInt());
 
 Map<String, dynamic> _$DeleteNoteRequestDtoToJson(
-        DeleteNoteRequestDto instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-    };
+  DeleteNoteRequestDto instance,
+) => <String, dynamic>{'id': instance.id};

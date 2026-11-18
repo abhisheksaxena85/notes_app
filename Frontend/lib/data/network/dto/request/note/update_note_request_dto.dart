@@ -14,6 +14,8 @@ class UpdateNoteRequestDto {
   String? category;
   @JsonKey(name: "pinned")
   bool? pinned;
+  @JsonKey(name: "tags")
+  String? tags;
 
   UpdateNoteRequestDto({
     this.noteId,
@@ -21,6 +23,7 @@ class UpdateNoteRequestDto {
     this.content,
     this.category,
     this.pinned,
+    this.tags,
   });
 
   factory UpdateNoteRequestDto.fromJson(Map<String, dynamic> json) =>

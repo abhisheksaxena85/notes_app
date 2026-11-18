@@ -7,68 +7,76 @@ Widget profileErrorWidget({
   required String message,
   required VoidCallback onRetry,
 }) {
-  return Center(
-    child: Padding(
-      padding: EdgeInsets.symmetric(horizontal: 32.w),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(20.r),
-            decoration: BoxDecoration(
-              color: AppColors.redBgLight,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.error_outline_rounded,
-              size: 48.sp,
-              color: AppColors.errorColor,
-            ),
-          ),
-          SizedBox(height: 16.h),
-          Text(
-            "Failed to Load Profile",
-            style: GoogleFonts.googleSans(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w700,
-              color: AppColors.neutral90,
-            ),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            message.isNotEmpty
-                ? message
-                : "Something went wrong while fetching profile.",
-            textAlign: TextAlign.center,
-            style: GoogleFonts.sourceSans3(
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w400,
-              color: AppColors.neutral70,
-            ),
-          ),
-          SizedBox(height: 24.h),
-          ElevatedButton.icon(
-            onPressed: onRetry,
-            icon: Icon(Icons.refresh_rounded, size: 18.sp, color: AppColors.white),
-            label: Text(
-              "Retry",
-              style: GoogleFonts.googleSans(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-                color: AppColors.white,
+  return Builder(
+    builder: (context) {
+      final palette = context.daymark;
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 32.w),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 64.r,
+                height: 64.r,
+                decoration: BoxDecoration(
+                  color: palette.danger.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.person_off_rounded,
+                  size: 32.sp,
+                  color: palette.danger,
+                ),
               ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.brandColor,
-              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.r),
+              SizedBox(height: 16.h),
+              Text(
+                "Unable to load profile",
+                style: GoogleFonts.inter(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w700,
+                  color: palette.ink,
+                ),
               ),
-            ),
+              SizedBox(height: 8.h),
+              Text(
+                message.isNotEmpty
+                    ? message
+                    : "Something went wrong while fetching user profile.",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 13.sp,
+                  color: palette.muted,
+                ),
+              ),
+              SizedBox(height: 20.h),
+              ElevatedButton.icon(
+                onPressed: onRetry,
+                icon: Icon(Icons.refresh_rounded, size: 18.sp),
+                label: Text(
+                  "Retry",
+                  style: GoogleFonts.inter(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: palette.ink,
+                  foregroundColor: palette.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 20.w,
+                    vertical: 12.h,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    ),
+        ),
+      );
+    },
   );
 }

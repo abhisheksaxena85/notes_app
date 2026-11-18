@@ -10,68 +10,64 @@ Widget noteContentField({
 }) {
   final hasError = errorText != null && errorText.isNotEmpty;
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      TextField(
-        controller: controller,
-        onChanged: onChanged,
-        minLines: 8,
-        maxLines: 18,
-        keyboardType: TextInputType.multiline,
-        style: GoogleFonts.sourceSans3(
-          fontSize: 14.sp,
-          fontWeight: FontWeight.w400,
-          color: AppColors.neutral90,
-          height: 1.5,
-        ),
-        decoration: InputDecoration(
-          hintText: "Write your note description here...",
-          hintStyle: GoogleFonts.sourceSans3(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w400,
-            color: AppColors.neutral50,
-          ),
-          filled: true,
-          fillColor: AppColors.neutral05,
-          contentPadding: EdgeInsets.all(14.r),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10.r),
-            borderSide: BorderSide(
-              color: hasError ? AppColors.errorColor : AppColors.neutral30,
-              width: 1,
+  return Builder(
+    builder: (context) {
+      final palette = context.daymark;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            constraints: BoxConstraints(minHeight: 180.h),
+            padding: EdgeInsets.all(16.r),
+            decoration: BoxDecoration(
+              color: palette.surface,
+              borderRadius: BorderRadius.circular(16.r),
+              border: Border.all(
+                color: hasError ? palette.danger : palette.line,
+                width: 1,
+              ),
+            ),
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              minLines: 8,
+              maxLines: 20,
+              keyboardType: TextInputType.multiline,
+              style: GoogleFonts.inter(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w400,
+                color: palette.ink,
+                height: 1.5,
+              ),
+              decoration: InputDecoration(
+                hintText: "Write your note description here...",
+                hintStyle: GoogleFonts.inter(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w400,
+                  color: palette.muted,
+                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
             ),
           ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10.r),
-            borderSide: BorderSide(
-              color: hasError ? AppColors.errorColor : AppColors.neutral30,
-              width: 1,
+          if (hasError) ...[
+            SizedBox(height: 4.h),
+            Padding(
+              padding: EdgeInsets.only(left: 6.w),
+              child: Text(
+                errorText,
+                style: GoogleFonts.inter(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w500,
+                  color: palette.danger,
+                ),
+              ),
             ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10.r),
-            borderSide: BorderSide(
-              color: hasError ? AppColors.errorColor : AppColors.brandColor,
-              width: 1.5,
-            ),
-          ),
-        ),
-      ),
-      if (hasError) ...[
-        SizedBox(height: 4.h),
-        Padding(
-          padding: EdgeInsets.only(left: 4.w),
-          child: Text(
-            errorText,
-            style: GoogleFonts.sourceSans3(
-              fontSize: 12.sp,
-              color: AppColors.errorColor,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    ],
+          ],
+        ],
+      );
+    },
   );
 }

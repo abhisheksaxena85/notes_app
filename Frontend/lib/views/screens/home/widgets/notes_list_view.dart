@@ -8,28 +8,33 @@ Widget notesListView({
   required List<NoteItem> notes,
   required Future<void> Function() onRefresh,
   void Function(NoteItem)? onNoteTap,
+  void Function(NoteItem)? onNoteMoreTap,
 }) {
-  // Sort with pinned notes first, then by date/id
-  final sortedNotes = List<NoteItem>.from(notes)
-    ..sort((a, b) {
-      if ((a.pinned ?? false) && !(b.pinned ?? false)) return -1;
-      if (!(a.pinned ?? false) && (b.pinned ?? false)) return 1;
-      return (b.noteId ?? 0).compareTo(a.noteId ?? 0);
-    });
-
   return RefreshIndicator(
     onRefresh: onRefresh,
-    color: AppColors.brandColor,
+    color: AppColors.accentLight,
     child: ListView.builder(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-      itemCount: sortedNotes.length,
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h).copyWith(
+        bottom: 90.h,
+      ),
+      itemCount: notes.length,
       itemBuilder: (context, index) {
-        final note = sortedNotes[index];
+        final note = notes[index];
         return noteItemCard(
+          context: context,
           note: note,
           onTap: () {
             if (onNoteTap != null) {
+              onNoteTap(note);
+            }
+          },
+          onMoreTap: () {
+            if (onNoteMoreTap != null) {
+              onNoteMoreTap(note);
+            } else if (onNoteTap != null) {
               onNoteTap(note);
             }
           },

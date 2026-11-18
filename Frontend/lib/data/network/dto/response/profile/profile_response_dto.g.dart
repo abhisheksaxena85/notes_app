@@ -23,12 +23,12 @@ Map<String, dynamic> _$ProfileResponseDtoToJson(ProfileResponseDto instance) =>
     };
 
 ProfileData _$ProfileDataFromJson(Map<String, dynamic> json) => ProfileData(
-      id: (json['id'] as num?)?.toInt(),
-      name: json['name'] as String?,
-      email: json['email'] as String?,
-      mobile: json['mobile'] as String?,
-      gender: json['gender'] as String?,
-    );
+  id: (json['id'] as num?)?.toInt(),
+  name: json['name'] as String?,
+  email: json['email'] as String?,
+  mobile: json['mobile'] as String?,
+  gender: json['gender'] as String?,
+);
 
 Map<String, dynamic> _$ProfileDataToJson(ProfileData instance) =>
     <String, dynamic>{

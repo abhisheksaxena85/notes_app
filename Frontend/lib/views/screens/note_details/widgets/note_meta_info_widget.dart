@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 
 Widget noteMetaInfoWidget({
   String? createdAt,
@@ -12,47 +13,61 @@ Widget noteMetaInfoWidget({
 
   if (!hasCreated && !hasUpdated) return const SizedBox.shrink();
 
-  return Container(
-    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-    decoration: BoxDecoration(
-      color: AppColors.neutral10,
-      borderRadius: BorderRadius.circular(8.r),
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        if (hasCreated)
-          Row(
-            children: [
-              Icon(Icons.calendar_today_rounded, size: 12.sp, color: AppColors.neutral60),
-              SizedBox(width: 4.w),
-              Text(
-                "Created: ${_formatDate(createdAt)}",
-                style: GoogleFonts.sourceSans3(
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.neutral70,
-                ),
+  return Builder(
+    builder: (context) {
+      final palette = context.daymark;
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: palette.surface,
+          borderRadius: BorderRadius.circular(14.r),
+          border: Border.all(color: palette.line),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            if (hasCreated)
+              Row(
+                children: [
+                  AppIcons.icon(
+                    AppIcons.clock,
+                    size: 13.sp,
+                    color: palette.muted,
+                  ),
+                  SizedBox(width: 6.w),
+                  Text(
+                    "Created: ${_formatDate(createdAt)}",
+                    style: GoogleFonts.inter(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w400,
+                      color: palette.muted,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        if (hasUpdated)
-          Row(
-            children: [
-              Icon(Icons.update_rounded, size: 12.sp, color: AppColors.neutral60),
-              SizedBox(width: 4.w),
-              Text(
-                "Updated: ${_formatDate(updatedAt)}",
-                style: GoogleFonts.sourceSans3(
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.neutral70,
-                ),
+            if (hasUpdated)
+              Row(
+                children: [
+                  AppIcons.icon(
+                    AppIcons.arrowUpRight,
+                    size: 13.sp,
+                    color: palette.muted,
+                  ),
+                  SizedBox(width: 6.w),
+                  Text(
+                    "Updated: ${_formatDate(updatedAt)}",
+                    style: GoogleFonts.inter(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w400,
+                      color: palette.muted,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-      ],
-    ),
+          ],
+        ),
+      );
+    },
   );
 }
 

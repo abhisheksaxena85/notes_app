@@ -9,9 +9,22 @@ import 'package:notes_app/viewmodel/note_details/note_details_state.dart';
 import 'package:notes_app/viewmodel/note_details/note_details_viewmodel.dart';
 import 'package:notes_app/viewmodel/profile/profile_state.dart';
 import 'package:notes_app/viewmodel/profile/profile_viewmodel.dart';
+import 'package:notes_app/viewmodel/reminder/reminder_state.dart';
+import 'package:notes_app/viewmodel/reminder/reminder_viewmodel.dart';
+import 'package:notes_app/viewmodel/task/task_state.dart';
+import 'package:notes_app/viewmodel/task/task_viewmodel.dart';
 
 final homeController = AsyncNotifierProvider<HomeViewmodel, HomeState>(
   HomeViewmodel.new,
+);
+
+final taskController = AsyncNotifierProvider<TaskViewmodel, TaskState>(
+  TaskViewmodel.new,
+);
+
+final reminderController =
+    AsyncNotifierProvider<ReminderViewmodel, ReminderState>(
+  ReminderViewmodel.new,
 );
 
 final profileController = AsyncNotifierProvider<ProfileViewmodel, ProfileState>(

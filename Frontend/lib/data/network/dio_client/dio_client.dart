@@ -7,10 +7,17 @@ class DioClient {
   final Dio dio;
   DioClient(this.dio);
 
-  factory DioClient.create() {
+  factory DioClient.create({String? baseUrl}) {
+    const configuredUrl = String.fromEnvironment('API_BASE_URL');
+    final activeBaseUrl =
+        baseUrl ??
+        (configuredUrl.isNotEmpty
+            ? configuredUrl
+            : "https://notesapp-production-d43adec7.up.railway.app");
+
     final dio = Dio(
       BaseOptions(
-        baseUrl: "https://notesapp-production-d43adec7.up.railway.app",
+        baseUrl: activeBaseUrl,
         sendTimeout: const Duration(seconds: 10),
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),

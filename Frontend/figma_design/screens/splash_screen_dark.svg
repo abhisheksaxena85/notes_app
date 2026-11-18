@@ -1,0 +1,42 @@
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" fill="#151816"/>
+
+  <!-- Status Bar -->
+  <text x="32" y="34" font-family="Inter, -apple-system, sans-serif" font-size="14" font-weight="600" fill="#F0F3F1">9:41</text>
+  <circle cx="340" cy="30" r="3" fill="#F0F3F1"/>
+  <rect x="348" y="25" width="22" height="11" rx="3" stroke="#F0F3F1" stroke-width="1.5"/>
+  <rect x="350" y="27" width="15" height="7" rx="1.5" fill="#F0F3F1"/>
+
+  <!-- Center Branded Content -->
+  <g id="CenterContentDark">
+    <!-- App Logo Icon Card -->
+    <g id="SplashLogoDark" filter="drop-shadow(0px 8px 24px rgba(0, 0, 0, 0.35))">
+      <rect x="153" y="270" width="84" height="84" rx="26" fill="#202522" stroke="#2D352F" stroke-width="1.2"/>
+      
+      <!-- Journal / Notebook Emblem -->
+      <rect x="175" y="290" width="40" height="44" rx="7" fill="#26342B" stroke="#739280" stroke-width="1.8"/>
+      <line x1="184" y1="290" x2="184" y2="334" stroke="#739280" stroke-width="1.5"/>
+      <path d="M197 290V306L201.5 302.5L206 306V290" fill="#739280"/>
+      <line x1="189" y1="314" x2="208" y2="314" stroke="#739280" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="189" y1="322" x2="203" y2="322" stroke="#739280" stroke-width="1.5" stroke-linecap="round"/>
+    </g>
+
+    <!-- App Title & Tagline -->
+    <g id="SplashTextDark">
+      <text id="SplashTitleDark" x="195" y="394" font-family="Inter, -apple-system, sans-serif" font-size="34" font-weight="800" letter-spacing="-1.2" fill="#F0F3F1" text-anchor="middle">Daymark</text>
+      <text id="SplashTaglineDark" x="195" y="420" font-family="Inter, -apple-system, sans-serif" font-size="14" font-weight="500" letter-spacing="0.2" fill="#8A948C" text-anchor="middle">Thoughtful daily notes</text>
+    </g>
+
+    <!-- Animated Loading Pill -->
+    <g id="SplashIndicatorDark">
+      <rect x="171" y="460" width="48" height="4" rx="2" fill="#26342B"/>
+      <rect x="171" y="460" width="22" height="4" rx="2" fill="#739280"/>
+    </g>
+  </g>
+
+  <!-- Bottom Brand Footnote -->
+  <g id="SplashFooterDark">
+    <text x="195" y="784" font-family="Inter, -apple-system, sans-serif" font-size="9" font-weight="800" letter-spacing="1.4" fill="#8A948C" text-anchor="middle">A CALM SPACE FOR YOUR THOUGHTS</text>
+    <text x="195" y="802" font-family="Inter, -apple-system, sans-serif" font-size="9" font-weight="700" letter-spacing="0.8" fill="#525B54" text-anchor="middle">DAYMARK · VERSION 1.0.0</text>
+  </g>
+</svg>

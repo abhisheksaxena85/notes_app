@@ -14,6 +14,8 @@ class CreateNoteRequestDto {
   String? category;
   @JsonKey(name: "pinned")
   bool? pinned;
+  @JsonKey(name: "tags")
+  String? tags;
 
   CreateNoteRequestDto({
     this.userId,
@@ -21,6 +23,7 @@ class CreateNoteRequestDto {
     this.content,
     this.category,
     this.pinned,
+    this.tags,
   });
 
   factory CreateNoteRequestDto.fromJson(Map<String, dynamic> json) =>

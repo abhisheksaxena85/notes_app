@@ -5,55 +5,73 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/data/local/shared_preference/preference.dart';
 import 'package:notes_app/data/local/shared_preference/preference_keys.dart';
-import 'package:notes_app/data/network/dto/request/profile/profile_request_dto.dart';
 import 'package:notes_app/data/network/dto/response/profile/profile_response_dto.dart';
 import 'package:notes_app/data/repository/profile/profile_repo.dart';
 import 'package:notes_app/viewmodel/profile/profile_state.dart';
 
 class ProfileViewmodel extends AsyncNotifier<ProfileState> {
-  /// MARK: Variables
-  final ProfileRepo _profileRepo = ProfileRepo();
+  final ProfileRepo _profileRepo = getIt<ProfileRepo>();
 
-  /// MARK: DATA
   var profileData = ProfileResponseDto();
 
   @override
   Future<ProfileState> build() async {
-    return fetchUserDetails();
+    final userId = getUserId();
+    profileData =
+        await _profileRepo.getCachedProfile(userId) ?? ProfileResponseDto();
+
+    final subscription = _profileRepo
+        .watchProfile(userId)
+        .listen(
+          (profile) {
+            if (profile == null) return;
+            profileData = ProfileResponseDto(success: true, data: profile);
+            if (state.hasValue) {
+              state = AsyncData(ProfileState(profileData: profileData));
+            }
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            log(
+              'Failed to observe local profile: $error',
+              stackTrace: stackTrace,
+            );
+          },
+        );
+    ref.onDispose(() {
+      subscription.cancel();
+    });
+    return ProfileState(profileData: profileData);
   }
 
   int getUserId() {
     return getIt<Preference>().getInt(PreferenceKeys.USER_ID) ?? 0;
   }
 
-  Future<ProfileState> fetchUserDetails({int? id}) async {
-    final int userId = id ?? getUserId();
-    log("Fetching user details for userId: $userId");
+  Future<void> getUserDetails({int? id}) async {
+    final userId = id ?? getUserId();
     try {
-      final response = await _profileRepo.getUserDetails(
-        ProfileRequestDto(id: userId),
-      );
-      profileData = response;
-      return ProfileState(profileData: profileData);
-    } catch (e) {
-      log("Error while fetching user details! $e");
+      await _profileRepo.refreshProfile(userId);
+    } catch (e, st) {
+      log('Failed to refresh profile for user $userId: $e', stackTrace: st);
+      if (profileData.data == null) {
+        state = AsyncError(e, st);
+      }
       rethrow;
     }
   }
 
-  Future<void> getUserDetails({int? id}) async {
-    state = const AsyncLoading();
-    try {
-      final int userId = id ?? getUserId();
-      log("Refetching user details for userId: $userId");
-      final response = await _profileRepo.getUserDetails(
-        ProfileRequestDto(id: userId),
-      );
-      profileData = response;
-      state = AsyncData(ProfileState(profileData: profileData));
-    } catch (e, st) {
-      log("Error while refetching user details! $e");
-      state = AsyncError(e.toString(), st);
-    }
+  Future<void> updateProfile({
+    required String name,
+    required String mobile,
+    required String gender,
+  }) async {
+    final userId = getUserId();
+    await _profileRepo.updateProfile(
+      userId: userId,
+      name: name,
+      mobile: mobile,
+      gender: gender,
+    );
+    await getUserDetails(id: userId);
   }
 }

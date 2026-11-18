@@ -1,0 +1,151 @@
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="390" height="844" fill="#F6F7F5"/>
+  
+  <!-- Status Bar placeholder -->
+  <text x="32" y="34" font-family="Inter, -apple-system, sans-serif" font-size="14" font-weight="600" fill="#252A27">9:41</text>
+  <circle cx="340" cy="30" r="3" fill="#252A27"/>
+  <rect x="348" y="25" width="22" height="11" rx="3" stroke="#252A27" stroke-width="1.5"/>
+  <rect x="350" y="27" width="15" height="7" rx="1.5" fill="#252A27"/>
+
+  <!-- Top Greeting & Header -->
+  <g id="Header">
+    <text x="20" y="76" font-family="Inter, -apple-system, sans-serif" font-size="10" font-weight="700" letter-spacing="1.2" fill="#858D87">GOOD DAY, EMIAI</text>
+    
+    <!-- Note Count Badge -->
+    <rect x="306" y="62" width="64" height="24" rx="12" fill="#EAF0EB"/>
+    <text x="338" y="77" font-family="Inter, -apple-system, sans-serif" font-size="9" font-weight="800" letter-spacing="0.7" fill="#5E7668" text-anchor="middle">3 NOTES</text>
+    
+    <!-- Title & Date -->
+    <text x="20" y="114" font-family="Inter, -apple-system, sans-serif" font-size="31" font-weight="800" letter-spacing="-1.1" fill="#252A27">Your notes</text>
+    <text x="20" y="132" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="500" letter-spacing="0.8" fill="#858D87">TUE  ·  NOVEMBER 17</text>
+  </g>
+
+  <!-- Search Input -->
+  <g id="Search">
+    <rect x="20" y="148" width="350" height="48" rx="16" fill="#FFFFFF" stroke="#E8ECE8" stroke-width="1"/>
+    <!-- Magnifier icon -->
+    <circle cx="42" cy="172" r="6" stroke="#858D87" stroke-width="1.6"/>
+    <path d="M46.5 176.5L51 181" stroke="#858D87" stroke-width="1.6" stroke-linecap="round"/>
+    <text x="58" y="177" font-family="Inter, -apple-system, sans-serif" font-size="14" font-weight="400" fill="#858D87">Search your notes</text>
+  </g>
+
+  <!-- Filter Chips -->
+  <g id="FilterChips">
+    <!-- All (Active) -->
+    <rect x="20" y="210" width="50" height="30" rx="15" fill="#252A27"/>
+    <text x="45" y="229" font-family="Inter, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#FFFFFF" text-anchor="middle">All</text>
+    
+    <!-- Recent -->
+    <rect x="78" y="210" width="74" height="30" rx="15" fill="#FFFFFF" stroke="#E8ECE8" stroke-width="1"/>
+    <text x="115" y="229" font-family="Inter, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#858D87" text-anchor="middle">Recent</text>
+    
+    <!-- Pinned -->
+    <rect x="160" y="210" width="74" height="30" rx="15" fill="#FFFFFF" stroke="#E8ECE8" stroke-width="1"/>
+    <text x="197" y="229" font-family="Inter, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#858D87" text-anchor="middle">Pinned</text>
+  </g>
+
+  <!-- Note Card 1 (Pinned) -->
+  <g id="NoteCard1">
+    <rect x="20" y="254" width="350" height="152" rx="20" fill="#FFFFFF" stroke="#E8ECE8" stroke-width="1"/>
+    
+    <!-- Title & Pin & More -->
+    <text x="37" y="284" font-family="Inter, -apple-system, sans-serif" font-size="16" font-weight="700" fill="#252A27">Weekly Product Roadmap</text>
+    <!-- Pin icon -->
+    <path d="M285 273L293 281M287 271L295 279M283 275L289 281L285 285L279 279L283 275ZM279 279L274 284" stroke="#5E7668" stroke-width="1.6" stroke-linecap="round"/>
+    <!-- 3 dots -->
+    <circle cx="330" cy="278" r="1.8" fill="#858D87"/>
+    <circle cx="337" cy="278" r="1.8" fill="#858D87"/>
+    <circle cx="344" cy="278" r="1.8" fill="#858D87"/>
+
+    <!-- Content preview -->
+    <text x="37" y="306" font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="400" fill="#858D87">Review Q4 milestones with engineering leads and</text>
+    <text x="37" y="324" font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="400" fill="#858D87">finalize release checklist for the mobile client...</text>
+
+    <!-- Tag Chips -->
+    <rect x="37" y="338" width="56" height="24" rx="12" fill="#EAF0EB"/>
+    <text x="65" y="354" font-family="Inter, -apple-system, sans-serif" font-size="10" font-weight="600" fill="#5E7668" text-anchor="middle">Work</text>
+
+    <rect x="100" y="338" width="70" height="24" rx="12" fill="#EAF0EB"/>
+    <text x="135" y="354" font-family="Inter, -apple-system, sans-serif" font-size="10" font-weight="600" fill="#5E7668" text-anchor="middle">Planning</text>
+
+    <!-- Footer info -->
+    <circle cx="43" cy="384" r="5" stroke="#858D87" stroke-width="1.2"/>
+    <path d="M43 381.5V384L45 385.5" stroke="#858D87" stroke-width="1.2" stroke-linecap="round"/>
+    <text x="54" y="388" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="400" fill="#858D87">Nov 17 · 10:30 AM</text>
+    <path d="M344 380L352 388M352 388H346M352 388V382" stroke="#858D87" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Note Card 2 -->
+  <g id="NoteCard2">
+    <rect x="20" y="418" width="350" height="148" rx="20" fill="#FFFFFF" stroke="#E8ECE8" stroke-width="1"/>
+    
+    <text x="37" y="448" font-family="Inter, -apple-system, sans-serif" font-size="16" font-weight="700" fill="#252A27">Morning Reflection &amp; Ideas</text>
+    <circle cx="330" cy="442" r="1.8" fill="#858D87"/>
+    <circle cx="337" cy="442" r="1.8" fill="#858D87"/>
+    <circle cx="344" cy="442" r="1.8" fill="#858D87"/>
+
+    <text x="37" y="470" font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="400" fill="#858D87">Exploring calm interface design with muted olive</text>
+    <text x="37" y="488" font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="400" fill="#858D87">tones, subtle borders, and generous whitespace...</text>
+
+    <rect x="37" y="502" width="54" height="24" rx="12" fill="#EAF0EB"/>
+    <text x="64" y="518" font-family="Inter, -apple-system, sans-serif" font-size="10" font-weight="600" fill="#5E7668" text-anchor="middle">Ideas</text>
+
+    <rect x="98" y="502" width="62" height="24" rx="12" fill="#EAF0EB"/>
+    <text x="129" y="518" font-family="Inter, -apple-system, sans-serif" font-size="10" font-weight="600" fill="#5E7668" text-anchor="middle">Design</text>
+
+    <circle cx="43" cy="546" r="5" stroke="#858D87" stroke-width="1.2"/>
+    <path d="M43 543.5V546L45 547.5" stroke="#858D87" stroke-width="1.2" stroke-linecap="round"/>
+    <text x="54" y="550" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="400" fill="#858D87">Nov 16 · 8:15 AM</text>
+    <path d="M344 542L352 550M352 550H346M352 550V544" stroke="#858D87" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Note Card 3 -->
+  <g id="NoteCard3">
+    <rect x="20" y="578" width="350" height="136" rx="20" fill="#FFFFFF" stroke="#E8ECE8" stroke-width="1"/>
+    
+    <text x="37" y="608" font-family="Inter, -apple-system, sans-serif" font-size="16" font-weight="700" fill="#252A27">Book recommendations</text>
+    <circle cx="330" cy="602" r="1.8" fill="#858D87"/>
+    <circle cx="337" cy="602" r="1.8" fill="#858D87"/>
+    <circle cx="344" cy="602" r="1.8" fill="#858D87"/>
+
+    <text x="37" y="630" font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="400" fill="#858D87">1. The Design of Everyday Things — Don Norman</text>
+    <text x="37" y="648" font-family="Inter, -apple-system, sans-serif" font-size="13" font-weight="400" fill="#858D87">2. Shape Up: Stop Running in Circles</text>
+
+    <rect x="37" y="662" width="70" height="24" rx="12" fill="#EAF0EB"/>
+    <text x="72" y="678" font-family="Inter, -apple-system, sans-serif" font-size="10" font-weight="600" fill="#5E7668" text-anchor="middle">Personal</text>
+  </g>
+
+  <!-- Floating Action Button -->
+  <g id="FAB" filter="drop-shadow(0px 4px 10px rgba(0, 0, 0, 0.12))">
+    <rect x="240" y="706" width="130" height="48" rx="18" fill="#252A27"/>
+    <path d="M260 730H272M266 724V736" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    <text x="279" y="735" font-family="Inter, -apple-system, sans-serif" font-size="14" font-weight="600" fill="#FFFFFF">New note</text>
+  </g>
+
+  <!-- Bottom Navigation Bar -->
+  <g id="BottomNavBar">
+    <rect x="0" y="776" width="390" height="68" fill="#FFFFFF" stroke="#E8ECE8" stroke-width="1"/>
+    
+    <!-- Tab 1: Notes (Active) -->
+    <g id="TabNotes">
+      <rect x="42" y="784" width="46" height="28" rx="14" fill="#EAF0EB"/>
+      <path d="M60 792H68M60 796H70M60 800H66M57 789H73C74.1 789 75 789.9 75 791V805C75 806.1 74.1 807 73 807H57C55.9 807 55 806.1 55 805V791C55 789.9 55.9 789 57 789Z" stroke="#252A27" stroke-width="1.5" stroke-linecap="round"/>
+      <text x="65" y="826" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="700" fill="#252A27" text-anchor="middle">Notes</text>
+    </g>
+
+    <!-- Tab 2: Calendar -->
+    <g id="TabCalendar">
+      <rect x="185" y="792" width="20" height="18" rx="4" stroke="#858D87" stroke-width="1.5"/>
+      <path d="M185 798H205M190 789V793M200 789V793" stroke="#858D87" stroke-width="1.5" stroke-linecap="round"/>
+      <text x="195" y="826" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="500" fill="#858D87" text-anchor="middle">Calendar</text>
+    </g>
+
+    <!-- Tab 3: Profile -->
+    <g id="TabProfile">
+      <circle cx="325" cy="797" r="5" stroke="#858D87" stroke-width="1.5"/>
+      <path d="M315 810C315 806.7 319.5 805 325 805C330.5 805 335 806.7 335 810" stroke="#858D87" stroke-width="1.5" stroke-linecap="round"/>
+      <text x="325" y="826" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="500" fill="#858D87" text-anchor="middle">Profile</text>
+    </g>
+  </g>
+</svg>

@@ -35,6 +35,8 @@ class NoteItem {
   String? updatedAt;
   @JsonKey(name: "pinned")
   bool? pinned;
+  @JsonKey(name: "tags")
+  String? tags;
 
   NoteItem({
     this.noteId,
@@ -44,7 +46,13 @@ class NoteItem {
     this.createdAt,
     this.updatedAt,
     this.pinned,
+    this.tags,
   });
+
+  List<String> get tagsList {
+    if (tags == null || tags!.trim().isEmpty) return [];
+    return tags!.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
+  }
 
   factory NoteItem.fromJson(Map<String, dynamic> json) =>
       _$NoteItemFromJson(json);

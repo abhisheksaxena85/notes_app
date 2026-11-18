@@ -4,29 +4,34 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 
 Widget notesLoadingWidget() {
-  return Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: 36.w,
-          height: 36.w,
-          child: CircularProgressIndicator(
-            strokeWidth: 3.w,
-            color: AppColors.brandColor,
-          ),
+  return Builder(
+    builder: (context) {
+      final palette = context.daymark;
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 32.r,
+              height: 32.r,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: palette.accent,
+              ),
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              "Loading your notes...",
+              style: GoogleFonts.inter(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w500,
+                color: palette.muted,
+              ),
+            ),
+          ],
         ),
-        SizedBox(height: 16.h),
-        Text(
-          "Loading your notes...",
-          style: GoogleFonts.sourceSans3(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w500,
-            color: AppColors.neutral70,
-          ),
-        ),
-      ],
-    ),
+      );
+    },
   );
 }

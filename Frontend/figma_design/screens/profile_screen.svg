@@ -1,0 +1,146 @@
+<svg width="390" height="844" viewBox="0 0 390 844" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" fill="#F6F7F5"/>
+
+  <!-- Status Bar -->
+  <text x="32" y="34" font-family="Inter, -apple-system, sans-serif" font-size="14" font-weight="600" fill="#252A27">9:41</text>
+  <rect x="348" y="25" width="22" height="11" rx="3" stroke="#252A27" stroke-width="1.5"/>
+  <rect x="350" y="27" width="15" height="7" rx="1.5" fill="#252A27"/>
+
+  <!-- Header -->
+  <g id="ProfileHeader">
+    <text x="20" y="76" font-family="Inter, -apple-system, sans-serif" font-size="10" font-weight="800" letter-spacing="1.3" fill="#858D87">YOUR SPACE</text>
+    <text x="20" y="112" font-family="Inter, -apple-system, sans-serif" font-size="31" font-weight="800" letter-spacing="-1.0" fill="#252A27">Profile</text>
+  </g>
+
+  <!-- User Card -->
+  <g id="UserCard">
+    <rect x="20" y="132" width="350" height="136" rx="22" fill="#FFFFFF" stroke="#E8ECE8" stroke-width="1"/>
+    
+    <!-- Avatar -->
+    <circle cx="58" cy="172" r="26" fill="#EAF0EB"/>
+    <text x="58" y="181" font-family="Inter, -apple-system, sans-serif" font-size="22" font-weight="800" fill="#5E7668" text-anchor="middle">E</text>
+
+    <!-- User details -->
+    <text x="96" y="168" font-family="Inter, -apple-system, sans-serif" font-size="18" font-weight="800" fill="#252A27">Emiai</text>
+    <text x="96" y="186" font-family="Inter, -apple-system, sans-serif" font-size="12" font-weight="400" fill="#858D87">emiai@example.com</text>
+
+    <!-- Verified Badge -->
+    <circle cx="342" cy="170" r="10" fill="#EAF0EB"/>
+    <path d="M338 170L341 173L347 167" stroke="#5E7668" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Divider -->
+    <line x1="38" y1="216" x2="352" y2="216" stroke="#E8ECE8" stroke-width="1"/>
+
+    <!-- Notes count summary -->
+    <rect x="38" y="228" width="16" height="16" rx="4" stroke="#858D87" stroke-width="1.3"/>
+    <text x="62" y="240" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="500" fill="#858D87">3 notes saved on this device</text>
+
+    <rect x="268" y="226" width="84" height="20" rx="10" fill="#F6F7F5"/>
+    <text x="310" y="239" font-family="Inter, -apple-system, sans-serif" font-size="8" font-weight="800" letter-spacing="0.6" fill="#858D87" text-anchor="middle">DEMO ACCOUNT</text>
+  </g>
+
+  <!-- Preferences Group with Dark Theme Option -->
+  <text x="20" y="296" font-family="Inter, -apple-system, sans-serif" font-size="10" font-weight="800" letter-spacing="1.2" fill="#858D87">PREFERENCES</text>
+  
+  <g id="PreferencesGroup">
+    <rect x="20" y="308" width="350" height="208" rx="19" fill="#FFFFFF" stroke="#E8ECE8" stroke-width="1"/>
+    
+    <!-- Item 1: Account Details -->
+    <circle cx="44" cy="334" r="14" fill="#F6F7F5"/>
+    <circle cx="44" cy="331" r="4.5" stroke="#252A27" stroke-width="1.4"/>
+    <path d="M37 342C37 339 40 338 44 338C48 338 51 339 51 342" stroke="#252A27" stroke-width="1.4"/>
+    <text x="68" y="333" font-family="Inter, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#252A27">Account details</text>
+    <text x="68" y="347" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="400" fill="#858D87">Your name and email address</text>
+    <path d="M344 330L348 334L344 338" stroke="#858D87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <line x1="68" y1="360" x2="352" y2="360" stroke="#E8ECE8" stroke-width="1"/>
+
+    <!-- Item 2: Dark Theme Option (TOGGLE SWITCH) -->
+    <circle cx="44" cy="386" r="14" fill="#F6F7F5"/>
+    <!-- Moon Icon -->
+    <path d="M46 380C42 382 40 386 40 390C40 394.5 43.5 398 48 398C51 398 53 396.5 54 395C51 395 47.5 392.5 47.5 389C47.5 385.5 50 382.5 52.5 382C50.5 380.5 48 380 46 380Z" stroke="#252A27" stroke-width="1.4" stroke-linejoin="round"/>
+    <text x="68" y="385" font-family="Inter, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#252A27">Dark theme</text>
+    <text x="68" y="399" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="400" fill="#858D87">Use calm dark appearance</text>
+    
+    <!-- Toggle Switch (OFF State) -->
+    <rect id="DarkThemeToggleLight" x="316" y="375" width="40" height="22" rx="11" fill="#E8ECE8"/>
+    <circle cx="327" cy="386" r="8" fill="#FFFFFF"/>
+
+    <line x1="68" y1="412" x2="352" y2="412" stroke="#E8ECE8" stroke-width="1"/>
+
+    <!-- Item 3: App Preferences -->
+    <circle cx="44" cy="438" r="14" fill="#F6F7F5"/>
+    <path d="M38 434H46M42 434V432M42 434V436M42 442H50M46 442V440M46 442V444" stroke="#252A27" stroke-width="1.4" stroke-linecap="round"/>
+    <text x="68" y="437" font-family="Inter, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#252A27">App preferences</text>
+    <text x="68" y="451" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="400" fill="#858D87">Reading and note editor options</text>
+    <path d="M344 434L348 438L344 442" stroke="#858D87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <line x1="68" y1="464" x2="352" y2="464" stroke="#E8ECE8" stroke-width="1"/>
+
+    <!-- Item 4: Notifications -->
+    <circle cx="44" cy="490" r="14" fill="#F6F7F5"/>
+    <path d="M44 482C41.8 482 40 483.8 40 486V491L38 493H50L48 491V486C48 483.8 46.2 482 44 482ZM42.5 494C42.5 494.8 43.2 495.5 44 495.5C44.8 495.5 45.5 494.8 45.5 494" stroke="#252A27" stroke-width="1.4" stroke-linecap="round"/>
+    <text x="68" y="489" font-family="Inter, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#252A27">Notifications</text>
+    <text x="68" y="503" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="400" fill="#858D87">Manage reminders and summaries</text>
+    <path d="M344 486L348 490L344 494" stroke="#858D87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Data & Support Group -->
+  <text x="20" y="542" font-family="Inter, -apple-system, sans-serif" font-size="10" font-weight="800" letter-spacing="1.2" fill="#858D87">DATA &amp; SUPPORT</text>
+
+  <g id="DataGroup">
+    <rect x="20" y="554" width="350" height="156" rx="19" fill="#FFFFFF" stroke="#E8ECE8" stroke-width="1"/>
+    
+    <!-- Item 1: Privacy -->
+    <circle cx="44" cy="580" r="14" fill="#F6F7F5"/>
+    <path d="M44 572L40 574V581C40 585 44 588 44 588C44 588 48 585 48 581V574L44 572Z" stroke="#252A27" stroke-width="1.4" stroke-linejoin="round"/>
+    <text x="68" y="579" font-family="Inter, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#252A27">Privacy &amp; security</text>
+    <text x="68" y="593" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="400" fill="#858D87">Understand how your notes are stored</text>
+    <path d="M344 576L348 580L344 584" stroke="#858D87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <line x1="68" y1="606" x2="352" y2="606" stroke="#E8ECE8" stroke-width="1"/>
+
+    <!-- Item 2: Backup -->
+    <circle cx="44" cy="632" r="14" fill="#F6F7F5"/>
+    <path d="M40 635H48C50 635 51 633.5 50.5 631.5C50 629 48 627.5 45.5 627.5C43 627.5 42 629 41.5 630C40 630 38 631 38 633C38 634.5 39 635 40 635Z" stroke="#252A27" stroke-width="1.4"/>
+    <text x="68" y="631" font-family="Inter, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#252A27">Data &amp; backup</text>
+    <text x="68" y="645" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="400" fill="#858D87">Export a JSON copy of your notes</text>
+    <path d="M344 628L348 632L344 636" stroke="#858D87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <line x1="68" y1="658" x2="352" y2="658" stroke="#E8ECE8" stroke-width="1"/>
+
+    <!-- Item 3: About -->
+    <circle cx="44" cy="684" r="14" fill="#F6F7F5"/>
+    <circle cx="44" cy="684" r="8" stroke="#252A27" stroke-width="1.4"/>
+    <path d="M44 682V686M44 679V680" stroke="#252A27" stroke-width="1.5" stroke-linecap="round"/>
+    <text x="68" y="683" font-family="Inter, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#252A27">About Daymark</text>
+    <text x="68" y="697" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="400" fill="#858D87">Version 1.0.0 · Design System</text>
+    <path d="M344 680L348 684L344 688" stroke="#858D87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Bottom Navigation Bar (Profile Active) -->
+  <g id="BottomNavBarProfile">
+    <rect x="0" y="776" width="390" height="68" fill="#FFFFFF" stroke="#E8ECE8" stroke-width="1"/>
+    
+    <!-- Tab 1: Notes -->
+    <g id="TabNotesP">
+      <path d="M60 792H68M60 796H70M60 800H66M57 789H73C74.1 789 75 789.9 75 791V805C75 806.1 74.1 807 73 807H57C55.9 807 55 806.1 55 805V791C55 789.9 55.9 789 57 789Z" stroke="#858D87" stroke-width="1.5" stroke-linecap="round"/>
+      <text x="65" y="826" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="500" fill="#858D87" text-anchor="middle">Notes</text>
+    </g>
+
+    <!-- Tab 2: Calendar -->
+    <g id="TabCalendarP">
+      <rect x="185" y="792" width="20" height="18" rx="4" stroke="#858D87" stroke-width="1.5"/>
+      <path d="M185 798H205M190 789V793M200 789V793" stroke="#858D87" stroke-width="1.5" stroke-linecap="round"/>
+      <text x="195" y="826" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="500" fill="#858D87" text-anchor="middle">Calendar</text>
+    </g>
+
+    <!-- Tab 3: Profile (Active) -->
+    <g id="TabProfilePActive">
+      <rect x="302" y="784" width="46" height="28" rx="14" fill="#EAF0EB"/>
+      <circle cx="325" cy="794" r="5" stroke="#252A27" stroke-width="1.5"/>
+      <path d="M315 807C315 803.7 319.5 802 325 802C330.5 802 335 803.7 335 807" stroke="#252A27" stroke-width="1.5" stroke-linecap="round"/>
+      <text x="325" y="826" font-family="Inter, -apple-system, sans-serif" font-size="11" font-weight="700" fill="#252A27" text-anchor="middle">Profile</text>
+    </g>
+  </g>
+</svg>

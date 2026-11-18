@@ -7,22 +7,22 @@ part of 'delete_note_response_dto.dart';
 // **************************************************************************
 
 DeleteNoteResponseDto _$DeleteNoteResponseDtoFromJson(
-        Map<String, dynamic> json) =>
-    DeleteNoteResponseDto(
-      success: json['success'] as bool?,
-      message: json['message'] as String?,
-      data: json['data'] == null
-          ? null
-          : DeleteNoteData.fromJson(json['data'] as Map<String, dynamic>),
-    );
+  Map<String, dynamic> json,
+) => DeleteNoteResponseDto(
+  success: json['success'] as bool?,
+  message: json['message'] as String?,
+  data: json['data'] == null
+      ? null
+      : DeleteNoteData.fromJson(json['data'] as Map<String, dynamic>),
+);
 
 Map<String, dynamic> _$DeleteNoteResponseDtoToJson(
-        DeleteNoteResponseDto instance) =>
-    <String, dynamic>{
-      'success': instance.success,
-      'message': instance.message,
-      'data': instance.data,
-    };
+  DeleteNoteResponseDto instance,
+) => <String, dynamic>{
+  'success': instance.success,
+  'message': instance.message,
+  'data': instance.data,
+};
 
 DeleteNoteData _$DeleteNoteDataFromJson(Map<String, dynamic> json) =>
     DeleteNoteData(
@@ -31,7 +31,7 @@ DeleteNoteData _$DeleteNoteDataFromJson(Map<String, dynamic> json) =>
       content: json['content'] as String?,
       category: json['category'] as String?,
       createdAt: json['createdAt'] as String?,
-      updatedAt: (json['updatedAt'] ?? json['updateAt']) as String?,
+      updatedAt: json['updatedAt'] as String?,
       pinned: json['pinned'] as bool?,
     );
 

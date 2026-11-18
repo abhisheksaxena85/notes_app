@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 
 Widget notesEmptyWidget({
   required Future<void> Function() onRefresh,
 }) {
-  return RefreshIndicator(
-    onRefresh: onRefresh,
-    color: AppColors.brandColor,
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final palette = context.daymark;
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        color: palette.accent,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Center(
@@ -23,35 +27,39 @@ Widget notesEmptyWidget({
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
-                      padding: EdgeInsets.all(24.r),
+                      width: 72.r,
+                      height: 72.r,
                       decoration: BoxDecoration(
-                        color: AppColors.priBlue00,
-                        shape: BoxShape.circle,
+                        color: palette.accentSoft,
+                        borderRadius: BorderRadius.circular(22.r),
+                        border: Border.all(color: palette.line),
                       ),
-                      child: Icon(
-                        Icons.edit_note_rounded,
-                        size: 56.sp,
-                        color: AppColors.brandColor,
+                      child: Center(
+                        child: AppIcons.icon(
+                          AppIcons.navNotes,
+                          size: 32.sp,
+                          color: palette.accent,
+                        ),
                       ),
                     ),
                     SizedBox(height: 20.h),
                     Text(
-                      "No Notes Found",
-                      style: GoogleFonts.googleSans(
+                      "No notes yet",
+                      style: GoogleFonts.inter(
                         fontSize: 18.sp,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.neutral90,
+                        color: palette.ink,
                       ),
                     ),
                     SizedBox(height: 8.h),
                     Text(
-                      "You haven't created any notes yet.\nTap the '+' button below to get started!",
+                      "Your calm space is waiting.\nTap '+ New note' below to capture your thoughts.",
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.sourceSans3(
-                        fontSize: 14.sp,
+                      style: GoogleFonts.inter(
+                        fontSize: 13.sp,
                         fontWeight: FontWeight.w400,
-                        color: AppColors.neutral70,
-                        height: 1.4,
+                        height: 1.5,
+                        color: palette.muted,
                       ),
                     ),
                   ],
@@ -59,8 +67,8 @@ Widget notesEmptyWidget({
               ),
             ),
           ),
-        );
-      },
-    ),
+        ),
+      );
+    },
   );
 }

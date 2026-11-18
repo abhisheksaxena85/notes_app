@@ -35,6 +35,8 @@ class UpdateNoteData {
   String? createdAt;
   @JsonKey(name: "pinned")
   bool? pinned;
+  @JsonKey(name: "tags")
+  String? tags;
 
   UpdateNoteData({
     this.noteId,
@@ -44,6 +46,7 @@ class UpdateNoteData {
     this.updateAt,
     this.createdAt,
     this.pinned,
+    this.tags,
   });
 
   factory UpdateNoteData.fromJson(Map<String, dynamic> json) =>

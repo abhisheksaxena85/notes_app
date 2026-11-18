@@ -10,45 +10,67 @@ import 'package:notes_app/data/repository/home/home_repo.dart';
 import 'package:notes_app/viewmodel/home/home_state.dart';
 
 class HomeViewmodel extends AsyncNotifier<HomeState> {
-  /// MARK: Variables
-  final HomeRepo _homeRepo = HomeRepo();
+  final HomeRepo _homeRepo = getIt<HomeRepo>();
 
-  /// MARK: DATA
   var notesData = GetAllNotesResponseDto();
 
   @override
   Future<HomeState> build() async {
-    return fetchNotes();
+    final userId = getUserId();
+    final cachedNotes = await _homeRepo.getCachedNotes(userId);
+    notesData = cachedNotes;
+
+    final subscription = _homeRepo
+        .watchNotes(userId)
+        .listen(
+          (notes) {
+            notesData = GetAllNotesResponseDto(success: true, data: notes);
+            if (state.hasValue) {
+              state = AsyncData(HomeState(notesData: notesData));
+            }
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            log(
+              'Failed to observe local notes: $error',
+              stackTrace: stackTrace,
+            );
+          },
+        );
+    ref.onDispose(() {
+      subscription.cancel();
+    });
+
+    if (userId != 0) {
+      unawaited(_refreshNotes(userId));
+    }
+    return HomeState(notesData: cachedNotes);
   }
 
   int getUserId() {
     return getIt<Preference>().getInt(PreferenceKeys.USER_ID) ?? 0;
   }
 
-  Future<HomeState> fetchNotes({int? id}) async {
-    final int userId = id ?? getUserId();
-    log("Fetching all notes for userId: $userId");
+  Future<void> getAllNotes({int? id}) async {
+    final userId = id ?? getUserId();
     try {
-      final response = await _homeRepo.getAllNotes(userId);
-      notesData = response;
-      return HomeState(notesData: notesData);
-    } catch (e) {
-      log("Error while fetching notes! $e");
+      await _homeRepo.getAllNotes(userId);
+    } catch (error, stackTrace) {
+      log(
+        'Failed to refresh notes for user $userId: $error',
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
 
-  Future<void> getAllNotes({int? id}) async {
-    state = const AsyncLoading();
+  Future<void> _refreshNotes(int userId) async {
     try {
-      final int userId = id ?? getUserId();
-      log("Refetching notes for userId: $userId");
-      final response = await _homeRepo.getAllNotes(userId);
-      notesData = response;
-      state = AsyncData(HomeState(notesData: notesData));
-    } catch (e, st) {
-      log("Error while refetching notes! $e");
-      state = AsyncError(e.toString(), st);
+      await _homeRepo.getAllNotes(userId);
+    } catch (error, stackTrace) {
+      log(
+        'Failed to refresh notes for user $userId: $error',
+        stackTrace: stackTrace,
+      );
     }
   }
 }
