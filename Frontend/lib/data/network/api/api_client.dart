@@ -55,17 +55,30 @@ class ApiClient {
     return _dio.put(ApiEndpoints.TOGGLE_PIN, queryParameters: {'id': noteId});
   }
 
-  Future<Response> getCalendarSummary(int userId, int year, int month) async {
+  /// [tz] is an IANA zone name (e.g. `Asia/Kolkata`) used to bucket
+  /// timestamps into days; the server uses UTC without it.
+  Future<Response> getCalendarSummary(
+    int userId,
+    int year,
+    int month, {
+    String? tz,
+  }) async {
     return _dio.get(
       ApiEndpoints.CALENDAR_SUMMARY,
-      queryParameters: {'userId': userId, 'year': year, 'month': month},
+      queryParameters: {
+        'userId': userId,
+        'year': year,
+        'month': month,
+        'tz': ?tz,
+      },
     );
   }
 
-  Future<Response> getNotesByDate(int userId, String date) async {
+  /// See [getCalendarSummary] for [tz].
+  Future<Response> getNotesByDate(int userId, String date, {String? tz}) async {
     return _dio.get(
       ApiEndpoints.GET_NOTES_BY_DATE,
-      queryParameters: {'userId': userId, 'date': date},
+      queryParameters: {'userId': userId, 'date': date, 'tz': ?tz},
     );
   }
 

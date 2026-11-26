@@ -65,22 +65,25 @@ public class NotesController {
     public ResponseEntity<ApiResponse<CalendarSummaryResponseDto>> getCalendarSummary(
             @RequestParam long userId,
             @RequestParam int year,
-            @RequestParam int month){
-        return notesService.getCalendarSummary(userId, year, month);
+            @RequestParam int month,
+            @RequestParam(required = false) String tz){
+        return notesService.getCalendarSummary(userId, year, month, tz);
     }
 
     @GetMapping("/get-notes-by-date")
     public ResponseEntity<ApiResponse<List<NotesModel>>> getNotesByDate(
             @RequestParam long userId,
-            @RequestParam String date){
-        return notesService.getNotesByDate(userId, date);
+            @RequestParam String date,
+            @RequestParam(required = false) String tz){
+        return notesService.getNotesByDate(userId, date, tz);
     }
 
     @GetMapping("/day-activity")
     public ResponseEntity<ApiResponse<DayActivityResponseDto>> getDayActivity(
             @RequestParam long userId,
-            @RequestParam String date){
-        return notesService.getDayActivity(userId, date);
+            @RequestParam String date,
+            @RequestParam(required = false) String tz){
+        return notesService.getDayActivity(userId, date, tz);
     }
 
     @GetMapping("/search")

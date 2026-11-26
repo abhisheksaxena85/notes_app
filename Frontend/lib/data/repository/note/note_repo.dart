@@ -12,6 +12,7 @@ import 'package:notes_app/data/network/dto/request/note/update_note_request_dto.
 import 'package:notes_app/data/network/dto/response/note/note_details_response_dto.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/note_data_transfer_service.dart';
+import 'package:notes_app/utils/date/date_keys.dart';
 import 'package:uuid/uuid.dart';
 
 class ImportResult {
@@ -168,7 +169,7 @@ class NoteRepo {
             category: Value(category),
             pinned: Value(pinned),
             tags: tags == null ? const Value.absent() : Value(tags),
-            updatedAt: Value(DateTime.now().toIso8601String()),
+            updatedAt: Value(DateKeys.nowUtc()),
           ),
         );
       },

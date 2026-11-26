@@ -13,9 +13,6 @@ public interface NotesRepository extends JpaRepository<NotesModel, Long> {
 
     Optional<NotesModel> findByUser_IdAndClientId(long userId, String clientId);
 
-    @Query("SELECT n FROM NotesModel n WHERE n.user.id = :userId AND n.createdAt LIKE :datePrefix%")
-    List<NotesModel> findByUserIdAndDatePrefix(@Param("userId") long userId, @Param("datePrefix") String datePrefix);
-
     @Query("SELECT n FROM NotesModel n WHERE n.user.id = :userId AND (" +
            "LOWER(n.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
            "LOWER(n.content) LIKE LOWER(CONCAT('%', :query, '%')) OR " +

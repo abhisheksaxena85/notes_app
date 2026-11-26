@@ -11,6 +11,7 @@ import 'package:notes_app/views/screens/home/widgets/note_item_card.dart';
 import 'package:notes_app/views/screens/home/widgets/reminder_item_card.dart';
 import 'package:notes_app/views/screens/home/widgets/task_item_card.dart';
 import 'package:notes_app/views/screens/note_details/note_details_screen.dart';
+import 'package:notes_app/utils/date/date_keys.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -44,30 +45,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   List<NoteItem> _getNotesForDate(List<NoteItem> allNotes, DateTime date) {
-    return allNotes.where((note) {
-      final dateStr = note.createdAt ?? note.updatedAt;
-      if (dateStr == null) return false;
-      if (dateStr.length >= 10) {
-        final parts = dateStr.substring(0, 10).split('-');
-        if (parts.length == 3) {
-          final y = int.tryParse(parts[0]);
-          final m = int.tryParse(parts[1]);
-          final d = int.tryParse(parts[2]);
-          if (y == date.year && m == date.month && d == date.day) {
-            return true;
-          }
-        }
-      }
-      final parsed = DateTime.tryParse(dateStr);
-      if (parsed == null) return false;
-      return parsed.year == date.year &&
-          parsed.month == date.month &&
-          parsed.day == date.day;
-    }).toList();
+    return allNotes
+        .where((note) => DateKeys.isOnDay(note.createdAt ?? note.updatedAt, date))
+        .toList();
   }
 
   List<TaskItem> _getTasksForDate(List<TaskItem> allTasks, DateTime date) {
     return allTasks.where((task) {
+      // dueDate is the wall-clock day the user picked: compared as is.
       if (task.dueDate != null && task.dueDate!.isNotEmpty) {
         final parts = task.dueDate!.split('-');
         if (parts.length == 3) {
@@ -76,26 +61,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           final d = int.tryParse(parts[2]);
           return y == date.year && m == date.month && d == date.day;
         }
-      } else if (task.createdAt != null && task.createdAt!.isNotEmpty) {
-        if (task.createdAt!.length >= 10) {
-          final parts = task.createdAt!.substring(0, 10).split('-');
-          if (parts.length == 3) {
-            final y = int.tryParse(parts[0]);
-            final m = int.tryParse(parts[1]);
-            final d = int.tryParse(parts[2]);
-            if (y == date.year && m == date.month && d == date.day) {
-              return true;
-            }
-          }
-        }
-        final parsed = DateTime.tryParse(task.createdAt!);
-        if (parsed != null) {
-          return parsed.year == date.year &&
-              parsed.month == date.month &&
-              parsed.day == date.day;
-        }
+        return false;
       }
-      return false;
+      // No due date: the local day it was created.
+      return DateKeys.isOnDay(task.createdAt, date);
     }).toList();
   }
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:notes_app/data/local/database/app_database.dart';
 import 'package:notes_app/data/network/dto/response/home/get_all_notes_response_dto.dart';
+import 'package:notes_app/utils/date/date_keys.dart';
 
 enum NoteExportFormat {
   csv,
@@ -571,7 +572,7 @@ class NoteDataTransferService {
   }) {
     final payload = {
       'exportVersion': 1,
-      'exportedAt': DateTime.now().toIso8601String(),
+      'exportedAt': DateKeys.nowUtc(),
       if (userId != null && userId > 0) 'userId': userId,
       'totalNotes': notes.length,
       'notes': notes.map((n) => n.toJson()).toList(),

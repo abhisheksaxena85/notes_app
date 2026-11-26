@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
+import 'package:notes_app/utils/date/date_keys.dart';
 
 Widget noteMetaInfoWidget({
   String? createdAt,
@@ -73,14 +74,11 @@ Widget noteMetaInfoWidget({
 
 String _formatDate(String? dateStr) {
   if (dateStr == null || dateStr.trim().isEmpty) return "";
-  try {
-    final parsed = DateTime.parse(dateStr);
-    const months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    ];
-    return "${months[parsed.month - 1]} ${parsed.day}, ${parsed.year}";
-  } catch (_) {
-    return dateStr;
-  }
+  final parsed = DateKeys.instant(dateStr);
+  if (parsed == null) return dateStr;
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  ];
+  return "${months[parsed.month - 1]} ${parsed.day}, ${parsed.year}";
 }

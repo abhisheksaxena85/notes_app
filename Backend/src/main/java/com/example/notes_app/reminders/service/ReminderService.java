@@ -4,6 +4,7 @@ import com.example.notes_app.auth.model.UserModel;
 import com.example.notes_app.auth.repository.AuthRepository;
 import com.example.notes_app.common.ApiResponse;
 import com.example.notes_app.common.IdempotentCreate;
+import com.example.notes_app.common.Timestamps;
 import com.example.notes_app.common.exception.NotFoundException;
 import com.example.notes_app.reminders.dto.request.CreateReminderRequestDto;
 import com.example.notes_app.reminders.dto.request.UpdateReminderRequestDto;
@@ -16,7 +17,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -76,8 +76,8 @@ public class ReminderService {
         reminder.setCategory(requestDto.getCategory() != null ? requestDto.getCategory() : "General");
         reminder.setStatus(requestDto.getStatus() != null ? requestDto.getStatus() : "PENDING");
         reminder.setRepeatInterval(requestDto.getRepeatInterval() != null ? requestDto.getRepeatInterval() : "NONE");
-        reminder.setCreatedAt(LocalDateTime.now().toString());
-        reminder.setUpdatedAt(LocalDateTime.now().toString());
+        reminder.setCreatedAt(Timestamps.now());
+        reminder.setUpdatedAt(Timestamps.now());
         reminder.setUser(user);
         reminder.setClientId(clientId);
         return reminder;
@@ -104,7 +104,7 @@ public class ReminderService {
         if (requestDto.getCategory() != null) reminder.setCategory(requestDto.getCategory());
         if (requestDto.getStatus() != null) reminder.setStatus(requestDto.getStatus());
         if (requestDto.getRepeatInterval() != null) reminder.setRepeatInterval(requestDto.getRepeatInterval());
-        reminder.setUpdatedAt(LocalDateTime.now().toString());
+        reminder.setUpdatedAt(Timestamps.now());
 
         ReminderModel saved = reminderRepository.save(reminder);
         return ResponseEntity.ok(new ApiResponse<>(true, "Reminder updated successfully", saved));
@@ -116,7 +116,7 @@ public class ReminderService {
 
         String newStatus = status != null ? status.toUpperCase() : ("COMPLETED".equalsIgnoreCase(reminder.getStatus()) ? "PENDING" : "COMPLETED");
         reminder.setStatus(newStatus);
-        reminder.setUpdatedAt(LocalDateTime.now().toString());
+        reminder.setUpdatedAt(Timestamps.now());
 
         ReminderModel saved = reminderRepository.save(reminder);
         return ResponseEntity.ok(new ApiResponse<>(true, "Reminder status updated", saved));

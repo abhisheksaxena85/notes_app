@@ -4,6 +4,7 @@ import com.example.notes_app.auth.model.UserModel;
 import com.example.notes_app.auth.repository.AuthRepository;
 import com.example.notes_app.common.ApiResponse;
 import com.example.notes_app.common.IdempotentCreate;
+import com.example.notes_app.common.Timestamps;
 import com.example.notes_app.common.exception.NotFoundException;
 import com.example.notes_app.tasks.dto.request.CreateTaskRequestDto;
 import com.example.notes_app.tasks.dto.request.UpdateTaskRequestDto;
@@ -16,7 +17,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -66,8 +66,8 @@ public class TaskService {
         task.setPriority(requestDto.getPriority() != null ? requestDto.getPriority() : "MEDIUM");
         task.setStatus(requestDto.getStatus() != null ? requestDto.getStatus() : "PENDING");
         task.setCompleted(requestDto.isCompleted());
-        task.setCreatedAt(LocalDateTime.now().toString());
-        task.setUpdatedAt(LocalDateTime.now().toString());
+        task.setCreatedAt(Timestamps.now());
+        task.setUpdatedAt(Timestamps.now());
         task.setUser(user);
         task.setClientId(clientId);
         return task;
@@ -99,7 +99,7 @@ public class TaskService {
         if (requestDto.getPriority() != null) task.setPriority(requestDto.getPriority());
         if (requestDto.getStatus() != null) task.setStatus(requestDto.getStatus());
         task.setCompleted(requestDto.isCompleted() || "COMPLETED".equalsIgnoreCase(task.getStatus()));
-        task.setUpdatedAt(LocalDateTime.now().toString());
+        task.setUpdatedAt(Timestamps.now());
 
         TaskModel saved = taskRepository.save(task);
         return ResponseEntity.ok(new ApiResponse<>(true, "Task updated successfully", saved));
@@ -112,7 +112,7 @@ public class TaskService {
         String newStatus = status != null ? status.toUpperCase() : ("COMPLETED".equalsIgnoreCase(task.getStatus()) ? "PENDING" : "COMPLETED");
         task.setStatus(newStatus);
         task.setCompleted("COMPLETED".equalsIgnoreCase(newStatus));
-        task.setUpdatedAt(LocalDateTime.now().toString());
+        task.setUpdatedAt(Timestamps.now());
 
         TaskModel saved = taskRepository.save(task);
         return ResponseEntity.ok(new ApiResponse<>(true, "Task status updated", saved));

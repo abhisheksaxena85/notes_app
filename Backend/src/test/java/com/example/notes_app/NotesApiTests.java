@@ -50,6 +50,9 @@ public class NotesApiTests {
     @Autowired
     private tools.jackson.databind.json.JsonMapper jsonMapper;
 
+    /** "Today" below is LocalDate.now(), so days are bucketed in this JVM's zone. */
+    private static final String ZONE = java.time.ZoneId.systemDefault().getId();
+
     private static long testUserId;
     private static long testNoteId;
     private static final String testEmail = "daymark_test_" + System.currentTimeMillis() + "@example.com";
@@ -142,12 +145,12 @@ public class NotesApiTests {
     public void testCalendarSummaryAndDateQuery() {
         LocalDate now = LocalDate.now();
         ResponseEntity<ApiResponse<CalendarSummaryResponseDto>> summaryResp =
-                notesService.getCalendarSummary(testUserId, now.getYear(), now.getMonthValue());
+                notesService.getCalendarSummary(testUserId, now.getYear(), now.getMonthValue(), ZONE);
         assertTrue(summaryResp.getBody().isSuccess());
         assertTrue(summaryResp.getBody().getData().getTotalNotes() >= 1);
 
         String today = now.toString();
-        ResponseEntity<ApiResponse<List<NotesModel>>> dateResp = notesService.getNotesByDate(testUserId, today);
+        ResponseEntity<ApiResponse<List<NotesModel>>> dateResp = notesService.getNotesByDate(testUserId, today, ZONE);
         assertTrue(dateResp.getBody().isSuccess());
         assertFalse(dateResp.getBody().getData().isEmpty());
     }
@@ -216,7 +219,7 @@ public class NotesApiTests {
         assertTrue(toggleTaskResp.getBody().getData().isCompleted());
 
         // 4. Verify Calendar Summary Aggregates Tasks & Reminders
-        var summaryResp = notesService.getCalendarSummary(testUserId, today.getYear(), today.getMonthValue());
+        var summaryResp = notesService.getCalendarSummary(testUserId, today.getYear(), today.getMonthValue(), ZONE);
         assertTrue(summaryResp.getBody().isSuccess());
         var summary = summaryResp.getBody().getData();
         assertTrue(summary.getTotalTasks() >= 1);
@@ -225,14 +228,14 @@ public class NotesApiTests {
         assertTrue(summary.getCountsByDate().getOrDefault(today.toString(), 0) >= 2);
 
         // 5. Day activity returns the same items the calendar counted for that date
-        var dayResp = notesService.getDayActivity(testUserId, today.toString());
+        var dayResp = notesService.getDayActivity(testUserId, today.toString(), ZONE);
         assertTrue(dayResp.getBody().isSuccess());
         var day = dayResp.getBody().getData();
         assertEquals(today.toString(), day.getDate());
         assertTrue(day.getTasks().stream().anyMatch(t -> t.getTaskId() == taskId));
         assertTrue(day.getReminders().stream().anyMatch(r -> r.getReminderId() == reminderId));
         assertEquals(summary.getCountsByDate().get(today.toString()).intValue(), day.getTotalCount());
-        assertThrows(BadRequestException.class, () -> notesService.getDayActivity(testUserId, "not-a-date"));
+        assertThrows(BadRequestException.class, () -> notesService.getDayActivity(testUserId, "not-a-date", ZONE));
 
         // 6. Cleanup
         assertTrue(taskService.deleteTask(taskId).getBody().isSuccess());

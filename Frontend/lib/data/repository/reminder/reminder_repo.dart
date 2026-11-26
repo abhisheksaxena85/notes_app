@@ -10,6 +10,7 @@ import 'package:notes_app/data/network/dto/request/reminder/create_reminder_requ
 import 'package:notes_app/data/network/dto/request/reminder/update_reminder_request_dto.dart';
 import 'package:notes_app/data/network/dto/response/reminder/reminder_item.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
+import 'package:notes_app/utils/date/date_keys.dart';
 import 'package:uuid/uuid.dart';
 
 class ReminderRepo {
@@ -148,7 +149,7 @@ class ReminderRepo {
 
   Future<void> _writeRow(int localId, CachedRemindersCompanion changes) async {
     await (database.update(database.cachedReminders)..where((r) => r.id.equals(localId)))
-        .write(changes.copyWith(updatedAt: Value(DateTime.now().toIso8601String())));
+        .write(changes.copyWith(updatedAt: Value(DateKeys.nowUtc())));
   }
 
   static Value<T> _set<T>(T? value) => value == null ? const Value.absent() : Value(value);

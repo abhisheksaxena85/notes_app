@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/data/network/dto/response/home/get_all_notes_response_dto.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
+import 'package:notes_app/utils/date/date_keys.dart';
 
 Widget noteItemCard({
   required BuildContext context,
@@ -195,19 +196,16 @@ Widget noteItemCard({
 
 String _formatDate(String? dateStr) {
   if (dateStr == null || dateStr.trim().isEmpty) return "Recently";
-  try {
-    final parsed = DateTime.parse(dateStr);
-    const months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    ];
-    final hour = parsed.hour > 12
-        ? parsed.hour - 12
-        : (parsed.hour == 0 ? 12 : parsed.hour);
-    final period = parsed.hour >= 12 ? "PM" : "AM";
-    final minuteStr = parsed.minute.toString().padLeft(2, '0');
-    return "${months[parsed.month - 1]} ${parsed.day} · $hour:$minuteStr $period";
-  } catch (_) {
-    return dateStr;
-  }
+  final parsed = DateKeys.instant(dateStr);
+  if (parsed == null) return dateStr;
+  const months = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  ];
+  final hour = parsed.hour > 12
+      ? parsed.hour - 12
+      : (parsed.hour == 0 ? 12 : parsed.hour);
+  final period = parsed.hour >= 12 ? "PM" : "AM";
+  final minuteStr = parsed.minute.toString().padLeft(2, '0');
+  return "${months[parsed.month - 1]} ${parsed.day} · $hour:$minuteStr $period";
 }

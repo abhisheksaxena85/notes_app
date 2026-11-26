@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:notes_app/data/local/database/app_database.steps.dart';
 import 'package:notes_app/data/local/database/sync_queue_models.dart';
+import 'package:notes_app/utils/date/date_keys.dart';
 import 'package:uuid/uuid.dart';
 
 part 'app_database.g.dart';
@@ -521,7 +522,7 @@ class AppDatabase extends _$AppDatabase {
     required String clientId,
     required String payload,
   }) async {
-    final now = DateTime.now().toIso8601String();
+    final now = DateKeys.nowUtc();
     return transaction(() async {
       final localNoteId = await into(cachedNotes).insert(
         CachedNotesCompanion.insert(
@@ -1160,7 +1161,7 @@ class AppDatabase extends _$AppDatabase {
     required String clientId,
     required String payload,
   }) async {
-    final now = DateTime.now().toIso8601String();
+    final now = DateKeys.nowUtc();
     return transaction(() async {
       final localTaskId = await into(cachedTasks).insert(
         CachedTasksCompanion.insert(
@@ -1271,7 +1272,7 @@ class AppDatabase extends _$AppDatabase {
     required String clientId,
     required String payload,
   }) async {
-    final now = DateTime.now().toIso8601String();
+    final now = DateKeys.nowUtc();
     return transaction(() async {
       final localReminderId = await into(cachedReminders).insert(
         CachedRemindersCompanion.insert(
