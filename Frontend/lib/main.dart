@@ -10,6 +10,7 @@ import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/connectivity_service.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
+import 'package:notes_app/utils/services/reminder_scheduler.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
 import 'package:notes_app/views/screens/splash/splash_screen.dart';
 import 'package:notes_app/views/widgets/connectivity_snackbar_listener.dart';
@@ -50,7 +51,11 @@ Future<void> initialize() async {
   // The app's only connectivity checker. The sync service and the
   // connectivity snackbars subscribe to it.
   getIt<ConnectivityService>().start();
-  getIt<SessionService>().restore();
+  final session = getIt<SessionService>()..restore();
+  // REM-03: scheduled notifications follow the signed-in user's reminders.
+  final scheduler = getIt<ReminderScheduler>()
+    ..start(userChanges: session.changes, permission: permissions.status);
+  unawaited(scheduler.reconcile());
   // Sync queued changes when the app returns to the foreground too, not only
   // when connectivity changes. The listener registers itself with the binding
   // and lives as long as the app.
@@ -59,6 +64,8 @@ Future<void> initialize() async {
       getIt<OfflineSyncService>().onAppResumed();
       // REM-02: the user may have changed the permission in the OS settings.
       unawaited(permissions.refresh());
+      // REM-03: time zone changes and occurrences missed while closed.
+      unawaited(scheduler.onAppResumed());
     },
   );
 }

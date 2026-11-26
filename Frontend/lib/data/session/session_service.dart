@@ -18,6 +18,11 @@ class SessionService {
   final OfflineSyncService syncService;
   final ProfileRepo profileRepo;
 
+  /// REM-03: cancels the signed-out user's scheduled reminder notifications
+  /// (ReminderScheduler.cancelAllReminders). A callback, so the scheduler,
+  /// which follows [changes], doesn't have to be built before the session.
+  final Future<void> Function()? cancelReminders;
+
   // Synchronous, so providers already see the new user when login/logout
   // returns.
   final StreamController<int> _changes = StreamController<int>.broadcast(
@@ -30,6 +35,7 @@ class SessionService {
     required this.database,
     required this.syncService,
     required this.profileRepo,
+    this.cancelReminders,
   });
 
   /// The signed-in user, or 0 when signed out.
@@ -89,10 +95,22 @@ class SessionService {
     }
   }
 
-  /// Logout hook for REM-03: cancel every scheduled reminder notification of
-  /// [userId], so a signed-out user's reminders don't keep firing. Nothing is
-  /// scheduled on the device yet, so there is nothing to cancel.
-  Future<void> cancelReminderNotifications(int userId) async {}
+  /// Logout hook (REM-03): cancels every scheduled reminder notification of
+  /// [userId], so a signed-out user's reminders don't keep firing. Failures
+  /// are logged; they must not stop the logout.
+  Future<void> cancelReminderNotifications(int userId) async {
+    try {
+      await cancelReminders?.call();
+    } catch (error, stackTrace) {
+      log('Failed to cancel reminder notifications: $error', stackTrace: stackTrace);
+    }
+  }
+
+  /// The user id saved by the last [login], read without restoring the
+  /// session. For the notification background isolate (REM-04), which must
+  /// not act for a user who has signed out since the notification was shown.
+  static int storedUserId(Preference preference) =>
+      preference.getInt(PreferenceKeys.USER_ID) ?? 0;
 
   void _refreshProfile(int userId) {
     unawaited(

@@ -129,6 +129,16 @@ class CachedReminders extends Table {
   // FE-02: deleted here, delete not yet confirmed by the server. Hidden from
   // every read; the row is removed once the server confirms.
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  // REM-05: first occurrence of a repeating series (wall clock); repeats are
+  // anchored to it. remindAt is always the next pending occurrence.
+  TextColumn get startAt => text().nullable()();
+  // REM-05: answer to the last handled occurrence (COMPLETED / MISSED) and
+  // which occurrence it was (wall clock).
+  TextColumn get lastOutcome => text().nullable()();
+  TextColumn get lastOutcomeAt => text().nullable()();
+  // REM-04: "Snooze 10 min" until this instant (UTC ISO-8601). Local only,
+  // never sent to the server.
+  TextColumn get snoozedUntil => text().nullable()();
 
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
@@ -201,7 +211,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   /// Each step uses the tables exactly as they were at that version (from the
   /// snapshots in `drift_schemas/`, generated into app_database.steps.dart), so
@@ -250,6 +260,15 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(schema.cachedNotes, schema.cachedNotes.isDeleted);
         await m.addColumn(schema.cachedTasks, schema.cachedTasks.isDeleted);
         await m.addColumn(schema.cachedReminders, schema.cachedReminders.isDeleted);
+      },
+      from4To5: (m, schema) async {
+        // REM-03/REM-05: notification scheduling and repeating reminders.
+        await m.addColumn(schema.cachedReminders, schema.cachedReminders.startAt);
+        await m.addColumn(schema.cachedReminders, schema.cachedReminders.lastOutcome);
+        await m.addColumn(schema.cachedReminders, schema.cachedReminders.lastOutcomeAt);
+        await m.addColumn(schema.cachedReminders, schema.cachedReminders.snoozedUntil);
+        // Existing series are anchored where they are now.
+        await customStatement('UPDATE cached_reminders SET start_at = remind_at WHERE start_at IS NULL');
       },
     ),
   );
@@ -1247,6 +1266,24 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
+  /// The cached row by local id, or null if it doesn't exist or is deleted.
+  Future<CachedReminder?> getReminderRow(int userId, int localId) {
+    return (select(cachedReminders)
+          ..where((rem) =>
+              rem.userId.equals(userId) & rem.isDeleted.equals(false) & rem.id.equals(localId)))
+        .getSingleOrNull();
+  }
+
+  Future<CachedReminder?> getReminderRowByServerId(int userId, int serverId) {
+    return (select(cachedReminders)
+          ..where((rem) =>
+              rem.userId.equals(userId) &
+              rem.isDeleted.equals(false) &
+              rem.serverId.equals(serverId))
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
   Future<List<CachedReminder>> getRemindersByDate(int userId, String date) {
     return (select(cachedReminders)
           ..where((rem) =>
@@ -1269,6 +1306,7 @@ class AppDatabase extends _$AppDatabase {
     String? category,
     String? status,
     String? repeatInterval,
+    String? startAt,
     required String clientId,
     required String payload,
   }) async {
@@ -1284,6 +1322,7 @@ class AppDatabase extends _$AppDatabase {
           category: Value(category ?? 'General'),
           status: Value(status ?? 'PENDING'),
           repeatInterval: Value(repeatInterval ?? 'NONE'),
+          startAt: Value(startAt ?? remindAt),
           createdAt: Value(now),
           updatedAt: Value(now),
           isPending: const Value(true),

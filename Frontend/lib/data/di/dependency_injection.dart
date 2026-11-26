@@ -13,6 +13,7 @@ import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/connectivity_service.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
+import 'package:notes_app/utils/services/reminder_scheduler.dart';
 
 var getIt = GetIt.instance;
 
@@ -100,6 +101,18 @@ Future<void> configureDependencies() async {
       database: getIt<AppDatabase>(),
       syncService: getIt<OfflineSyncService>(),
       profileRepo: getIt<ProfileRepo>(),
+      cancelReminders: () => getIt<ReminderScheduler>().cancelAllReminders(),
     ),
+  );
+
+  /// Keeps scheduled reminder notifications equal to the database (REM-03).
+  getIt.registerLazySingleton<ReminderScheduler>(
+    () => ReminderScheduler(
+      database: getIt<AppDatabase>(),
+      repo: getIt<ReminderRepo>(),
+      notifications: getIt<NotificationService>(),
+      currentUserId: () => getIt<SessionService>().userId,
+    ),
+    dispose: (scheduler) => scheduler.dispose(),
   );
 }

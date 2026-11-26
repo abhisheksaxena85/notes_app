@@ -8,6 +8,10 @@ class CreateReminderRequestDto {
   final String? status;
   final String? repeatInterval;
 
+  /// REM-05: first occurrence of a repeating series; the server defaults it
+  /// to remindAt.
+  final String? startAt;
+
   /// FE-03: idempotency key, so a retried create can't make a duplicate.
   final String? clientId;
 
@@ -20,6 +24,7 @@ class CreateReminderRequestDto {
     this.category,
     this.status,
     this.repeatInterval,
+    this.startAt,
     this.clientId,
   });
 
@@ -33,6 +38,7 @@ class CreateReminderRequestDto {
       if (category != null) 'category': category,
       if (status != null) 'status': status,
       if (repeatInterval != null) 'repeatInterval': repeatInterval,
+      if (startAt != null) 'startAt': startAt,
       if (clientId != null) 'clientId': clientId,
     };
   }
@@ -47,6 +53,7 @@ class CreateReminderRequestDto {
       category: json['category'] as String?,
       status: json['status'] as String?,
       repeatInterval: json['repeatInterval'] as String?,
+      startAt: json['startAt'] as String?,
       clientId: json['clientId'] as String?,
     );
   }

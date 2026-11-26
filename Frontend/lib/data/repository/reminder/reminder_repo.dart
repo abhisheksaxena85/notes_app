@@ -11,6 +11,7 @@ import 'package:notes_app/data/network/dto/request/reminder/update_reminder_requ
 import 'package:notes_app/data/network/dto/response/reminder/reminder_item.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/date/date_keys.dart';
+import 'package:notes_app/utils/reminder_time.dart';
 import 'package:uuid/uuid.dart';
 
 class ReminderRepo {
@@ -81,6 +82,7 @@ class ReminderRepo {
     }
 
     final clientId = const Uuid().v4();
+    final startAt = requestDto.startAt ?? requestDto.remindAt;
     final localId = await database.enqueueReminder(
       userId: userId,
       title: title,
@@ -90,8 +92,9 @@ class ReminderRepo {
       category: requestDto.category ?? 'General',
       status: requestDto.status ?? 'PENDING',
       repeatInterval: requestDto.repeatInterval ?? 'NONE',
+      startAt: startAt,
       clientId: clientId,
-      payload: jsonEncode({...requestDto.toJson(), 'clientId': clientId}),
+      payload: jsonEncode({...requestDto.toJson(), 'startAt': startAt, 'clientId': clientId}),
     );
     unawaited(syncService.requestSync());
     return localId;
@@ -106,15 +109,47 @@ class ReminderRepo {
       itemId: reminderId,
       op: 'status',
       changes: {'status': status},
-      applyToRow: (localId) => _writeRow(localId, CachedRemindersCompanion(status: Value(status))),
+      applyToRow: (localId) => _writeRow(
+        localId,
+        // An answered reminder is no longer snoozed.
+        CachedRemindersCompanion(status: Value(status), snoozedUntil: const Value(null)),
+      ),
     );
     unawaited(syncService.requestSync());
   }
 
   /// Saves an edit locally and queues it (FE-02); works for unsynced
   /// reminders and offline. Throws [StateError] if it doesn't exist.
+  ///
+  /// A new `remindAt` also moves `dueDate`/`dueTime` (unless given), clears a
+  /// snooze, and re-anchors a repeating series there unless `startAt` is
+  /// given, the same rules as the server (REM-07). The scheduler then
+  /// reschedules the notification (REM-03).
   Future<void> updateReminder(int userId, UpdateReminderRequestDto requestDto) async {
     final changes = requestDto.toJson()..remove('reminderId');
+    var dto = requestDto;
+    final remindAt = requestDto.remindAt;
+    if (remindAt != null) {
+      final at = parseWallClock(remindAt);
+      if (at == null) throw ArgumentError.value(remindAt, 'remindAt', 'is not a date and time');
+      final normalized = formatWallClock(at);
+      dto = UpdateReminderRequestDto(
+        reminderId: requestDto.reminderId,
+        title: requestDto.title,
+        remindAt: normalized,
+        dueDate: requestDto.dueDate ?? formatDueDate(at),
+        dueTime: requestDto.dueTime ?? formatDueTime(at),
+        category: requestDto.category,
+        status: requestDto.status,
+        repeatInterval: requestDto.repeatInterval,
+        startAt: requestDto.startAt ?? normalized,
+        lastOutcome: requestDto.lastOutcome,
+        lastOutcomeAt: requestDto.lastOutcomeAt,
+      );
+      changes
+        ..clear()
+        ..addAll(dto.toJson()..remove('reminderId'));
+    }
     await database.recordItemChange(
       entity: SyncEntity.reminder,
       userId: userId,
@@ -124,18 +159,50 @@ class ReminderRepo {
       applyToRow: (localId) => _writeRow(
         localId,
         CachedRemindersCompanion(
-          title: _set(requestDto.title),
-          remindAt: _set(requestDto.remindAt),
-          dueDate: _set(requestDto.dueDate),
-          dueTime: _set(requestDto.dueTime),
-          category: _set(requestDto.category),
-          status: _set(requestDto.status),
-          repeatInterval: _set(requestDto.repeatInterval),
+          title: _set(dto.title),
+          remindAt: _set(dto.remindAt),
+          dueDate: _set(dto.dueDate),
+          dueTime: _set(dto.dueTime),
+          category: _set(dto.category),
+          status: _set(dto.status),
+          repeatInterval: _set(dto.repeatInterval),
+          startAt: _set(dto.startAt),
+          lastOutcome: _set(dto.lastOutcome),
+          lastOutcomeAt: _set(dto.lastOutcomeAt),
+          snoozedUntil: remindAt != null ? const Value(null) : const Value.absent(),
         ),
       ),
     );
     unawaited(syncService.requestSync());
   }
+
+  /// REM-05 catch-up: a repeating reminder whose occurrence passed without an
+  /// answer (the app was closed) moves to [next], keeping its anchor, and
+  /// records the missed occurrence. Queued like any edit.
+  Future<void> advanceMissedOccurrence(int userId, CachedReminder row, DateTime next) {
+    return updateReminder(
+      userId,
+      UpdateReminderRequestDto(
+        reminderId: itemIdOf(row),
+        remindAt: formatWallClock(next),
+        startAt: row.startAt ?? row.remindAt,
+        lastOutcome: 'MISSED',
+        lastOutcomeAt: row.remindAt,
+      ),
+    );
+  }
+
+  /// REM-04 "Snooze": the notification comes back at [until]. Local only:
+  /// nothing is queued for the server and the status doesn't change.
+  Future<void> snoozeReminder(int userId, int localId, DateTime until) async {
+    await (database.update(database.cachedReminders)
+          ..where((r) => r.id.equals(localId) & r.userId.equals(userId)))
+        .write(CachedRemindersCompanion(snoozedUntil: Value(until.toUtc().toIso8601String())));
+  }
+
+  /// The id the UI and the outbox use for a cached row: the server id, or the
+  /// negative local id before the first sync.
+  static int itemIdOf(CachedReminder row) => row.serverId ?? -row.id;
 
   /// Deletes locally and queues the delete (FE-02); see TaskRepo.deleteTask.
   Future<void> deleteReminder(int userId, int reminderId) async {

@@ -3329,6 +3329,50 @@ class $CachedRemindersTable extends CachedReminders
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _startAtMeta = const VerificationMeta(
+    'startAt',
+  );
+  @override
+  late final GeneratedColumn<String> startAt = GeneratedColumn<String>(
+    'start_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastOutcomeMeta = const VerificationMeta(
+    'lastOutcome',
+  );
+  @override
+  late final GeneratedColumn<String> lastOutcome = GeneratedColumn<String>(
+    'last_outcome',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastOutcomeAtMeta = const VerificationMeta(
+    'lastOutcomeAt',
+  );
+  @override
+  late final GeneratedColumn<String> lastOutcomeAt = GeneratedColumn<String>(
+    'last_outcome_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _snoozedUntilMeta = const VerificationMeta(
+    'snoozedUntil',
+  );
+  @override
+  late final GeneratedColumn<String> snoozedUntil = GeneratedColumn<String>(
+    'snoozed_until',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3346,6 +3390,10 @@ class $CachedRemindersTable extends CachedReminders
     isPending,
     clientId,
     isDeleted,
+    startAt,
+    lastOutcome,
+    lastOutcomeAt,
+    snoozedUntil,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3455,6 +3503,39 @@ class $CachedRemindersTable extends CachedReminders
         isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
       );
     }
+    if (data.containsKey('start_at')) {
+      context.handle(
+        _startAtMeta,
+        startAt.isAcceptableOrUnknown(data['start_at']!, _startAtMeta),
+      );
+    }
+    if (data.containsKey('last_outcome')) {
+      context.handle(
+        _lastOutcomeMeta,
+        lastOutcome.isAcceptableOrUnknown(
+          data['last_outcome']!,
+          _lastOutcomeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_outcome_at')) {
+      context.handle(
+        _lastOutcomeAtMeta,
+        lastOutcomeAt.isAcceptableOrUnknown(
+          data['last_outcome_at']!,
+          _lastOutcomeAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('snoozed_until')) {
+      context.handle(
+        _snoozedUntilMeta,
+        snoozedUntil.isAcceptableOrUnknown(
+          data['snoozed_until']!,
+          _snoozedUntilMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -3528,6 +3609,22 @@ class $CachedRemindersTable extends CachedReminders
         DriftSqlType.bool,
         data['${effectivePrefix}is_deleted'],
       )!,
+      startAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}start_at'],
+      ),
+      lastOutcome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_outcome'],
+      ),
+      lastOutcomeAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_outcome_at'],
+      ),
+      snoozedUntil: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}snoozed_until'],
+      ),
     );
   }
 
@@ -3553,6 +3650,10 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
   final bool isPending;
   final String? clientId;
   final bool isDeleted;
+  final String? startAt;
+  final String? lastOutcome;
+  final String? lastOutcomeAt;
+  final String? snoozedUntil;
   const CachedReminder({
     required this.id,
     required this.userId,
@@ -3569,6 +3670,10 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
     required this.isPending,
     this.clientId,
     required this.isDeleted,
+    this.startAt,
+    this.lastOutcome,
+    this.lastOutcomeAt,
+    this.snoozedUntil,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3602,6 +3707,18 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
       map['client_id'] = Variable<String>(clientId);
     }
     map['is_deleted'] = Variable<bool>(isDeleted);
+    if (!nullToAbsent || startAt != null) {
+      map['start_at'] = Variable<String>(startAt);
+    }
+    if (!nullToAbsent || lastOutcome != null) {
+      map['last_outcome'] = Variable<String>(lastOutcome);
+    }
+    if (!nullToAbsent || lastOutcomeAt != null) {
+      map['last_outcome_at'] = Variable<String>(lastOutcomeAt);
+    }
+    if (!nullToAbsent || snoozedUntil != null) {
+      map['snoozed_until'] = Variable<String>(snoozedUntil);
+    }
     return map;
   }
 
@@ -3636,6 +3753,18 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
           ? const Value.absent()
           : Value(clientId),
       isDeleted: Value(isDeleted),
+      startAt: startAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startAt),
+      lastOutcome: lastOutcome == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastOutcome),
+      lastOutcomeAt: lastOutcomeAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastOutcomeAt),
+      snoozedUntil: snoozedUntil == null && nullToAbsent
+          ? const Value.absent()
+          : Value(snoozedUntil),
     );
   }
 
@@ -3660,6 +3789,10 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
       isPending: serializer.fromJson<bool>(json['isPending']),
       clientId: serializer.fromJson<String?>(json['clientId']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      startAt: serializer.fromJson<String?>(json['startAt']),
+      lastOutcome: serializer.fromJson<String?>(json['lastOutcome']),
+      lastOutcomeAt: serializer.fromJson<String?>(json['lastOutcomeAt']),
+      snoozedUntil: serializer.fromJson<String?>(json['snoozedUntil']),
     );
   }
   @override
@@ -3681,6 +3814,10 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
       'isPending': serializer.toJson<bool>(isPending),
       'clientId': serializer.toJson<String?>(clientId),
       'isDeleted': serializer.toJson<bool>(isDeleted),
+      'startAt': serializer.toJson<String?>(startAt),
+      'lastOutcome': serializer.toJson<String?>(lastOutcome),
+      'lastOutcomeAt': serializer.toJson<String?>(lastOutcomeAt),
+      'snoozedUntil': serializer.toJson<String?>(snoozedUntil),
     };
   }
 
@@ -3700,6 +3837,10 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
     bool? isPending,
     Value<String?> clientId = const Value.absent(),
     bool? isDeleted,
+    Value<String?> startAt = const Value.absent(),
+    Value<String?> lastOutcome = const Value.absent(),
+    Value<String?> lastOutcomeAt = const Value.absent(),
+    Value<String?> snoozedUntil = const Value.absent(),
   }) => CachedReminder(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -3716,6 +3857,12 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
     isPending: isPending ?? this.isPending,
     clientId: clientId.present ? clientId.value : this.clientId,
     isDeleted: isDeleted ?? this.isDeleted,
+    startAt: startAt.present ? startAt.value : this.startAt,
+    lastOutcome: lastOutcome.present ? lastOutcome.value : this.lastOutcome,
+    lastOutcomeAt: lastOutcomeAt.present
+        ? lastOutcomeAt.value
+        : this.lastOutcomeAt,
+    snoozedUntil: snoozedUntil.present ? snoozedUntil.value : this.snoozedUntil,
   );
   CachedReminder copyWithCompanion(CachedRemindersCompanion data) {
     return CachedReminder(
@@ -3736,6 +3883,16 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
       isPending: data.isPending.present ? data.isPending.value : this.isPending,
       clientId: data.clientId.present ? data.clientId.value : this.clientId,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      startAt: data.startAt.present ? data.startAt.value : this.startAt,
+      lastOutcome: data.lastOutcome.present
+          ? data.lastOutcome.value
+          : this.lastOutcome,
+      lastOutcomeAt: data.lastOutcomeAt.present
+          ? data.lastOutcomeAt.value
+          : this.lastOutcomeAt,
+      snoozedUntil: data.snoozedUntil.present
+          ? data.snoozedUntil.value
+          : this.snoozedUntil,
     );
   }
 
@@ -3756,7 +3913,11 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
           ..write('updatedAt: $updatedAt, ')
           ..write('isPending: $isPending, ')
           ..write('clientId: $clientId, ')
-          ..write('isDeleted: $isDeleted')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('startAt: $startAt, ')
+          ..write('lastOutcome: $lastOutcome, ')
+          ..write('lastOutcomeAt: $lastOutcomeAt, ')
+          ..write('snoozedUntil: $snoozedUntil')
           ..write(')'))
         .toString();
   }
@@ -3778,6 +3939,10 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
     isPending,
     clientId,
     isDeleted,
+    startAt,
+    lastOutcome,
+    lastOutcomeAt,
+    snoozedUntil,
   );
   @override
   bool operator ==(Object other) =>
@@ -3797,7 +3962,11 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
           other.updatedAt == this.updatedAt &&
           other.isPending == this.isPending &&
           other.clientId == this.clientId &&
-          other.isDeleted == this.isDeleted);
+          other.isDeleted == this.isDeleted &&
+          other.startAt == this.startAt &&
+          other.lastOutcome == this.lastOutcome &&
+          other.lastOutcomeAt == this.lastOutcomeAt &&
+          other.snoozedUntil == this.snoozedUntil);
 }
 
 class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
@@ -3816,6 +3985,10 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
   final Value<bool> isPending;
   final Value<String?> clientId;
   final Value<bool> isDeleted;
+  final Value<String?> startAt;
+  final Value<String?> lastOutcome;
+  final Value<String?> lastOutcomeAt;
+  final Value<String?> snoozedUntil;
   const CachedRemindersCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -3832,6 +4005,10 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     this.isPending = const Value.absent(),
     this.clientId = const Value.absent(),
     this.isDeleted = const Value.absent(),
+    this.startAt = const Value.absent(),
+    this.lastOutcome = const Value.absent(),
+    this.lastOutcomeAt = const Value.absent(),
+    this.snoozedUntil = const Value.absent(),
   });
   CachedRemindersCompanion.insert({
     this.id = const Value.absent(),
@@ -3849,6 +4026,10 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     this.isPending = const Value.absent(),
     this.clientId = const Value.absent(),
     this.isDeleted = const Value.absent(),
+    this.startAt = const Value.absent(),
+    this.lastOutcome = const Value.absent(),
+    this.lastOutcomeAt = const Value.absent(),
+    this.snoozedUntil = const Value.absent(),
   }) : userId = Value(userId),
        title = Value(title),
        remindAt = Value(remindAt);
@@ -3868,6 +4049,10 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     Expression<bool>? isPending,
     Expression<String>? clientId,
     Expression<bool>? isDeleted,
+    Expression<String>? startAt,
+    Expression<String>? lastOutcome,
+    Expression<String>? lastOutcomeAt,
+    Expression<String>? snoozedUntil,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3885,6 +4070,10 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
       if (isPending != null) 'is_pending': isPending,
       if (clientId != null) 'client_id': clientId,
       if (isDeleted != null) 'is_deleted': isDeleted,
+      if (startAt != null) 'start_at': startAt,
+      if (lastOutcome != null) 'last_outcome': lastOutcome,
+      if (lastOutcomeAt != null) 'last_outcome_at': lastOutcomeAt,
+      if (snoozedUntil != null) 'snoozed_until': snoozedUntil,
     });
   }
 
@@ -3904,6 +4093,10 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     Value<bool>? isPending,
     Value<String?>? clientId,
     Value<bool>? isDeleted,
+    Value<String?>? startAt,
+    Value<String?>? lastOutcome,
+    Value<String?>? lastOutcomeAt,
+    Value<String?>? snoozedUntil,
   }) {
     return CachedRemindersCompanion(
       id: id ?? this.id,
@@ -3921,6 +4114,10 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
       isPending: isPending ?? this.isPending,
       clientId: clientId ?? this.clientId,
       isDeleted: isDeleted ?? this.isDeleted,
+      startAt: startAt ?? this.startAt,
+      lastOutcome: lastOutcome ?? this.lastOutcome,
+      lastOutcomeAt: lastOutcomeAt ?? this.lastOutcomeAt,
+      snoozedUntil: snoozedUntil ?? this.snoozedUntil,
     );
   }
 
@@ -3972,6 +4169,18 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     if (isDeleted.present) {
       map['is_deleted'] = Variable<bool>(isDeleted.value);
     }
+    if (startAt.present) {
+      map['start_at'] = Variable<String>(startAt.value);
+    }
+    if (lastOutcome.present) {
+      map['last_outcome'] = Variable<String>(lastOutcome.value);
+    }
+    if (lastOutcomeAt.present) {
+      map['last_outcome_at'] = Variable<String>(lastOutcomeAt.value);
+    }
+    if (snoozedUntil.present) {
+      map['snoozed_until'] = Variable<String>(snoozedUntil.value);
+    }
     return map;
   }
 
@@ -3992,7 +4201,11 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
           ..write('updatedAt: $updatedAt, ')
           ..write('isPending: $isPending, ')
           ..write('clientId: $clientId, ')
-          ..write('isDeleted: $isDeleted')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('startAt: $startAt, ')
+          ..write('lastOutcome: $lastOutcome, ')
+          ..write('lastOutcomeAt: $lastOutcomeAt, ')
+          ..write('snoozedUntil: $snoozedUntil')
           ..write(')'))
         .toString();
   }
@@ -6841,6 +7054,10 @@ typedef $$CachedRemindersTableCreateCompanionBuilder =
       Value<bool> isPending,
       Value<String?> clientId,
       Value<bool> isDeleted,
+      Value<String?> startAt,
+      Value<String?> lastOutcome,
+      Value<String?> lastOutcomeAt,
+      Value<String?> snoozedUntil,
     });
 typedef $$CachedRemindersTableUpdateCompanionBuilder =
     CachedRemindersCompanion Function({
@@ -6859,6 +7076,10 @@ typedef $$CachedRemindersTableUpdateCompanionBuilder =
       Value<bool> isPending,
       Value<String?> clientId,
       Value<bool> isDeleted,
+      Value<String?> startAt,
+      Value<String?> lastOutcome,
+      Value<String?> lastOutcomeAt,
+      Value<String?> snoozedUntil,
     });
 
 class $$CachedRemindersTableFilterComposer
@@ -6942,6 +7163,26 @@ class $$CachedRemindersTableFilterComposer
 
   ColumnFilters<bool> get isDeleted => $composableBuilder(
     column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get startAt => $composableBuilder(
+    column: $table.startAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastOutcome => $composableBuilder(
+    column: $table.lastOutcome,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastOutcomeAt => $composableBuilder(
+    column: $table.lastOutcomeAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get snoozedUntil => $composableBuilder(
+    column: $table.snoozedUntil,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7029,6 +7270,26 @@ class $$CachedRemindersTableOrderingComposer
     column: $table.isDeleted,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get startAt => $composableBuilder(
+    column: $table.startAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastOutcome => $composableBuilder(
+    column: $table.lastOutcome,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastOutcomeAt => $composableBuilder(
+    column: $table.lastOutcomeAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get snoozedUntil => $composableBuilder(
+    column: $table.snoozedUntil,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CachedRemindersTableAnnotationComposer
@@ -7086,6 +7347,24 @@ class $$CachedRemindersTableAnnotationComposer
 
   GeneratedColumn<bool> get isDeleted =>
       $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<String> get startAt =>
+      $composableBuilder(column: $table.startAt, builder: (column) => column);
+
+  GeneratedColumn<String> get lastOutcome => $composableBuilder(
+    column: $table.lastOutcome,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastOutcomeAt => $composableBuilder(
+    column: $table.lastOutcomeAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get snoozedUntil => $composableBuilder(
+    column: $table.snoozedUntil,
+    builder: (column) => column,
+  );
 }
 
 class $$CachedRemindersTableTableManager
@@ -7140,6 +7419,10 @@ class $$CachedRemindersTableTableManager
                 Value<bool> isPending = const Value.absent(),
                 Value<String?> clientId = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
+                Value<String?> startAt = const Value.absent(),
+                Value<String?> lastOutcome = const Value.absent(),
+                Value<String?> lastOutcomeAt = const Value.absent(),
+                Value<String?> snoozedUntil = const Value.absent(),
               }) => CachedRemindersCompanion(
                 id: id,
                 userId: userId,
@@ -7156,6 +7439,10 @@ class $$CachedRemindersTableTableManager
                 isPending: isPending,
                 clientId: clientId,
                 isDeleted: isDeleted,
+                startAt: startAt,
+                lastOutcome: lastOutcome,
+                lastOutcomeAt: lastOutcomeAt,
+                snoozedUntil: snoozedUntil,
               ),
           createCompanionCallback:
               ({
@@ -7174,6 +7461,10 @@ class $$CachedRemindersTableTableManager
                 Value<bool> isPending = const Value.absent(),
                 Value<String?> clientId = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
+                Value<String?> startAt = const Value.absent(),
+                Value<String?> lastOutcome = const Value.absent(),
+                Value<String?> lastOutcomeAt = const Value.absent(),
+                Value<String?> snoozedUntil = const Value.absent(),
               }) => CachedRemindersCompanion.insert(
                 id: id,
                 userId: userId,
@@ -7190,6 +7481,10 @@ class $$CachedRemindersTableTableManager
                 isPending: isPending,
                 clientId: clientId,
                 isDeleted: isDeleted,
+                startAt: startAt,
+                lastOutcome: lastOutcome,
+                lastOutcomeAt: lastOutcomeAt,
+                snoozedUntil: snoozedUntil,
               ),
           withReferenceMapper: (p0) => p0
               .map(

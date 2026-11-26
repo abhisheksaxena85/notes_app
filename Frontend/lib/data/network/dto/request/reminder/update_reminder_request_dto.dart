@@ -8,6 +8,14 @@ class UpdateReminderRequestDto {
   final String? status;
   final String? repeatInterval;
 
+  /// REM-05: the series anchor. Sent with every remindAt change the app
+  /// makes, so the server doesn't re-anchor a series it only advanced.
+  final String? startAt;
+
+  /// REM-05: answer to the last occurrence (catch-up of missed repeats).
+  final String? lastOutcome;
+  final String? lastOutcomeAt;
+
   UpdateReminderRequestDto({
     required this.reminderId,
     this.title,
@@ -17,6 +25,9 @@ class UpdateReminderRequestDto {
     this.category,
     this.status,
     this.repeatInterval,
+    this.startAt,
+    this.lastOutcome,
+    this.lastOutcomeAt,
   });
 
   Map<String, dynamic> toJson() {
@@ -29,6 +40,9 @@ class UpdateReminderRequestDto {
       if (category != null) 'category': category,
       if (status != null) 'status': status,
       if (repeatInterval != null) 'repeatInterval': repeatInterval,
+      if (startAt != null) 'startAt': startAt,
+      if (lastOutcome != null) 'lastOutcome': lastOutcome,
+      if (lastOutcomeAt != null) 'lastOutcomeAt': lastOutcomeAt,
     };
   }
 
@@ -42,6 +56,9 @@ class UpdateReminderRequestDto {
       category: json['category'] as String?,
       status: json['status'] as String?,
       repeatInterval: json['repeatInterval'] as String?,
+      startAt: json['startAt'] as String?,
+      lastOutcome: json['lastOutcome'] as String?,
+      lastOutcomeAt: json['lastOutcomeAt'] as String?,
     );
   }
 }

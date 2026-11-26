@@ -15,6 +15,11 @@ class ReminderDatabaseMapper {
       repeatInterval: reminder.repeatInterval,
       createdAt: reminder.createdAt,
       updatedAt: reminder.updatedAt,
+      clientId: reminder.clientId,
+      startAt: reminder.startAt,
+      lastOutcome: reminder.lastOutcome,
+      lastOutcomeAt: reminder.lastOutcomeAt,
+      snoozedUntil: reminder.snoozedUntil,
     );
   }
 
@@ -35,6 +40,11 @@ class ReminderDatabaseMapper {
       updatedAt: Value(reminder.updatedAt),
       isPending: const Value(false),
       clientId: Value(reminder.clientId),
+      // Servers before REM-07 send no startAt: the series starts at remindAt.
+      startAt: Value(reminder.startAt ?? reminder.remindAt),
+      lastOutcome: Value(reminder.lastOutcome),
+      lastOutcomeAt: Value(reminder.lastOutcomeAt),
+      // snoozedUntil is local only: absent here, so a refresh keeps it.
     );
   }
 }

@@ -14,6 +14,18 @@ class ReminderItem {
   /// FE-03 idempotency key the item was created with (null for old items).
   final String? clientId;
 
+  /// REM-05: first occurrence of a repeating series (wall clock).
+  final String? startAt;
+
+  /// REM-05: answer to the last handled occurrence (COMPLETED / MISSED).
+  final String? lastOutcome;
+
+  /// REM-05: which occurrence [lastOutcome] is for (wall clock).
+  final String? lastOutcomeAt;
+
+  /// REM-04: snoozed until this instant (UTC ISO-8601). Local only.
+  final String? snoozedUntil;
+
   ReminderItem({
     this.reminderId,
     required this.title,
@@ -26,6 +38,10 @@ class ReminderItem {
     this.createdAt,
     this.updatedAt,
     this.clientId,
+    this.startAt,
+    this.lastOutcome,
+    this.lastOutcomeAt,
+    this.snoozedUntil,
   });
 
   /// Status to render: an overdue one-off PENDING reminder is shown as MISSED.
@@ -80,6 +96,9 @@ class ReminderItem {
       createdAt: json['createdAt']?.toString(),
       updatedAt: json['updatedAt']?.toString(),
       clientId: json['clientId']?.toString(),
+      startAt: json['startAt']?.toString(),
+      lastOutcome: json['lastOutcome']?.toString().toUpperCase(),
+      lastOutcomeAt: json['lastOutcomeAt']?.toString(),
     );
   }
 
@@ -96,6 +115,9 @@ class ReminderItem {
       if (createdAt != null) 'createdAt': createdAt,
       if (updatedAt != null) 'updatedAt': updatedAt,
       if (clientId != null) 'clientId': clientId,
+      if (startAt != null) 'startAt': startAt,
+      if (lastOutcome != null) 'lastOutcome': lastOutcome,
+      if (lastOutcomeAt != null) 'lastOutcomeAt': lastOutcomeAt,
     };
   }
 
@@ -111,6 +133,10 @@ class ReminderItem {
     String? createdAt,
     String? updatedAt,
     String? clientId,
+    String? startAt,
+    String? lastOutcome,
+    String? lastOutcomeAt,
+    String? snoozedUntil,
   }) {
     return ReminderItem(
       reminderId: reminderId ?? this.reminderId,
@@ -124,6 +150,10 @@ class ReminderItem {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       clientId: clientId ?? this.clientId,
+      startAt: startAt ?? this.startAt,
+      lastOutcome: lastOutcome ?? this.lastOutcome,
+      lastOutcomeAt: lastOutcomeAt ?? this.lastOutcomeAt,
+      snoozedUntil: snoozedUntil ?? this.snoozedUntil,
     );
   }
 }
