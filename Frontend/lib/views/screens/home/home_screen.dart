@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/data/network/dto/response/home/get_all_notes_response_dto.dart';
 import 'package:notes_app/data/network/dto/response/reminder/reminder_item.dart';
 import 'package:notes_app/data/network/dto/response/task/task_item.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
+import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/viewmodel/home/home_viewmodel.dart';
 import 'package:notes_app/views/screens/home/widgets/create_reminder_modal.dart';
@@ -20,6 +22,7 @@ import 'package:notes_app/views/screens/home/widgets/reminder_item_card.dart';
 import 'package:notes_app/views/screens/home/widgets/sync_failures_banner.dart';
 import 'package:notes_app/views/screens/home/widgets/task_item_card.dart';
 import 'package:notes_app/views/screens/note_details/note_details_screen.dart';
+import 'package:notes_app/views/widgets/notification_permission_prompt.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -268,6 +271,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
             // Queued changes the server refused (retry / discard)
             const SyncFailuresBanner(),
+
+            // REM-02: upcoming reminders that won't alert
+            NotificationsOffBanner(
+              permissions: getIt<NotificationPermissionService>(),
+              hasUpcomingReminders: allReminders.any((r) => r.isUpcoming()),
+            ),
 
             // Segmented Filter Chips Row: All, Notes, Tasks, Reminders
             Padding(

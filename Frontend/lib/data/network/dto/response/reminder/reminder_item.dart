@@ -40,6 +40,14 @@ class ReminderItem {
     return ItemStatus.effective(status, due, now ?? DateTime.now());
   }
 
+  /// Pending and still to come: a notification is (or should be) scheduled.
+  /// Repeating reminders always have a next occurrence.
+  bool isUpcoming([DateTime? now]) {
+    if (status != ItemStatus.pending) return false;
+    if (repeatInterval != 'NONE') return true;
+    return effectiveStatus(now) == ItemStatus.pending;
+  }
+
   factory ReminderItem.fromJson(Map<String, dynamic> json) {
     final rawId = json['reminderId'] ?? json['id'];
     int? parsedId;

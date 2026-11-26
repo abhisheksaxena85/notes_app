@@ -15,10 +15,12 @@ import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/utils/services/local_reminder_service.dart';
 import 'package:notes_app/utils/services/note_data_transfer_service.dart';
+import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/views/screens/auth/login/login_screen.dart';
+import 'package:notes_app/views/widgets/notification_permission_prompt.dart';
 
 class BuildProfileWidget extends ConsumerWidget {
   final ProfileData profileData;
@@ -306,6 +308,8 @@ class BuildProfileWidget extends ConsumerWidget {
     bool isDaily = LocalReminderService.isDailyReminderEnabled();
     TimeOfDay reminderTime = LocalReminderService.getDailyReminderTime();
     bool isWeekly = LocalReminderService.isWeeklySummaryEnabled();
+    final permissions = getIt<NotificationPermissionService>();
+    permissions.refresh();
 
     showModalBottomSheet(
       context: context,
@@ -351,7 +355,10 @@ class BuildProfileWidget extends ConsumerWidget {
                     "Managed locally on your device without backend tracking.",
                     style: GoogleFonts.inter(fontSize: 12.sp, color: palette.muted),
                   ),
-                  SizedBox(height: 20.h),
+                  SizedBox(height: 14.h),
+                  // REM-02: whether reminders will alert, and how to fix it.
+                  NotificationStatusRow(permissions: permissions),
+                  Divider(color: palette.line, height: 24.h),
                   // Daily Reminder Row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1584,16 +1591,18 @@ class BuildProfileWidget extends ConsumerWidget {
                     "Dual light/dark themes are rendered dynamically from the Figma design tokens.\nTypography uses Google Fonts Inter.",
                   ),
                 ),
-                _buildDivider(palette),
-
-                // Item 4: Notifications
-                _buildSettingsRow(
-                  iconPath: AppIcons.bell,
-                  title: "Notifications",
-                  subtitle: "Manage daily reminders and summaries",
-                  palette: palette,
-                  onTap: () => _showNotificationsModal(context),
-                ),
+                // Item 4: Notifications (hidden where the OS has none: web,
+                // Windows, Linux)
+                if (getIt<NotificationService>().isSupported) ...[
+                  _buildDivider(palette),
+                  _buildSettingsRow(
+                    iconPath: AppIcons.bell,
+                    title: "Notifications",
+                    subtitle: "Reminder alerts, daily reminder and weekly summary",
+                    palette: palette,
+                    onTap: () => _showNotificationsModal(context),
+                  ),
+                ],
               ],
             ),
           ),

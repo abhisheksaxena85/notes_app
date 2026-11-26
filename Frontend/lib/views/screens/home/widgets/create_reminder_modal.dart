@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
+import 'package:notes_app/views/widgets/notification_permission_prompt.dart';
 
 Future<bool?> showCreateReminderModal(BuildContext context) {
   return showModalBottomSheet<bool>(
@@ -97,6 +100,11 @@ class _CreateReminderModalViewState
             category: _selectedCategory,
             repeatInterval: _selectedRepeat,
           );
+      // REM-02: the first reminder is the moment to ask; it is saved whatever
+      // the answer.
+      if (mounted) {
+        await maybeAskForNotifications(context, getIt<NotificationPermissionService>());
+      }
       if (mounted) {
         Navigator.pop(context, true);
       }

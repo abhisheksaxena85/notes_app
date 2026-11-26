@@ -11,6 +11,7 @@ import 'package:notes_app/data/repository/task/task_repo.dart';
 import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/connectivity_service.dart';
+import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
 
 var getIt = GetIt.instance;
@@ -32,6 +33,14 @@ Future<void> configureDependencies() async {
 
   /// OS notifications (REM-01). A no-op on web, Windows and Linux.
   getIt.registerLazySingleton<NotificationService>(() => NotificationService());
+
+  /// Notification permission, asked in context (REM-02).
+  getIt.registerLazySingleton<NotificationPermissionService>(
+    () => NotificationPermissionService(
+      notifications: getIt<NotificationService>(),
+      preference: getIt<Preference>(),
+    ),
+  );
 
   /// Connectivity: the only network checker in the app. Started once in
   /// `initialize()` and shared by the sync service and the snackbars.

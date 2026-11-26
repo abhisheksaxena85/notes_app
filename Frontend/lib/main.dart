@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:notes_app/data/local/shared_preference/preference.dart';
 import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/connectivity_service.dart';
+import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
 import 'package:notes_app/views/screens/splash/splash_screen.dart';
@@ -42,6 +44,8 @@ Future<void> initialize() async {
   } catch (error, stackTrace) {
     log('Notifications are unavailable: $error', stackTrace: stackTrace);
   }
+  final permissions = getIt<NotificationPermissionService>();
+  unawaited(permissions.refresh());
 
   // The app's only connectivity checker. The sync service and the
   // connectivity snackbars subscribe to it.
@@ -50,7 +54,13 @@ Future<void> initialize() async {
   // Sync queued changes when the app returns to the foreground too, not only
   // when connectivity changes. The listener registers itself with the binding
   // and lives as long as the app.
-  AppLifecycleListener(onResume: getIt<OfflineSyncService>().onAppResumed);
+  AppLifecycleListener(
+    onResume: () {
+      getIt<OfflineSyncService>().onAppResumed();
+      // REM-02: the user may have changed the permission in the OS settings.
+      unawaited(permissions.refresh());
+    },
+  );
 }
 
 class MyApp extends ConsumerWidget {
