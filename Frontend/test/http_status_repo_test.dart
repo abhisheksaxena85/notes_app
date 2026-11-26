@@ -7,6 +7,7 @@ import 'package:notes_app/data/network/api/api_client.dart';
 import 'package:notes_app/data/network/dio_client/dio_client.dart';
 import 'package:notes_app/data/repository/note/note_repo.dart';
 import 'package:notes_app/data/repository/profile/profile_repo.dart';
+import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/res/api_error.dart';
 
 /// Simulates the backend answering with a real 4xx status (BE-03): Dio throws.
@@ -49,7 +50,11 @@ void main() {
   });
 
   test('deleteNote on 404 drops the stale cached note and surfaces "Note not found"', () async {
-    final repo = NoteRepo(client: client, database: database);
+    final repo = NoteRepo(
+      client: client,
+      database: database,
+      syncService: OfflineSyncService(client: client, database: database),
+    );
     await database.saveServerNote(
       CachedNotesCompanion.insert(
         userId: 7,

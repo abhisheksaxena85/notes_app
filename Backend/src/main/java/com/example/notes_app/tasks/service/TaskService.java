@@ -3,6 +3,7 @@ package com.example.notes_app.tasks.service;
 import com.example.notes_app.auth.model.UserModel;
 import com.example.notes_app.auth.repository.AuthRepository;
 import com.example.notes_app.common.ApiResponse;
+import com.example.notes_app.common.IdempotentCreate;
 import com.example.notes_app.common.exception.NotFoundException;
 import com.example.notes_app.tasks.dto.request.CreateTaskRequestDto;
 import com.example.notes_app.tasks.dto.request.UpdateTaskRequestDto;
@@ -32,11 +33,30 @@ public class TaskService {
                 .orElseThrow(() -> new NotFoundException("Task not found"));
     }
 
-    @Transactional
+    /**
+     * Not @Transactional on purpose: see {@link IdempotentCreate}. A repeat with
+     * the same clientId returns the existing task with 200 instead of 201.
+     */
     public ResponseEntity<ApiResponse<CreateTaskResponseDto>> createTask(CreateTaskRequestDto requestDto) {
         UserModel user = authRepository.findById(requestDto.getUserId())
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        String clientId = IdempotentCreate.normalize(requestDto.getClientId());
 
+        IdempotentCreate.Result<TaskModel> result = IdempotentCreate.createOnce(
+                clientId,
+                () -> taskRepository.findByUser_IdAndClientId(user.getId(), clientId),
+                () -> taskRepository.save(newTask(requestDto, user, clientId)));
+
+        if (!result.created()) {
+            return ResponseEntity.ok(new ApiResponse<>(true, "Task already created",
+                    new CreateTaskResponseDto(result.entity().getTaskId())));
+        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>(true, "Task created successfully",
+                        new CreateTaskResponseDto(result.entity().getTaskId())));
+    }
+
+    private static TaskModel newTask(CreateTaskRequestDto requestDto, UserModel user, String clientId) {
         TaskModel task = new TaskModel();
         task.setTitle(requestDto.getTitle());
         task.setDescription(requestDto.getDescription());
@@ -49,10 +69,8 @@ public class TaskService {
         task.setCreatedAt(LocalDateTime.now().toString());
         task.setUpdatedAt(LocalDateTime.now().toString());
         task.setUser(user);
-
-        TaskModel saved = taskRepository.save(task);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>(true, "Task created successfully", new CreateTaskResponseDto(saved.getTaskId())));
+        task.setClientId(clientId);
+        return task;
     }
 
     public ResponseEntity<ApiResponse<List<TaskModel>>> getAllTasks(long userId) {

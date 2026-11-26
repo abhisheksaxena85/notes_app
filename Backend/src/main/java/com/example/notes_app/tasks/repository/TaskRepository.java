@@ -7,9 +7,12 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TaskRepository extends JpaRepository<TaskModel, Long> {
+    Optional<TaskModel> findByUser_IdAndClientId(long userId, String clientId);
+
     @Query("SELECT t FROM TaskModel t WHERE t.user.id = :userId ORDER BY t.isCompleted ASC, t.dueDate ASC, t.createdAt DESC")
     List<TaskModel> findByUserId(@Param("userId") long userId);
 

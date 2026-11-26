@@ -7,6 +7,7 @@ import com.example.notes_app.tasks.dto.request.UpdateTaskRequestDto;
 import com.example.notes_app.tasks.dto.response.CreateTaskResponseDto;
 import com.example.notes_app.tasks.model.TaskModel;
 import com.example.notes_app.tasks.service.TaskService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,7 @@ public class TaskController {
     private TaskService taskService;
 
     @PostMapping("/create-task")
-    public ResponseEntity<ApiResponse<CreateTaskResponseDto>> createTask(@RequestBody CreateTaskRequestDto requestDto) {
+    public ResponseEntity<ApiResponse<CreateTaskResponseDto>> createTask(@Valid @RequestBody CreateTaskRequestDto requestDto) {
         return taskService.createTask(requestDto);
     }
 

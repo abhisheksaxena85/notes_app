@@ -3,6 +3,7 @@ package com.example.notes_app.notes.service;
 import com.example.notes_app.auth.model.UserModel;
 import com.example.notes_app.auth.repository.AuthRepository;
 import com.example.notes_app.common.ApiResponse;
+import com.example.notes_app.common.IdempotentCreate;
 import com.example.notes_app.common.exception.BadRequestException;
 import com.example.notes_app.common.exception.NotFoundException;
 import com.example.notes_app.notes.dto.request.CreateNoteRequestDto;
@@ -65,25 +66,32 @@ public class NotesService {
                 .body(new ApiResponse<>(true, "Successfully fetched notes", user.getArticles()));
     }
 
-    @Transactional
+    /** Not @Transactional on purpose: see {@link IdempotentCreate}. */
     public ResponseEntity<ApiResponse<CreateNoteResponseDto>> createNote(CreateNoteRequestDto requestDto){
         UserModel user = requireUser(requestDto.getUserId());
-        NotesModel newNote = new NotesModel();
-        newNote.setTitle(requestDto.getTitle());
-        newNote.setContent(requestDto.getContent());
-        newNote.setCategory(requestDto.getCategory());
-        newNote.setPinned(requestDto.isPinned());
-        newNote.setTags(requestDto.getTags());
-        newNote.setUser(user);
-        newNote.setCreatedAt(LocalDateTime.now().toString());
-        newNote.setUpdatedAt(LocalDateTime.now().toString());
-
-        NotesModel savedEntity = notesRepository.save(newNote);
+        String clientId = IdempotentCreate.normalize(requestDto.getClientId());
+        IdempotentCreate.Result<NotesModel> result = IdempotentCreate.createOnce(
+                clientId,
+                () -> notesRepository.findByUser_IdAndClientId(user.getId(), clientId),
+                () -> {
+                    NotesModel newNote = new NotesModel();
+                    newNote.setTitle(requestDto.getTitle());
+                    newNote.setContent(requestDto.getContent());
+                    newNote.setCategory(requestDto.getCategory());
+                    newNote.setPinned(requestDto.isPinned());
+                    newNote.setTags(requestDto.getTags());
+                    newNote.setClientId(clientId);
+                    newNote.setUser(user);
+                    newNote.setCreatedAt(LocalDateTime.now().toString());
+                    newNote.setUpdatedAt(LocalDateTime.now().toString());
+                    return notesRepository.save(newNote);
+                });
 
         CreateNoteResponseDto responseDto = new CreateNoteResponseDto();
-        responseDto.setNoteId(savedEntity.getNoteId());
+        responseDto.setNoteId(result.entity().getNoteId());
+        String message = result.created() ? "Note saved successfully!" : "Note already saved";
         return ResponseEntity.status(HttpStatus.OK)
-                .body(new ApiResponse<>(true, "Note saved successfully!", responseDto));
+                .body(new ApiResponse<>(true, message, responseDto));
     }
 
     @Transactional

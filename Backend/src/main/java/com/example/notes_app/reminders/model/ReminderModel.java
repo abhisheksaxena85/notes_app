@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "reminders")
+@Table(name = "reminders", uniqueConstraints = @UniqueConstraint(
+        name = "uk_reminders_user_client", columnNames = {"user_id", "client_id"}))
 public class ReminderModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,6 +44,10 @@ public class ReminderModel {
 
     @Column(name = "updated_at")
     private String updatedAt;
+
+    /** FE-03: id the app generated when it queued the create; unique per user. Null for old clients. */
+    @Column(name = "client_id", length = 36)
+    private String clientId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

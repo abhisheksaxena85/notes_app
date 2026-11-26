@@ -17,6 +17,10 @@ class CreateNoteRequestDto {
   @JsonKey(name: "tags")
   String? tags;
 
+  /// FE-03: idempotency key, so a retried create can't make a duplicate.
+  @JsonKey(name: "clientId", includeIfNull: false)
+  String? clientId;
+
   CreateNoteRequestDto({
     this.userId,
     this.title,
@@ -24,6 +28,7 @@ class CreateNoteRequestDto {
     this.category,
     this.pinned,
     this.tags,
+    this.clientId,
   });
 
   factory CreateNoteRequestDto.fromJson(Map<String, dynamic> json) =>

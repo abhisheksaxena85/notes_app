@@ -25,7 +25,8 @@ void main() {
         content: 'Saved before upload',
         category: 'General',
         pinned: false,
-        payload: '{"userId":42,"title":"Offline note"}',
+        clientId: 'client-1',
+        payload: '{"userId":42,"title":"Offline note","clientId":"client-1"}',
       );
       await database.replaceServerNotes(42, [
         NoteDatabaseMapper.fromNoteItem(

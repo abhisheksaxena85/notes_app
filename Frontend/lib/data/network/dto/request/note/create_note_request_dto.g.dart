@@ -15,6 +15,7 @@ CreateNoteRequestDto _$CreateNoteRequestDtoFromJson(
   category: json['category'] as String?,
   pinned: json['pinned'] as bool?,
   tags: json['tags'] as String?,
+  clientId: json['clientId'] as String?,
 );
 
 Map<String, dynamic> _$CreateNoteRequestDtoToJson(
@@ -26,4 +27,5 @@ Map<String, dynamic> _$CreateNoteRequestDtoToJson(
   'category': instance.category,
   'pinned': instance.pinned,
   'tags': instance.tags,
+  'clientId': ?instance.clientId,
 };

@@ -9,6 +9,9 @@ class CreateTaskRequestDto {
   final String? status;
   final bool isCompleted;
 
+  /// FE-03: idempotency key, so a retried create can't make a duplicate.
+  final String? clientId;
+
   CreateTaskRequestDto({
     required this.userId,
     required this.title,
@@ -19,6 +22,7 @@ class CreateTaskRequestDto {
     this.priority,
     this.status,
     this.isCompleted = false,
+    this.clientId,
   });
 
   Map<String, dynamic> toJson() {
@@ -32,6 +36,7 @@ class CreateTaskRequestDto {
       if (priority != null) 'priority': priority,
       if (status != null) 'status': status,
       'isCompleted': isCompleted,
+      if (clientId != null) 'clientId': clientId,
     };
   }
 
@@ -46,6 +51,7 @@ class CreateTaskRequestDto {
       priority: json['priority'] as String?,
       status: json['status'] as String?,
       isCompleted: json['isCompleted'] as bool? ?? false,
+      clientId: json['clientId'] as String?,
     );
   }
 }

@@ -76,7 +76,6 @@ class ReminderViewmodel extends AsyncNotifier<ReminderState> {
     );
 
     await _reminderRepo.enqueueReminder(request);
-    unawaited(_reminderRepo.syncQueuedReminders(userId));
   }
 
   Future<void> updateReminderStatus(int reminderId, String status) async {

@@ -132,6 +132,17 @@ class $CachedNotesTable extends CachedNotes
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _clientIdMeta = const VerificationMeta(
+    'clientId',
+  );
+  @override
+  late final GeneratedColumn<String> clientId = GeneratedColumn<String>(
+    'client_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -145,6 +156,7 @@ class $CachedNotesTable extends CachedNotes
     tags,
     pinned,
     isPending,
+    clientId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -227,6 +239,12 @@ class $CachedNotesTable extends CachedNotes
         isPending.isAcceptableOrUnknown(data['is_pending']!, _isPendingMeta),
       );
     }
+    if (data.containsKey('client_id')) {
+      context.handle(
+        _clientIdMeta,
+        clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
+      );
+    }
     return context;
   }
 
@@ -284,6 +302,10 @@ class $CachedNotesTable extends CachedNotes
         DriftSqlType.bool,
         data['${effectivePrefix}is_pending'],
       )!,
+      clientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}client_id'],
+      ),
     );
   }
 
@@ -305,6 +327,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
   final String? tags;
   final bool pinned;
   final bool isPending;
+  final String? clientId;
   const CachedNote({
     required this.id,
     required this.userId,
@@ -317,6 +340,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
     this.tags,
     required this.pinned,
     required this.isPending,
+    this.clientId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -342,6 +366,9 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
     }
     map['pinned'] = Variable<bool>(pinned);
     map['is_pending'] = Variable<bool>(isPending);
+    if (!nullToAbsent || clientId != null) {
+      map['client_id'] = Variable<String>(clientId);
+    }
     return map;
   }
 
@@ -366,6 +393,9 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
       tags: tags == null && nullToAbsent ? const Value.absent() : Value(tags),
       pinned: Value(pinned),
       isPending: Value(isPending),
+      clientId: clientId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientId),
     );
   }
 
@@ -386,6 +416,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
       tags: serializer.fromJson<String?>(json['tags']),
       pinned: serializer.fromJson<bool>(json['pinned']),
       isPending: serializer.fromJson<bool>(json['isPending']),
+      clientId: serializer.fromJson<String?>(json['clientId']),
     );
   }
   @override
@@ -403,6 +434,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
       'tags': serializer.toJson<String?>(tags),
       'pinned': serializer.toJson<bool>(pinned),
       'isPending': serializer.toJson<bool>(isPending),
+      'clientId': serializer.toJson<String?>(clientId),
     };
   }
 
@@ -418,6 +450,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
     Value<String?> tags = const Value.absent(),
     bool? pinned,
     bool? isPending,
+    Value<String?> clientId = const Value.absent(),
   }) => CachedNote(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -430,6 +463,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
     tags: tags.present ? tags.value : this.tags,
     pinned: pinned ?? this.pinned,
     isPending: isPending ?? this.isPending,
+    clientId: clientId.present ? clientId.value : this.clientId,
   );
   CachedNote copyWithCompanion(CachedNotesCompanion data) {
     return CachedNote(
@@ -444,6 +478,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
       tags: data.tags.present ? data.tags.value : this.tags,
       pinned: data.pinned.present ? data.pinned.value : this.pinned,
       isPending: data.isPending.present ? data.isPending.value : this.isPending,
+      clientId: data.clientId.present ? data.clientId.value : this.clientId,
     );
   }
 
@@ -460,7 +495,8 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
           ..write('updatedAt: $updatedAt, ')
           ..write('tags: $tags, ')
           ..write('pinned: $pinned, ')
-          ..write('isPending: $isPending')
+          ..write('isPending: $isPending, ')
+          ..write('clientId: $clientId')
           ..write(')'))
         .toString();
   }
@@ -478,6 +514,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
     tags,
     pinned,
     isPending,
+    clientId,
   );
   @override
   bool operator ==(Object other) =>
@@ -493,7 +530,8 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
           other.updatedAt == this.updatedAt &&
           other.tags == this.tags &&
           other.pinned == this.pinned &&
-          other.isPending == this.isPending);
+          other.isPending == this.isPending &&
+          other.clientId == this.clientId);
 }
 
 class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
@@ -508,6 +546,7 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
   final Value<String?> tags;
   final Value<bool> pinned;
   final Value<bool> isPending;
+  final Value<String?> clientId;
   const CachedNotesCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -520,6 +559,7 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
     this.tags = const Value.absent(),
     this.pinned = const Value.absent(),
     this.isPending = const Value.absent(),
+    this.clientId = const Value.absent(),
   });
   CachedNotesCompanion.insert({
     this.id = const Value.absent(),
@@ -533,6 +573,7 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
     this.tags = const Value.absent(),
     this.pinned = const Value.absent(),
     this.isPending = const Value.absent(),
+    this.clientId = const Value.absent(),
   }) : userId = Value(userId),
        title = Value(title),
        content = Value(content);
@@ -548,6 +589,7 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
     Expression<String>? tags,
     Expression<bool>? pinned,
     Expression<bool>? isPending,
+    Expression<String>? clientId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -561,6 +603,7 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
       if (tags != null) 'tags': tags,
       if (pinned != null) 'pinned': pinned,
       if (isPending != null) 'is_pending': isPending,
+      if (clientId != null) 'client_id': clientId,
     });
   }
 
@@ -576,6 +619,7 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
     Value<String?>? tags,
     Value<bool>? pinned,
     Value<bool>? isPending,
+    Value<String?>? clientId,
   }) {
     return CachedNotesCompanion(
       id: id ?? this.id,
@@ -589,6 +633,7 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
       tags: tags ?? this.tags,
       pinned: pinned ?? this.pinned,
       isPending: isPending ?? this.isPending,
+      clientId: clientId ?? this.clientId,
     );
   }
 
@@ -628,6 +673,9 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
     if (isPending.present) {
       map['is_pending'] = Variable<bool>(isPending.value);
     }
+    if (clientId.present) {
+      map['client_id'] = Variable<String>(clientId.value);
+    }
     return map;
   }
 
@@ -644,7 +692,8 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
           ..write('updatedAt: $updatedAt, ')
           ..write('tags: $tags, ')
           ..write('pinned: $pinned, ')
-          ..write('isPending: $isPending')
+          ..write('isPending: $isPending, ')
+          ..write('clientId: $clientId')
           ..write(')'))
         .toString();
   }
@@ -712,6 +761,53 @@ class $PendingNotesTable extends PendingNotes
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _clientIdMeta = const VerificationMeta(
+    'clientId',
+  );
+  @override
+  late final GeneratedColumn<String> clientId = GeneratedColumn<String>(
+    'client_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _attemptsMeta = const VerificationMeta(
+    'attempts',
+  );
+  @override
+  late final GeneratedColumn<int> attempts = GeneratedColumn<int>(
+    'attempts',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastErrorMeta = const VerificationMeta(
+    'lastError',
+  );
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+    'last_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _failedMeta = const VerificationMeta('failed');
+  @override
+  late final GeneratedColumn<bool> failed = GeneratedColumn<bool>(
+    'failed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("failed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -719,6 +815,10 @@ class $PendingNotesTable extends PendingNotes
     localNoteId,
     payload,
     queuedAt,
+    clientId,
+    attempts,
+    lastError,
+    failed,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -768,6 +868,30 @@ class $PendingNotesTable extends PendingNotes
         queuedAt.isAcceptableOrUnknown(data['queued_at']!, _queuedAtMeta),
       );
     }
+    if (data.containsKey('client_id')) {
+      context.handle(
+        _clientIdMeta,
+        clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
+      );
+    }
+    if (data.containsKey('attempts')) {
+      context.handle(
+        _attemptsMeta,
+        attempts.isAcceptableOrUnknown(data['attempts']!, _attemptsMeta),
+      );
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(
+        _lastErrorMeta,
+        lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
+      );
+    }
+    if (data.containsKey('failed')) {
+      context.handle(
+        _failedMeta,
+        failed.isAcceptableOrUnknown(data['failed']!, _failedMeta),
+      );
+    }
     return context;
   }
 
@@ -801,6 +925,22 @@ class $PendingNotesTable extends PendingNotes
         DriftSqlType.dateTime,
         data['${effectivePrefix}queued_at'],
       )!,
+      clientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}client_id'],
+      ),
+      attempts: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempts'],
+      )!,
+      lastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error'],
+      ),
+      failed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}failed'],
+      )!,
     );
   }
 
@@ -816,12 +956,20 @@ class PendingNote extends DataClass implements Insertable<PendingNote> {
   final int localNoteId;
   final String payload;
   final DateTime queuedAt;
+  final String? clientId;
+  final int attempts;
+  final String? lastError;
+  final bool failed;
   const PendingNote({
     required this.id,
     required this.userId,
     required this.localNoteId,
     required this.payload,
     required this.queuedAt,
+    this.clientId,
+    required this.attempts,
+    this.lastError,
+    required this.failed,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -831,6 +979,14 @@ class PendingNote extends DataClass implements Insertable<PendingNote> {
     map['local_note_id'] = Variable<int>(localNoteId);
     map['payload'] = Variable<String>(payload);
     map['queued_at'] = Variable<DateTime>(queuedAt);
+    if (!nullToAbsent || clientId != null) {
+      map['client_id'] = Variable<String>(clientId);
+    }
+    map['attempts'] = Variable<int>(attempts);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    map['failed'] = Variable<bool>(failed);
     return map;
   }
 
@@ -841,6 +997,14 @@ class PendingNote extends DataClass implements Insertable<PendingNote> {
       localNoteId: Value(localNoteId),
       payload: Value(payload),
       queuedAt: Value(queuedAt),
+      clientId: clientId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientId),
+      attempts: Value(attempts),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      failed: Value(failed),
     );
   }
 
@@ -855,6 +1019,10 @@ class PendingNote extends DataClass implements Insertable<PendingNote> {
       localNoteId: serializer.fromJson<int>(json['localNoteId']),
       payload: serializer.fromJson<String>(json['payload']),
       queuedAt: serializer.fromJson<DateTime>(json['queuedAt']),
+      clientId: serializer.fromJson<String?>(json['clientId']),
+      attempts: serializer.fromJson<int>(json['attempts']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      failed: serializer.fromJson<bool>(json['failed']),
     );
   }
   @override
@@ -866,6 +1034,10 @@ class PendingNote extends DataClass implements Insertable<PendingNote> {
       'localNoteId': serializer.toJson<int>(localNoteId),
       'payload': serializer.toJson<String>(payload),
       'queuedAt': serializer.toJson<DateTime>(queuedAt),
+      'clientId': serializer.toJson<String?>(clientId),
+      'attempts': serializer.toJson<int>(attempts),
+      'lastError': serializer.toJson<String?>(lastError),
+      'failed': serializer.toJson<bool>(failed),
     };
   }
 
@@ -875,12 +1047,20 @@ class PendingNote extends DataClass implements Insertable<PendingNote> {
     int? localNoteId,
     String? payload,
     DateTime? queuedAt,
+    Value<String?> clientId = const Value.absent(),
+    int? attempts,
+    Value<String?> lastError = const Value.absent(),
+    bool? failed,
   }) => PendingNote(
     id: id ?? this.id,
     userId: userId ?? this.userId,
     localNoteId: localNoteId ?? this.localNoteId,
     payload: payload ?? this.payload,
     queuedAt: queuedAt ?? this.queuedAt,
+    clientId: clientId.present ? clientId.value : this.clientId,
+    attempts: attempts ?? this.attempts,
+    lastError: lastError.present ? lastError.value : this.lastError,
+    failed: failed ?? this.failed,
   );
   PendingNote copyWithCompanion(PendingNotesCompanion data) {
     return PendingNote(
@@ -891,6 +1071,10 @@ class PendingNote extends DataClass implements Insertable<PendingNote> {
           : this.localNoteId,
       payload: data.payload.present ? data.payload.value : this.payload,
       queuedAt: data.queuedAt.present ? data.queuedAt.value : this.queuedAt,
+      clientId: data.clientId.present ? data.clientId.value : this.clientId,
+      attempts: data.attempts.present ? data.attempts.value : this.attempts,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      failed: data.failed.present ? data.failed.value : this.failed,
     );
   }
 
@@ -901,13 +1085,27 @@ class PendingNote extends DataClass implements Insertable<PendingNote> {
           ..write('userId: $userId, ')
           ..write('localNoteId: $localNoteId, ')
           ..write('payload: $payload, ')
-          ..write('queuedAt: $queuedAt')
+          ..write('queuedAt: $queuedAt, ')
+          ..write('clientId: $clientId, ')
+          ..write('attempts: $attempts, ')
+          ..write('lastError: $lastError, ')
+          ..write('failed: $failed')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, userId, localNoteId, payload, queuedAt);
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    localNoteId,
+    payload,
+    queuedAt,
+    clientId,
+    attempts,
+    lastError,
+    failed,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -916,7 +1114,11 @@ class PendingNote extends DataClass implements Insertable<PendingNote> {
           other.userId == this.userId &&
           other.localNoteId == this.localNoteId &&
           other.payload == this.payload &&
-          other.queuedAt == this.queuedAt);
+          other.queuedAt == this.queuedAt &&
+          other.clientId == this.clientId &&
+          other.attempts == this.attempts &&
+          other.lastError == this.lastError &&
+          other.failed == this.failed);
 }
 
 class PendingNotesCompanion extends UpdateCompanion<PendingNote> {
@@ -925,12 +1127,20 @@ class PendingNotesCompanion extends UpdateCompanion<PendingNote> {
   final Value<int> localNoteId;
   final Value<String> payload;
   final Value<DateTime> queuedAt;
+  final Value<String?> clientId;
+  final Value<int> attempts;
+  final Value<String?> lastError;
+  final Value<bool> failed;
   const PendingNotesCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
     this.localNoteId = const Value.absent(),
     this.payload = const Value.absent(),
     this.queuedAt = const Value.absent(),
+    this.clientId = const Value.absent(),
+    this.attempts = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.failed = const Value.absent(),
   });
   PendingNotesCompanion.insert({
     this.id = const Value.absent(),
@@ -938,6 +1148,10 @@ class PendingNotesCompanion extends UpdateCompanion<PendingNote> {
     required int localNoteId,
     required String payload,
     this.queuedAt = const Value.absent(),
+    this.clientId = const Value.absent(),
+    this.attempts = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.failed = const Value.absent(),
   }) : userId = Value(userId),
        localNoteId = Value(localNoteId),
        payload = Value(payload);
@@ -947,6 +1161,10 @@ class PendingNotesCompanion extends UpdateCompanion<PendingNote> {
     Expression<int>? localNoteId,
     Expression<String>? payload,
     Expression<DateTime>? queuedAt,
+    Expression<String>? clientId,
+    Expression<int>? attempts,
+    Expression<String>? lastError,
+    Expression<bool>? failed,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -954,6 +1172,10 @@ class PendingNotesCompanion extends UpdateCompanion<PendingNote> {
       if (localNoteId != null) 'local_note_id': localNoteId,
       if (payload != null) 'payload': payload,
       if (queuedAt != null) 'queued_at': queuedAt,
+      if (clientId != null) 'client_id': clientId,
+      if (attempts != null) 'attempts': attempts,
+      if (lastError != null) 'last_error': lastError,
+      if (failed != null) 'failed': failed,
     });
   }
 
@@ -963,6 +1185,10 @@ class PendingNotesCompanion extends UpdateCompanion<PendingNote> {
     Value<int>? localNoteId,
     Value<String>? payload,
     Value<DateTime>? queuedAt,
+    Value<String?>? clientId,
+    Value<int>? attempts,
+    Value<String?>? lastError,
+    Value<bool>? failed,
   }) {
     return PendingNotesCompanion(
       id: id ?? this.id,
@@ -970,6 +1196,10 @@ class PendingNotesCompanion extends UpdateCompanion<PendingNote> {
       localNoteId: localNoteId ?? this.localNoteId,
       payload: payload ?? this.payload,
       queuedAt: queuedAt ?? this.queuedAt,
+      clientId: clientId ?? this.clientId,
+      attempts: attempts ?? this.attempts,
+      lastError: lastError ?? this.lastError,
+      failed: failed ?? this.failed,
     );
   }
 
@@ -991,6 +1221,18 @@ class PendingNotesCompanion extends UpdateCompanion<PendingNote> {
     if (queuedAt.present) {
       map['queued_at'] = Variable<DateTime>(queuedAt.value);
     }
+    if (clientId.present) {
+      map['client_id'] = Variable<String>(clientId.value);
+    }
+    if (attempts.present) {
+      map['attempts'] = Variable<int>(attempts.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (failed.present) {
+      map['failed'] = Variable<bool>(failed.value);
+    }
     return map;
   }
 
@@ -1001,7 +1243,11 @@ class PendingNotesCompanion extends UpdateCompanion<PendingNote> {
           ..write('userId: $userId, ')
           ..write('localNoteId: $localNoteId, ')
           ..write('payload: $payload, ')
-          ..write('queuedAt: $queuedAt')
+          ..write('queuedAt: $queuedAt, ')
+          ..write('clientId: $clientId, ')
+          ..write('attempts: $attempts, ')
+          ..write('lastError: $lastError, ')
+          ..write('failed: $failed')
           ..write(')'))
         .toString();
   }
@@ -1568,6 +1814,17 @@ class $CachedTasksTable extends CachedTasks
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _clientIdMeta = const VerificationMeta(
+    'clientId',
+  );
+  @override
+  late final GeneratedColumn<String> clientId = GeneratedColumn<String>(
+    'client_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1584,6 +1841,7 @@ class $CachedTasksTable extends CachedTasks
     createdAt,
     updatedAt,
     isPending,
+    clientId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1688,6 +1946,12 @@ class $CachedTasksTable extends CachedTasks
         isPending.isAcceptableOrUnknown(data['is_pending']!, _isPendingMeta),
       );
     }
+    if (data.containsKey('client_id')) {
+      context.handle(
+        _clientIdMeta,
+        clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
+      );
+    }
     return context;
   }
 
@@ -1757,6 +2021,10 @@ class $CachedTasksTable extends CachedTasks
         DriftSqlType.bool,
         data['${effectivePrefix}is_pending'],
       )!,
+      clientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}client_id'],
+      ),
     );
   }
 
@@ -1781,6 +2049,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
   final String? createdAt;
   final String? updatedAt;
   final bool isPending;
+  final String? clientId;
   const CachedTask({
     required this.id,
     required this.userId,
@@ -1796,6 +2065,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
     this.createdAt,
     this.updatedAt,
     required this.isPending,
+    this.clientId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1828,6 +2098,9 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
       map['updated_at'] = Variable<String>(updatedAt);
     }
     map['is_pending'] = Variable<bool>(isPending);
+    if (!nullToAbsent || clientId != null) {
+      map['client_id'] = Variable<String>(clientId);
+    }
     return map;
   }
 
@@ -1861,6 +2134,9 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
           ? const Value.absent()
           : Value(updatedAt),
       isPending: Value(isPending),
+      clientId: clientId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientId),
     );
   }
 
@@ -1884,6 +2160,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
       createdAt: serializer.fromJson<String?>(json['createdAt']),
       updatedAt: serializer.fromJson<String?>(json['updatedAt']),
       isPending: serializer.fromJson<bool>(json['isPending']),
+      clientId: serializer.fromJson<String?>(json['clientId']),
     );
   }
   @override
@@ -1904,6 +2181,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
       'createdAt': serializer.toJson<String?>(createdAt),
       'updatedAt': serializer.toJson<String?>(updatedAt),
       'isPending': serializer.toJson<bool>(isPending),
+      'clientId': serializer.toJson<String?>(clientId),
     };
   }
 
@@ -1922,6 +2200,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
     Value<String?> createdAt = const Value.absent(),
     Value<String?> updatedAt = const Value.absent(),
     bool? isPending,
+    Value<String?> clientId = const Value.absent(),
   }) => CachedTask(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -1937,6 +2216,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
     createdAt: createdAt.present ? createdAt.value : this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     isPending: isPending ?? this.isPending,
+    clientId: clientId.present ? clientId.value : this.clientId,
   );
   CachedTask copyWithCompanion(CachedTasksCompanion data) {
     return CachedTask(
@@ -1958,6 +2238,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isPending: data.isPending.present ? data.isPending.value : this.isPending,
+      clientId: data.clientId.present ? data.clientId.value : this.clientId,
     );
   }
 
@@ -1977,7 +2258,8 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
           ..write('isCompleted: $isCompleted, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('isPending: $isPending')
+          ..write('isPending: $isPending, ')
+          ..write('clientId: $clientId')
           ..write(')'))
         .toString();
   }
@@ -1998,6 +2280,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
     createdAt,
     updatedAt,
     isPending,
+    clientId,
   );
   @override
   bool operator ==(Object other) =>
@@ -2016,7 +2299,8 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
           other.isCompleted == this.isCompleted &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
-          other.isPending == this.isPending);
+          other.isPending == this.isPending &&
+          other.clientId == this.clientId);
 }
 
 class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
@@ -2034,6 +2318,7 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
   final Value<String?> createdAt;
   final Value<String?> updatedAt;
   final Value<bool> isPending;
+  final Value<String?> clientId;
   const CachedTasksCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -2049,6 +2334,7 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isPending = const Value.absent(),
+    this.clientId = const Value.absent(),
   });
   CachedTasksCompanion.insert({
     this.id = const Value.absent(),
@@ -2065,6 +2351,7 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isPending = const Value.absent(),
+    this.clientId = const Value.absent(),
   }) : userId = Value(userId),
        title = Value(title);
   static Insertable<CachedTask> custom({
@@ -2082,6 +2369,7 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
     Expression<String>? createdAt,
     Expression<String>? updatedAt,
     Expression<bool>? isPending,
+    Expression<String>? clientId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2098,6 +2386,7 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isPending != null) 'is_pending': isPending,
+      if (clientId != null) 'client_id': clientId,
     });
   }
 
@@ -2116,6 +2405,7 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
     Value<String?>? createdAt,
     Value<String?>? updatedAt,
     Value<bool>? isPending,
+    Value<String?>? clientId,
   }) {
     return CachedTasksCompanion(
       id: id ?? this.id,
@@ -2132,6 +2422,7 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isPending: isPending ?? this.isPending,
+      clientId: clientId ?? this.clientId,
     );
   }
 
@@ -2180,6 +2471,9 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
     if (isPending.present) {
       map['is_pending'] = Variable<bool>(isPending.value);
     }
+    if (clientId.present) {
+      map['client_id'] = Variable<String>(clientId.value);
+    }
     return map;
   }
 
@@ -2199,7 +2493,8 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
           ..write('isCompleted: $isCompleted, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('isPending: $isPending')
+          ..write('isPending: $isPending, ')
+          ..write('clientId: $clientId')
           ..write(')'))
         .toString();
   }
@@ -2267,6 +2562,53 @@ class $PendingTasksTable extends PendingTasks
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _clientIdMeta = const VerificationMeta(
+    'clientId',
+  );
+  @override
+  late final GeneratedColumn<String> clientId = GeneratedColumn<String>(
+    'client_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _attemptsMeta = const VerificationMeta(
+    'attempts',
+  );
+  @override
+  late final GeneratedColumn<int> attempts = GeneratedColumn<int>(
+    'attempts',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastErrorMeta = const VerificationMeta(
+    'lastError',
+  );
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+    'last_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _failedMeta = const VerificationMeta('failed');
+  @override
+  late final GeneratedColumn<bool> failed = GeneratedColumn<bool>(
+    'failed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("failed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2274,6 +2616,10 @@ class $PendingTasksTable extends PendingTasks
     localTaskId,
     payload,
     queuedAt,
+    clientId,
+    attempts,
+    lastError,
+    failed,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2323,6 +2669,30 @@ class $PendingTasksTable extends PendingTasks
         queuedAt.isAcceptableOrUnknown(data['queued_at']!, _queuedAtMeta),
       );
     }
+    if (data.containsKey('client_id')) {
+      context.handle(
+        _clientIdMeta,
+        clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
+      );
+    }
+    if (data.containsKey('attempts')) {
+      context.handle(
+        _attemptsMeta,
+        attempts.isAcceptableOrUnknown(data['attempts']!, _attemptsMeta),
+      );
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(
+        _lastErrorMeta,
+        lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
+      );
+    }
+    if (data.containsKey('failed')) {
+      context.handle(
+        _failedMeta,
+        failed.isAcceptableOrUnknown(data['failed']!, _failedMeta),
+      );
+    }
     return context;
   }
 
@@ -2356,6 +2726,22 @@ class $PendingTasksTable extends PendingTasks
         DriftSqlType.dateTime,
         data['${effectivePrefix}queued_at'],
       )!,
+      clientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}client_id'],
+      ),
+      attempts: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempts'],
+      )!,
+      lastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error'],
+      ),
+      failed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}failed'],
+      )!,
     );
   }
 
@@ -2371,12 +2757,20 @@ class PendingTask extends DataClass implements Insertable<PendingTask> {
   final int localTaskId;
   final String payload;
   final DateTime queuedAt;
+  final String? clientId;
+  final int attempts;
+  final String? lastError;
+  final bool failed;
   const PendingTask({
     required this.id,
     required this.userId,
     required this.localTaskId,
     required this.payload,
     required this.queuedAt,
+    this.clientId,
+    required this.attempts,
+    this.lastError,
+    required this.failed,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2386,6 +2780,14 @@ class PendingTask extends DataClass implements Insertable<PendingTask> {
     map['local_task_id'] = Variable<int>(localTaskId);
     map['payload'] = Variable<String>(payload);
     map['queued_at'] = Variable<DateTime>(queuedAt);
+    if (!nullToAbsent || clientId != null) {
+      map['client_id'] = Variable<String>(clientId);
+    }
+    map['attempts'] = Variable<int>(attempts);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    map['failed'] = Variable<bool>(failed);
     return map;
   }
 
@@ -2396,6 +2798,14 @@ class PendingTask extends DataClass implements Insertable<PendingTask> {
       localTaskId: Value(localTaskId),
       payload: Value(payload),
       queuedAt: Value(queuedAt),
+      clientId: clientId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientId),
+      attempts: Value(attempts),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      failed: Value(failed),
     );
   }
 
@@ -2410,6 +2820,10 @@ class PendingTask extends DataClass implements Insertable<PendingTask> {
       localTaskId: serializer.fromJson<int>(json['localTaskId']),
       payload: serializer.fromJson<String>(json['payload']),
       queuedAt: serializer.fromJson<DateTime>(json['queuedAt']),
+      clientId: serializer.fromJson<String?>(json['clientId']),
+      attempts: serializer.fromJson<int>(json['attempts']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      failed: serializer.fromJson<bool>(json['failed']),
     );
   }
   @override
@@ -2421,6 +2835,10 @@ class PendingTask extends DataClass implements Insertable<PendingTask> {
       'localTaskId': serializer.toJson<int>(localTaskId),
       'payload': serializer.toJson<String>(payload),
       'queuedAt': serializer.toJson<DateTime>(queuedAt),
+      'clientId': serializer.toJson<String?>(clientId),
+      'attempts': serializer.toJson<int>(attempts),
+      'lastError': serializer.toJson<String?>(lastError),
+      'failed': serializer.toJson<bool>(failed),
     };
   }
 
@@ -2430,12 +2848,20 @@ class PendingTask extends DataClass implements Insertable<PendingTask> {
     int? localTaskId,
     String? payload,
     DateTime? queuedAt,
+    Value<String?> clientId = const Value.absent(),
+    int? attempts,
+    Value<String?> lastError = const Value.absent(),
+    bool? failed,
   }) => PendingTask(
     id: id ?? this.id,
     userId: userId ?? this.userId,
     localTaskId: localTaskId ?? this.localTaskId,
     payload: payload ?? this.payload,
     queuedAt: queuedAt ?? this.queuedAt,
+    clientId: clientId.present ? clientId.value : this.clientId,
+    attempts: attempts ?? this.attempts,
+    lastError: lastError.present ? lastError.value : this.lastError,
+    failed: failed ?? this.failed,
   );
   PendingTask copyWithCompanion(PendingTasksCompanion data) {
     return PendingTask(
@@ -2446,6 +2872,10 @@ class PendingTask extends DataClass implements Insertable<PendingTask> {
           : this.localTaskId,
       payload: data.payload.present ? data.payload.value : this.payload,
       queuedAt: data.queuedAt.present ? data.queuedAt.value : this.queuedAt,
+      clientId: data.clientId.present ? data.clientId.value : this.clientId,
+      attempts: data.attempts.present ? data.attempts.value : this.attempts,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      failed: data.failed.present ? data.failed.value : this.failed,
     );
   }
 
@@ -2456,13 +2886,27 @@ class PendingTask extends DataClass implements Insertable<PendingTask> {
           ..write('userId: $userId, ')
           ..write('localTaskId: $localTaskId, ')
           ..write('payload: $payload, ')
-          ..write('queuedAt: $queuedAt')
+          ..write('queuedAt: $queuedAt, ')
+          ..write('clientId: $clientId, ')
+          ..write('attempts: $attempts, ')
+          ..write('lastError: $lastError, ')
+          ..write('failed: $failed')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, userId, localTaskId, payload, queuedAt);
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    localTaskId,
+    payload,
+    queuedAt,
+    clientId,
+    attempts,
+    lastError,
+    failed,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2471,7 +2915,11 @@ class PendingTask extends DataClass implements Insertable<PendingTask> {
           other.userId == this.userId &&
           other.localTaskId == this.localTaskId &&
           other.payload == this.payload &&
-          other.queuedAt == this.queuedAt);
+          other.queuedAt == this.queuedAt &&
+          other.clientId == this.clientId &&
+          other.attempts == this.attempts &&
+          other.lastError == this.lastError &&
+          other.failed == this.failed);
 }
 
 class PendingTasksCompanion extends UpdateCompanion<PendingTask> {
@@ -2480,12 +2928,20 @@ class PendingTasksCompanion extends UpdateCompanion<PendingTask> {
   final Value<int> localTaskId;
   final Value<String> payload;
   final Value<DateTime> queuedAt;
+  final Value<String?> clientId;
+  final Value<int> attempts;
+  final Value<String?> lastError;
+  final Value<bool> failed;
   const PendingTasksCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
     this.localTaskId = const Value.absent(),
     this.payload = const Value.absent(),
     this.queuedAt = const Value.absent(),
+    this.clientId = const Value.absent(),
+    this.attempts = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.failed = const Value.absent(),
   });
   PendingTasksCompanion.insert({
     this.id = const Value.absent(),
@@ -2493,6 +2949,10 @@ class PendingTasksCompanion extends UpdateCompanion<PendingTask> {
     required int localTaskId,
     required String payload,
     this.queuedAt = const Value.absent(),
+    this.clientId = const Value.absent(),
+    this.attempts = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.failed = const Value.absent(),
   }) : userId = Value(userId),
        localTaskId = Value(localTaskId),
        payload = Value(payload);
@@ -2502,6 +2962,10 @@ class PendingTasksCompanion extends UpdateCompanion<PendingTask> {
     Expression<int>? localTaskId,
     Expression<String>? payload,
     Expression<DateTime>? queuedAt,
+    Expression<String>? clientId,
+    Expression<int>? attempts,
+    Expression<String>? lastError,
+    Expression<bool>? failed,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2509,6 +2973,10 @@ class PendingTasksCompanion extends UpdateCompanion<PendingTask> {
       if (localTaskId != null) 'local_task_id': localTaskId,
       if (payload != null) 'payload': payload,
       if (queuedAt != null) 'queued_at': queuedAt,
+      if (clientId != null) 'client_id': clientId,
+      if (attempts != null) 'attempts': attempts,
+      if (lastError != null) 'last_error': lastError,
+      if (failed != null) 'failed': failed,
     });
   }
 
@@ -2518,6 +2986,10 @@ class PendingTasksCompanion extends UpdateCompanion<PendingTask> {
     Value<int>? localTaskId,
     Value<String>? payload,
     Value<DateTime>? queuedAt,
+    Value<String?>? clientId,
+    Value<int>? attempts,
+    Value<String?>? lastError,
+    Value<bool>? failed,
   }) {
     return PendingTasksCompanion(
       id: id ?? this.id,
@@ -2525,6 +2997,10 @@ class PendingTasksCompanion extends UpdateCompanion<PendingTask> {
       localTaskId: localTaskId ?? this.localTaskId,
       payload: payload ?? this.payload,
       queuedAt: queuedAt ?? this.queuedAt,
+      clientId: clientId ?? this.clientId,
+      attempts: attempts ?? this.attempts,
+      lastError: lastError ?? this.lastError,
+      failed: failed ?? this.failed,
     );
   }
 
@@ -2546,6 +3022,18 @@ class PendingTasksCompanion extends UpdateCompanion<PendingTask> {
     if (queuedAt.present) {
       map['queued_at'] = Variable<DateTime>(queuedAt.value);
     }
+    if (clientId.present) {
+      map['client_id'] = Variable<String>(clientId.value);
+    }
+    if (attempts.present) {
+      map['attempts'] = Variable<int>(attempts.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (failed.present) {
+      map['failed'] = Variable<bool>(failed.value);
+    }
     return map;
   }
 
@@ -2556,7 +3044,11 @@ class PendingTasksCompanion extends UpdateCompanion<PendingTask> {
           ..write('userId: $userId, ')
           ..write('localTaskId: $localTaskId, ')
           ..write('payload: $payload, ')
-          ..write('queuedAt: $queuedAt')
+          ..write('queuedAt: $queuedAt, ')
+          ..write('clientId: $clientId, ')
+          ..write('attempts: $attempts, ')
+          ..write('lastError: $lastError, ')
+          ..write('failed: $failed')
           ..write(')'))
         .toString();
   }
@@ -2713,6 +3205,17 @@ class $CachedRemindersTable extends CachedReminders
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _clientIdMeta = const VerificationMeta(
+    'clientId',
+  );
+  @override
+  late final GeneratedColumn<String> clientId = GeneratedColumn<String>(
+    'client_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2728,6 +3231,7 @@ class $CachedRemindersTable extends CachedReminders
     createdAt,
     updatedAt,
     isPending,
+    clientId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2825,6 +3329,12 @@ class $CachedRemindersTable extends CachedReminders
         isPending.isAcceptableOrUnknown(data['is_pending']!, _isPendingMeta),
       );
     }
+    if (data.containsKey('client_id')) {
+      context.handle(
+        _clientIdMeta,
+        clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
+      );
+    }
     return context;
   }
 
@@ -2890,6 +3400,10 @@ class $CachedRemindersTable extends CachedReminders
         DriftSqlType.bool,
         data['${effectivePrefix}is_pending'],
       )!,
+      clientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}client_id'],
+      ),
     );
   }
 
@@ -2913,6 +3427,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
   final String? createdAt;
   final String? updatedAt;
   final bool isPending;
+  final String? clientId;
   const CachedReminder({
     required this.id,
     required this.userId,
@@ -2927,6 +3442,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
     this.createdAt,
     this.updatedAt,
     required this.isPending,
+    this.clientId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2956,6 +3472,9 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
       map['updated_at'] = Variable<String>(updatedAt);
     }
     map['is_pending'] = Variable<bool>(isPending);
+    if (!nullToAbsent || clientId != null) {
+      map['client_id'] = Variable<String>(clientId);
+    }
     return map;
   }
 
@@ -2986,6 +3505,9 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
           ? const Value.absent()
           : Value(updatedAt),
       isPending: Value(isPending),
+      clientId: clientId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientId),
     );
   }
 
@@ -3008,6 +3530,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
       createdAt: serializer.fromJson<String?>(json['createdAt']),
       updatedAt: serializer.fromJson<String?>(json['updatedAt']),
       isPending: serializer.fromJson<bool>(json['isPending']),
+      clientId: serializer.fromJson<String?>(json['clientId']),
     );
   }
   @override
@@ -3027,6 +3550,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
       'createdAt': serializer.toJson<String?>(createdAt),
       'updatedAt': serializer.toJson<String?>(updatedAt),
       'isPending': serializer.toJson<bool>(isPending),
+      'clientId': serializer.toJson<String?>(clientId),
     };
   }
 
@@ -3044,6 +3568,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
     Value<String?> createdAt = const Value.absent(),
     Value<String?> updatedAt = const Value.absent(),
     bool? isPending,
+    Value<String?> clientId = const Value.absent(),
   }) => CachedReminder(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -3058,6 +3583,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
     createdAt: createdAt.present ? createdAt.value : this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     isPending: isPending ?? this.isPending,
+    clientId: clientId.present ? clientId.value : this.clientId,
   );
   CachedReminder copyWithCompanion(CachedRemindersCompanion data) {
     return CachedReminder(
@@ -3076,6 +3602,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isPending: data.isPending.present ? data.isPending.value : this.isPending,
+      clientId: data.clientId.present ? data.clientId.value : this.clientId,
     );
   }
 
@@ -3094,7 +3621,8 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
           ..write('repeatInterval: $repeatInterval, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('isPending: $isPending')
+          ..write('isPending: $isPending, ')
+          ..write('clientId: $clientId')
           ..write(')'))
         .toString();
   }
@@ -3114,6 +3642,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
     createdAt,
     updatedAt,
     isPending,
+    clientId,
   );
   @override
   bool operator ==(Object other) =>
@@ -3131,7 +3660,8 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
           other.repeatInterval == this.repeatInterval &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
-          other.isPending == this.isPending);
+          other.isPending == this.isPending &&
+          other.clientId == this.clientId);
 }
 
 class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
@@ -3148,6 +3678,7 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
   final Value<String?> createdAt;
   final Value<String?> updatedAt;
   final Value<bool> isPending;
+  final Value<String?> clientId;
   const CachedRemindersCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -3162,6 +3693,7 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isPending = const Value.absent(),
+    this.clientId = const Value.absent(),
   });
   CachedRemindersCompanion.insert({
     this.id = const Value.absent(),
@@ -3177,6 +3709,7 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isPending = const Value.absent(),
+    this.clientId = const Value.absent(),
   }) : userId = Value(userId),
        title = Value(title),
        remindAt = Value(remindAt);
@@ -3194,6 +3727,7 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     Expression<String>? createdAt,
     Expression<String>? updatedAt,
     Expression<bool>? isPending,
+    Expression<String>? clientId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3209,6 +3743,7 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isPending != null) 'is_pending': isPending,
+      if (clientId != null) 'client_id': clientId,
     });
   }
 
@@ -3226,6 +3761,7 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     Value<String?>? createdAt,
     Value<String?>? updatedAt,
     Value<bool>? isPending,
+    Value<String?>? clientId,
   }) {
     return CachedRemindersCompanion(
       id: id ?? this.id,
@@ -3241,6 +3777,7 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isPending: isPending ?? this.isPending,
+      clientId: clientId ?? this.clientId,
     );
   }
 
@@ -3286,6 +3823,9 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     if (isPending.present) {
       map['is_pending'] = Variable<bool>(isPending.value);
     }
+    if (clientId.present) {
+      map['client_id'] = Variable<String>(clientId.value);
+    }
     return map;
   }
 
@@ -3304,7 +3844,8 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
           ..write('repeatInterval: $repeatInterval, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('isPending: $isPending')
+          ..write('isPending: $isPending, ')
+          ..write('clientId: $clientId')
           ..write(')'))
         .toString();
   }
@@ -3372,6 +3913,53 @@ class $PendingRemindersTable extends PendingReminders
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _clientIdMeta = const VerificationMeta(
+    'clientId',
+  );
+  @override
+  late final GeneratedColumn<String> clientId = GeneratedColumn<String>(
+    'client_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _attemptsMeta = const VerificationMeta(
+    'attempts',
+  );
+  @override
+  late final GeneratedColumn<int> attempts = GeneratedColumn<int>(
+    'attempts',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastErrorMeta = const VerificationMeta(
+    'lastError',
+  );
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+    'last_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _failedMeta = const VerificationMeta('failed');
+  @override
+  late final GeneratedColumn<bool> failed = GeneratedColumn<bool>(
+    'failed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("failed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3379,6 +3967,10 @@ class $PendingRemindersTable extends PendingReminders
     localReminderId,
     payload,
     queuedAt,
+    clientId,
+    attempts,
+    lastError,
+    failed,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3428,6 +4020,30 @@ class $PendingRemindersTable extends PendingReminders
         queuedAt.isAcceptableOrUnknown(data['queued_at']!, _queuedAtMeta),
       );
     }
+    if (data.containsKey('client_id')) {
+      context.handle(
+        _clientIdMeta,
+        clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
+      );
+    }
+    if (data.containsKey('attempts')) {
+      context.handle(
+        _attemptsMeta,
+        attempts.isAcceptableOrUnknown(data['attempts']!, _attemptsMeta),
+      );
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(
+        _lastErrorMeta,
+        lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
+      );
+    }
+    if (data.containsKey('failed')) {
+      context.handle(
+        _failedMeta,
+        failed.isAcceptableOrUnknown(data['failed']!, _failedMeta),
+      );
+    }
     return context;
   }
 
@@ -3461,6 +4077,22 @@ class $PendingRemindersTable extends PendingReminders
         DriftSqlType.dateTime,
         data['${effectivePrefix}queued_at'],
       )!,
+      clientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}client_id'],
+      ),
+      attempts: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempts'],
+      )!,
+      lastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error'],
+      ),
+      failed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}failed'],
+      )!,
     );
   }
 
@@ -3476,12 +4108,20 @@ class PendingReminder extends DataClass implements Insertable<PendingReminder> {
   final int localReminderId;
   final String payload;
   final DateTime queuedAt;
+  final String? clientId;
+  final int attempts;
+  final String? lastError;
+  final bool failed;
   const PendingReminder({
     required this.id,
     required this.userId,
     required this.localReminderId,
     required this.payload,
     required this.queuedAt,
+    this.clientId,
+    required this.attempts,
+    this.lastError,
+    required this.failed,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3491,6 +4131,14 @@ class PendingReminder extends DataClass implements Insertable<PendingReminder> {
     map['local_reminder_id'] = Variable<int>(localReminderId);
     map['payload'] = Variable<String>(payload);
     map['queued_at'] = Variable<DateTime>(queuedAt);
+    if (!nullToAbsent || clientId != null) {
+      map['client_id'] = Variable<String>(clientId);
+    }
+    map['attempts'] = Variable<int>(attempts);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    map['failed'] = Variable<bool>(failed);
     return map;
   }
 
@@ -3501,6 +4149,14 @@ class PendingReminder extends DataClass implements Insertable<PendingReminder> {
       localReminderId: Value(localReminderId),
       payload: Value(payload),
       queuedAt: Value(queuedAt),
+      clientId: clientId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientId),
+      attempts: Value(attempts),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      failed: Value(failed),
     );
   }
 
@@ -3515,6 +4171,10 @@ class PendingReminder extends DataClass implements Insertable<PendingReminder> {
       localReminderId: serializer.fromJson<int>(json['localReminderId']),
       payload: serializer.fromJson<String>(json['payload']),
       queuedAt: serializer.fromJson<DateTime>(json['queuedAt']),
+      clientId: serializer.fromJson<String?>(json['clientId']),
+      attempts: serializer.fromJson<int>(json['attempts']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      failed: serializer.fromJson<bool>(json['failed']),
     );
   }
   @override
@@ -3526,6 +4186,10 @@ class PendingReminder extends DataClass implements Insertable<PendingReminder> {
       'localReminderId': serializer.toJson<int>(localReminderId),
       'payload': serializer.toJson<String>(payload),
       'queuedAt': serializer.toJson<DateTime>(queuedAt),
+      'clientId': serializer.toJson<String?>(clientId),
+      'attempts': serializer.toJson<int>(attempts),
+      'lastError': serializer.toJson<String?>(lastError),
+      'failed': serializer.toJson<bool>(failed),
     };
   }
 
@@ -3535,12 +4199,20 @@ class PendingReminder extends DataClass implements Insertable<PendingReminder> {
     int? localReminderId,
     String? payload,
     DateTime? queuedAt,
+    Value<String?> clientId = const Value.absent(),
+    int? attempts,
+    Value<String?> lastError = const Value.absent(),
+    bool? failed,
   }) => PendingReminder(
     id: id ?? this.id,
     userId: userId ?? this.userId,
     localReminderId: localReminderId ?? this.localReminderId,
     payload: payload ?? this.payload,
     queuedAt: queuedAt ?? this.queuedAt,
+    clientId: clientId.present ? clientId.value : this.clientId,
+    attempts: attempts ?? this.attempts,
+    lastError: lastError.present ? lastError.value : this.lastError,
+    failed: failed ?? this.failed,
   );
   PendingReminder copyWithCompanion(PendingRemindersCompanion data) {
     return PendingReminder(
@@ -3551,6 +4223,10 @@ class PendingReminder extends DataClass implements Insertable<PendingReminder> {
           : this.localReminderId,
       payload: data.payload.present ? data.payload.value : this.payload,
       queuedAt: data.queuedAt.present ? data.queuedAt.value : this.queuedAt,
+      clientId: data.clientId.present ? data.clientId.value : this.clientId,
+      attempts: data.attempts.present ? data.attempts.value : this.attempts,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      failed: data.failed.present ? data.failed.value : this.failed,
     );
   }
 
@@ -3561,14 +4237,27 @@ class PendingReminder extends DataClass implements Insertable<PendingReminder> {
           ..write('userId: $userId, ')
           ..write('localReminderId: $localReminderId, ')
           ..write('payload: $payload, ')
-          ..write('queuedAt: $queuedAt')
+          ..write('queuedAt: $queuedAt, ')
+          ..write('clientId: $clientId, ')
+          ..write('attempts: $attempts, ')
+          ..write('lastError: $lastError, ')
+          ..write('failed: $failed')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, userId, localReminderId, payload, queuedAt);
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    localReminderId,
+    payload,
+    queuedAt,
+    clientId,
+    attempts,
+    lastError,
+    failed,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3577,7 +4266,11 @@ class PendingReminder extends DataClass implements Insertable<PendingReminder> {
           other.userId == this.userId &&
           other.localReminderId == this.localReminderId &&
           other.payload == this.payload &&
-          other.queuedAt == this.queuedAt);
+          other.queuedAt == this.queuedAt &&
+          other.clientId == this.clientId &&
+          other.attempts == this.attempts &&
+          other.lastError == this.lastError &&
+          other.failed == this.failed);
 }
 
 class PendingRemindersCompanion extends UpdateCompanion<PendingReminder> {
@@ -3586,12 +4279,20 @@ class PendingRemindersCompanion extends UpdateCompanion<PendingReminder> {
   final Value<int> localReminderId;
   final Value<String> payload;
   final Value<DateTime> queuedAt;
+  final Value<String?> clientId;
+  final Value<int> attempts;
+  final Value<String?> lastError;
+  final Value<bool> failed;
   const PendingRemindersCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
     this.localReminderId = const Value.absent(),
     this.payload = const Value.absent(),
     this.queuedAt = const Value.absent(),
+    this.clientId = const Value.absent(),
+    this.attempts = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.failed = const Value.absent(),
   });
   PendingRemindersCompanion.insert({
     this.id = const Value.absent(),
@@ -3599,6 +4300,10 @@ class PendingRemindersCompanion extends UpdateCompanion<PendingReminder> {
     required int localReminderId,
     required String payload,
     this.queuedAt = const Value.absent(),
+    this.clientId = const Value.absent(),
+    this.attempts = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.failed = const Value.absent(),
   }) : userId = Value(userId),
        localReminderId = Value(localReminderId),
        payload = Value(payload);
@@ -3608,6 +4313,10 @@ class PendingRemindersCompanion extends UpdateCompanion<PendingReminder> {
     Expression<int>? localReminderId,
     Expression<String>? payload,
     Expression<DateTime>? queuedAt,
+    Expression<String>? clientId,
+    Expression<int>? attempts,
+    Expression<String>? lastError,
+    Expression<bool>? failed,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3615,6 +4324,10 @@ class PendingRemindersCompanion extends UpdateCompanion<PendingReminder> {
       if (localReminderId != null) 'local_reminder_id': localReminderId,
       if (payload != null) 'payload': payload,
       if (queuedAt != null) 'queued_at': queuedAt,
+      if (clientId != null) 'client_id': clientId,
+      if (attempts != null) 'attempts': attempts,
+      if (lastError != null) 'last_error': lastError,
+      if (failed != null) 'failed': failed,
     });
   }
 
@@ -3624,6 +4337,10 @@ class PendingRemindersCompanion extends UpdateCompanion<PendingReminder> {
     Value<int>? localReminderId,
     Value<String>? payload,
     Value<DateTime>? queuedAt,
+    Value<String?>? clientId,
+    Value<int>? attempts,
+    Value<String?>? lastError,
+    Value<bool>? failed,
   }) {
     return PendingRemindersCompanion(
       id: id ?? this.id,
@@ -3631,6 +4348,10 @@ class PendingRemindersCompanion extends UpdateCompanion<PendingReminder> {
       localReminderId: localReminderId ?? this.localReminderId,
       payload: payload ?? this.payload,
       queuedAt: queuedAt ?? this.queuedAt,
+      clientId: clientId ?? this.clientId,
+      attempts: attempts ?? this.attempts,
+      lastError: lastError ?? this.lastError,
+      failed: failed ?? this.failed,
     );
   }
 
@@ -3652,6 +4373,18 @@ class PendingRemindersCompanion extends UpdateCompanion<PendingReminder> {
     if (queuedAt.present) {
       map['queued_at'] = Variable<DateTime>(queuedAt.value);
     }
+    if (clientId.present) {
+      map['client_id'] = Variable<String>(clientId.value);
+    }
+    if (attempts.present) {
+      map['attempts'] = Variable<int>(attempts.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (failed.present) {
+      map['failed'] = Variable<bool>(failed.value);
+    }
     return map;
   }
 
@@ -3662,7 +4395,11 @@ class PendingRemindersCompanion extends UpdateCompanion<PendingReminder> {
           ..write('userId: $userId, ')
           ..write('localReminderId: $localReminderId, ')
           ..write('payload: $payload, ')
-          ..write('queuedAt: $queuedAt')
+          ..write('queuedAt: $queuedAt, ')
+          ..write('clientId: $clientId, ')
+          ..write('attempts: $attempts, ')
+          ..write('lastError: $lastError, ')
+          ..write('failed: $failed')
           ..write(')'))
         .toString();
   }
@@ -3710,6 +4447,7 @@ typedef $$CachedNotesTableCreateCompanionBuilder =
       Value<String?> tags,
       Value<bool> pinned,
       Value<bool> isPending,
+      Value<String?> clientId,
     });
 typedef $$CachedNotesTableUpdateCompanionBuilder =
     CachedNotesCompanion Function({
@@ -3724,6 +4462,7 @@ typedef $$CachedNotesTableUpdateCompanionBuilder =
       Value<String?> tags,
       Value<bool> pinned,
       Value<bool> isPending,
+      Value<String?> clientId,
     });
 
 class $$CachedNotesTableFilterComposer
@@ -3787,6 +4526,11 @@ class $$CachedNotesTableFilterComposer
 
   ColumnFilters<bool> get isPending => $composableBuilder(
     column: $table.isPending,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clientId => $composableBuilder(
+    column: $table.clientId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3854,6 +4598,11 @@ class $$CachedNotesTableOrderingComposer
     column: $table.isPending,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CachedNotesTableAnnotationComposer
@@ -3897,6 +4646,9 @@ class $$CachedNotesTableAnnotationComposer
 
   GeneratedColumn<bool> get isPending =>
       $composableBuilder(column: $table.isPending, builder: (column) => column);
+
+  GeneratedColumn<String> get clientId =>
+      $composableBuilder(column: $table.clientId, builder: (column) => column);
 }
 
 class $$CachedNotesTableTableManager
@@ -3941,6 +4693,7 @@ class $$CachedNotesTableTableManager
                 Value<String?> tags = const Value.absent(),
                 Value<bool> pinned = const Value.absent(),
                 Value<bool> isPending = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
               }) => CachedNotesCompanion(
                 id: id,
                 userId: userId,
@@ -3953,6 +4706,7 @@ class $$CachedNotesTableTableManager
                 tags: tags,
                 pinned: pinned,
                 isPending: isPending,
+                clientId: clientId,
               ),
           createCompanionCallback:
               ({
@@ -3967,6 +4721,7 @@ class $$CachedNotesTableTableManager
                 Value<String?> tags = const Value.absent(),
                 Value<bool> pinned = const Value.absent(),
                 Value<bool> isPending = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
               }) => CachedNotesCompanion.insert(
                 id: id,
                 userId: userId,
@@ -3979,6 +4734,7 @@ class $$CachedNotesTableTableManager
                 tags: tags,
                 pinned: pinned,
                 isPending: isPending,
+                clientId: clientId,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -4021,6 +4777,10 @@ typedef $$PendingNotesTableCreateCompanionBuilder =
       required int localNoteId,
       required String payload,
       Value<DateTime> queuedAt,
+      Value<String?> clientId,
+      Value<int> attempts,
+      Value<String?> lastError,
+      Value<bool> failed,
     });
 typedef $$PendingNotesTableUpdateCompanionBuilder =
     PendingNotesCompanion Function({
@@ -4029,6 +4789,10 @@ typedef $$PendingNotesTableUpdateCompanionBuilder =
       Value<int> localNoteId,
       Value<String> payload,
       Value<DateTime> queuedAt,
+      Value<String?> clientId,
+      Value<int> attempts,
+      Value<String?> lastError,
+      Value<bool> failed,
     });
 
 class $$PendingNotesTableFilterComposer
@@ -4062,6 +4826,26 @@ class $$PendingNotesTableFilterComposer
 
   ColumnFilters<DateTime> get queuedAt => $composableBuilder(
     column: $table.queuedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attempts => $composableBuilder(
+    column: $table.attempts,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get failed => $composableBuilder(
+    column: $table.failed,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4099,6 +4883,26 @@ class $$PendingNotesTableOrderingComposer
     column: $table.queuedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attempts => $composableBuilder(
+    column: $table.attempts,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get failed => $composableBuilder(
+    column: $table.failed,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PendingNotesTableAnnotationComposer
@@ -4126,6 +4930,18 @@ class $$PendingNotesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get queuedAt =>
       $composableBuilder(column: $table.queuedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get clientId =>
+      $composableBuilder(column: $table.clientId, builder: (column) => column);
+
+  GeneratedColumn<int> get attempts =>
+      $composableBuilder(column: $table.attempts, builder: (column) => column);
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<bool> get failed =>
+      $composableBuilder(column: $table.failed, builder: (column) => column);
 }
 
 class $$PendingNotesTableTableManager
@@ -4164,12 +4980,20 @@ class $$PendingNotesTableTableManager
                 Value<int> localNoteId = const Value.absent(),
                 Value<String> payload = const Value.absent(),
                 Value<DateTime> queuedAt = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
+                Value<int> attempts = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<bool> failed = const Value.absent(),
               }) => PendingNotesCompanion(
                 id: id,
                 userId: userId,
                 localNoteId: localNoteId,
                 payload: payload,
                 queuedAt: queuedAt,
+                clientId: clientId,
+                attempts: attempts,
+                lastError: lastError,
+                failed: failed,
               ),
           createCompanionCallback:
               ({
@@ -4178,12 +5002,20 @@ class $$PendingNotesTableTableManager
                 required int localNoteId,
                 required String payload,
                 Value<DateTime> queuedAt = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
+                Value<int> attempts = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<bool> failed = const Value.absent(),
               }) => PendingNotesCompanion.insert(
                 id: id,
                 userId: userId,
                 localNoteId: localNoteId,
                 payload: payload,
                 queuedAt: queuedAt,
+                clientId: clientId,
+                attempts: attempts,
+                lastError: lastError,
+                failed: failed,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -4459,6 +5291,7 @@ typedef $$CachedTasksTableCreateCompanionBuilder =
       Value<String?> createdAt,
       Value<String?> updatedAt,
       Value<bool> isPending,
+      Value<String?> clientId,
     });
 typedef $$CachedTasksTableUpdateCompanionBuilder =
     CachedTasksCompanion Function({
@@ -4476,6 +5309,7 @@ typedef $$CachedTasksTableUpdateCompanionBuilder =
       Value<String?> createdAt,
       Value<String?> updatedAt,
       Value<bool> isPending,
+      Value<String?> clientId,
     });
 
 class $$CachedTasksTableFilterComposer
@@ -4554,6 +5388,11 @@ class $$CachedTasksTableFilterComposer
 
   ColumnFilters<bool> get isPending => $composableBuilder(
     column: $table.isPending,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clientId => $composableBuilder(
+    column: $table.clientId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4636,6 +5475,11 @@ class $$CachedTasksTableOrderingComposer
     column: $table.isPending,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CachedTasksTableAnnotationComposer
@@ -4692,6 +5536,9 @@ class $$CachedTasksTableAnnotationComposer
 
   GeneratedColumn<bool> get isPending =>
       $composableBuilder(column: $table.isPending, builder: (column) => column);
+
+  GeneratedColumn<String> get clientId =>
+      $composableBuilder(column: $table.clientId, builder: (column) => column);
 }
 
 class $$CachedTasksTableTableManager
@@ -4739,6 +5586,7 @@ class $$CachedTasksTableTableManager
                 Value<String?> createdAt = const Value.absent(),
                 Value<String?> updatedAt = const Value.absent(),
                 Value<bool> isPending = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
               }) => CachedTasksCompanion(
                 id: id,
                 userId: userId,
@@ -4754,6 +5602,7 @@ class $$CachedTasksTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 isPending: isPending,
+                clientId: clientId,
               ),
           createCompanionCallback:
               ({
@@ -4771,6 +5620,7 @@ class $$CachedTasksTableTableManager
                 Value<String?> createdAt = const Value.absent(),
                 Value<String?> updatedAt = const Value.absent(),
                 Value<bool> isPending = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
               }) => CachedTasksCompanion.insert(
                 id: id,
                 userId: userId,
@@ -4786,6 +5636,7 @@ class $$CachedTasksTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 isPending: isPending,
+                clientId: clientId,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -4828,6 +5679,10 @@ typedef $$PendingTasksTableCreateCompanionBuilder =
       required int localTaskId,
       required String payload,
       Value<DateTime> queuedAt,
+      Value<String?> clientId,
+      Value<int> attempts,
+      Value<String?> lastError,
+      Value<bool> failed,
     });
 typedef $$PendingTasksTableUpdateCompanionBuilder =
     PendingTasksCompanion Function({
@@ -4836,6 +5691,10 @@ typedef $$PendingTasksTableUpdateCompanionBuilder =
       Value<int> localTaskId,
       Value<String> payload,
       Value<DateTime> queuedAt,
+      Value<String?> clientId,
+      Value<int> attempts,
+      Value<String?> lastError,
+      Value<bool> failed,
     });
 
 class $$PendingTasksTableFilterComposer
@@ -4869,6 +5728,26 @@ class $$PendingTasksTableFilterComposer
 
   ColumnFilters<DateTime> get queuedAt => $composableBuilder(
     column: $table.queuedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attempts => $composableBuilder(
+    column: $table.attempts,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get failed => $composableBuilder(
+    column: $table.failed,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4906,6 +5785,26 @@ class $$PendingTasksTableOrderingComposer
     column: $table.queuedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attempts => $composableBuilder(
+    column: $table.attempts,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get failed => $composableBuilder(
+    column: $table.failed,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PendingTasksTableAnnotationComposer
@@ -4933,6 +5832,18 @@ class $$PendingTasksTableAnnotationComposer
 
   GeneratedColumn<DateTime> get queuedAt =>
       $composableBuilder(column: $table.queuedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get clientId =>
+      $composableBuilder(column: $table.clientId, builder: (column) => column);
+
+  GeneratedColumn<int> get attempts =>
+      $composableBuilder(column: $table.attempts, builder: (column) => column);
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<bool> get failed =>
+      $composableBuilder(column: $table.failed, builder: (column) => column);
 }
 
 class $$PendingTasksTableTableManager
@@ -4971,12 +5882,20 @@ class $$PendingTasksTableTableManager
                 Value<int> localTaskId = const Value.absent(),
                 Value<String> payload = const Value.absent(),
                 Value<DateTime> queuedAt = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
+                Value<int> attempts = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<bool> failed = const Value.absent(),
               }) => PendingTasksCompanion(
                 id: id,
                 userId: userId,
                 localTaskId: localTaskId,
                 payload: payload,
                 queuedAt: queuedAt,
+                clientId: clientId,
+                attempts: attempts,
+                lastError: lastError,
+                failed: failed,
               ),
           createCompanionCallback:
               ({
@@ -4985,12 +5904,20 @@ class $$PendingTasksTableTableManager
                 required int localTaskId,
                 required String payload,
                 Value<DateTime> queuedAt = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
+                Value<int> attempts = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<bool> failed = const Value.absent(),
               }) => PendingTasksCompanion.insert(
                 id: id,
                 userId: userId,
                 localTaskId: localTaskId,
                 payload: payload,
                 queuedAt: queuedAt,
+                clientId: clientId,
+                attempts: attempts,
+                lastError: lastError,
+                failed: failed,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -5041,6 +5968,7 @@ typedef $$CachedRemindersTableCreateCompanionBuilder =
       Value<String?> createdAt,
       Value<String?> updatedAt,
       Value<bool> isPending,
+      Value<String?> clientId,
     });
 typedef $$CachedRemindersTableUpdateCompanionBuilder =
     CachedRemindersCompanion Function({
@@ -5057,6 +5985,7 @@ typedef $$CachedRemindersTableUpdateCompanionBuilder =
       Value<String?> createdAt,
       Value<String?> updatedAt,
       Value<bool> isPending,
+      Value<String?> clientId,
     });
 
 class $$CachedRemindersTableFilterComposer
@@ -5130,6 +6059,11 @@ class $$CachedRemindersTableFilterComposer
 
   ColumnFilters<bool> get isPending => $composableBuilder(
     column: $table.isPending,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clientId => $composableBuilder(
+    column: $table.clientId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -5207,6 +6141,11 @@ class $$CachedRemindersTableOrderingComposer
     column: $table.isPending,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CachedRemindersTableAnnotationComposer
@@ -5258,6 +6197,9 @@ class $$CachedRemindersTableAnnotationComposer
 
   GeneratedColumn<bool> get isPending =>
       $composableBuilder(column: $table.isPending, builder: (column) => column);
+
+  GeneratedColumn<String> get clientId =>
+      $composableBuilder(column: $table.clientId, builder: (column) => column);
 }
 
 class $$CachedRemindersTableTableManager
@@ -5310,6 +6252,7 @@ class $$CachedRemindersTableTableManager
                 Value<String?> createdAt = const Value.absent(),
                 Value<String?> updatedAt = const Value.absent(),
                 Value<bool> isPending = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
               }) => CachedRemindersCompanion(
                 id: id,
                 userId: userId,
@@ -5324,6 +6267,7 @@ class $$CachedRemindersTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 isPending: isPending,
+                clientId: clientId,
               ),
           createCompanionCallback:
               ({
@@ -5340,6 +6284,7 @@ class $$CachedRemindersTableTableManager
                 Value<String?> createdAt = const Value.absent(),
                 Value<String?> updatedAt = const Value.absent(),
                 Value<bool> isPending = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
               }) => CachedRemindersCompanion.insert(
                 id: id,
                 userId: userId,
@@ -5354,6 +6299,7 @@ class $$CachedRemindersTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 isPending: isPending,
+                clientId: clientId,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -5396,6 +6342,10 @@ typedef $$PendingRemindersTableCreateCompanionBuilder =
       required int localReminderId,
       required String payload,
       Value<DateTime> queuedAt,
+      Value<String?> clientId,
+      Value<int> attempts,
+      Value<String?> lastError,
+      Value<bool> failed,
     });
 typedef $$PendingRemindersTableUpdateCompanionBuilder =
     PendingRemindersCompanion Function({
@@ -5404,6 +6354,10 @@ typedef $$PendingRemindersTableUpdateCompanionBuilder =
       Value<int> localReminderId,
       Value<String> payload,
       Value<DateTime> queuedAt,
+      Value<String?> clientId,
+      Value<int> attempts,
+      Value<String?> lastError,
+      Value<bool> failed,
     });
 
 class $$PendingRemindersTableFilterComposer
@@ -5437,6 +6391,26 @@ class $$PendingRemindersTableFilterComposer
 
   ColumnFilters<DateTime> get queuedAt => $composableBuilder(
     column: $table.queuedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attempts => $composableBuilder(
+    column: $table.attempts,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get failed => $composableBuilder(
+    column: $table.failed,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -5474,6 +6448,26 @@ class $$PendingRemindersTableOrderingComposer
     column: $table.queuedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attempts => $composableBuilder(
+    column: $table.attempts,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get failed => $composableBuilder(
+    column: $table.failed,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PendingRemindersTableAnnotationComposer
@@ -5501,6 +6495,18 @@ class $$PendingRemindersTableAnnotationComposer
 
   GeneratedColumn<DateTime> get queuedAt =>
       $composableBuilder(column: $table.queuedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get clientId =>
+      $composableBuilder(column: $table.clientId, builder: (column) => column);
+
+  GeneratedColumn<int> get attempts =>
+      $composableBuilder(column: $table.attempts, builder: (column) => column);
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<bool> get failed =>
+      $composableBuilder(column: $table.failed, builder: (column) => column);
 }
 
 class $$PendingRemindersTableTableManager
@@ -5545,12 +6551,20 @@ class $$PendingRemindersTableTableManager
                 Value<int> localReminderId = const Value.absent(),
                 Value<String> payload = const Value.absent(),
                 Value<DateTime> queuedAt = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
+                Value<int> attempts = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<bool> failed = const Value.absent(),
               }) => PendingRemindersCompanion(
                 id: id,
                 userId: userId,
                 localReminderId: localReminderId,
                 payload: payload,
                 queuedAt: queuedAt,
+                clientId: clientId,
+                attempts: attempts,
+                lastError: lastError,
+                failed: failed,
               ),
           createCompanionCallback:
               ({
@@ -5559,12 +6573,20 @@ class $$PendingRemindersTableTableManager
                 required int localReminderId,
                 required String payload,
                 Value<DateTime> queuedAt = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
+                Value<int> attempts = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<bool> failed = const Value.absent(),
               }) => PendingRemindersCompanion.insert(
                 id: id,
                 userId: userId,
                 localReminderId: localReminderId,
                 payload: payload,
                 queuedAt: queuedAt,
+                clientId: clientId,
+                attempts: attempts,
+                lastError: lastError,
+                failed: failed,
               ),
           withReferenceMapper: (p0) => p0
               .map(

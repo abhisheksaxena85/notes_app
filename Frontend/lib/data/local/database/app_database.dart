@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:notes_app/data/local/database/app_database.steps.dart';
+import 'package:notes_app/data/local/database/sync_queue_models.dart';
+import 'package:uuid/uuid.dart';
 
 part 'app_database.g.dart';
 
@@ -15,6 +20,8 @@ class CachedNotes extends Table {
   TextColumn get tags => text().nullable()();
   BoolColumn get pinned => boolean().withDefault(const Constant(false))();
   BoolColumn get isPending => boolean().withDefault(const Constant(false))();
+  // FE-03: idempotency key sent with the create (see the backend client_id).
+  TextColumn get clientId => text().nullable()();
 
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
@@ -28,6 +35,12 @@ class PendingNotes extends Table {
   IntColumn get localNoteId => integer()();
   TextColumn get payload => text()();
   DateTimeColumn get queuedAt => dateTime().withDefault(currentDateAndTime)();
+  // FE-03: sync bookkeeping. `failed` marks a create the server refused for
+  // good; automatic sync skips it until the user retries or discards it.
+  TextColumn get clientId => text().nullable()();
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
+  TextColumn get lastError => text().nullable()();
+  BoolColumn get failed => boolean().withDefault(const Constant(false))();
 
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
@@ -62,6 +75,8 @@ class CachedTasks extends Table {
   TextColumn get createdAt => text().nullable()();
   TextColumn get updatedAt => text().nullable()();
   BoolColumn get isPending => boolean().withDefault(const Constant(false))();
+  // FE-03: idempotency key sent with the create (see the backend client_id).
+  TextColumn get clientId => text().nullable()();
 
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
@@ -75,6 +90,12 @@ class PendingTasks extends Table {
   IntColumn get localTaskId => integer()();
   TextColumn get payload => text()();
   DateTimeColumn get queuedAt => dateTime().withDefault(currentDateAndTime)();
+  // FE-03: sync bookkeeping. `failed` marks a create the server refused for
+  // good; automatic sync skips it until the user retries or discards it.
+  TextColumn get clientId => text().nullable()();
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
+  TextColumn get lastError => text().nullable()();
+  BoolColumn get failed => boolean().withDefault(const Constant(false))();
 
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
@@ -96,6 +117,8 @@ class CachedReminders extends Table {
   TextColumn get createdAt => text().nullable()();
   TextColumn get updatedAt => text().nullable()();
   BoolColumn get isPending => boolean().withDefault(const Constant(false))();
+  // FE-03: idempotency key sent with the create (see the backend client_id).
+  TextColumn get clientId => text().nullable()();
 
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
@@ -109,6 +132,12 @@ class PendingReminders extends Table {
   IntColumn get localReminderId => integer()();
   TextColumn get payload => text()();
   DateTimeColumn get queuedAt => dateTime().withDefault(currentDateAndTime)();
+  // FE-03: sync bookkeeping. `failed` marks a create the server refused for
+  // good; automatic sync skips it until the user retries or discards it.
+  TextColumn get clientId => text().nullable()();
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
+  TextColumn get lastError => text().nullable()();
+  BoolColumn get failed => boolean().withDefault(const Constant(false))();
 
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
@@ -131,20 +160,206 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
+  /// Each step uses the tables exactly as they were at that version (from the
+  /// snapshots in `drift_schemas/`, generated into app_database.steps.dart), so
+  /// later schema changes cannot break older steps. After changing a table:
+  /// bump [schemaVersion], run `dart run drift_dev schema dump
+  /// lib/data/local/database/app_database.dart drift_schemas/app_database/`,
+  /// then `dart run drift_dev schema steps drift_schemas/app_database/
+  /// lib/data/local/database/app_database.steps.dart`, add the new step here and
+  /// regenerate the test helpers (see test/drift/migration_test.dart).
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
-    onUpgrade: (m, from, to) async {
-      if (from < 2) {
-        await m.createTable(cachedTasks);
-        await m.createTable(pendingTasks);
-        await m.createTable(cachedReminders);
-        await m.createTable(pendingReminders);
-      }
-    },
+    onUpgrade: stepByStep(
+      from1To2: (m, schema) async {
+        await m.createTable(schema.cachedTasks);
+        await m.createTable(schema.pendingTasks);
+        await m.createTable(schema.cachedReminders);
+        await m.createTable(schema.pendingReminders);
+      },
+      from2To3: (m, schema) async {
+        // FE-03: client ids for idempotent creates, and failure bookkeeping.
+        await m.addColumn(schema.cachedNotes, schema.cachedNotes.clientId);
+        await m.addColumn(schema.cachedTasks, schema.cachedTasks.clientId);
+        await m.addColumn(schema.cachedReminders, schema.cachedReminders.clientId);
+        for (final queue in [
+          (schema.pendingNotes, schema.pendingNotes.clientId, schema.pendingNotes.attempts,
+              schema.pendingNotes.lastError, schema.pendingNotes.failed),
+          (schema.pendingTasks, schema.pendingTasks.clientId, schema.pendingTasks.attempts,
+              schema.pendingTasks.lastError, schema.pendingTasks.failed),
+          (schema.pendingReminders, schema.pendingReminders.clientId,
+              schema.pendingReminders.attempts, schema.pendingReminders.lastError,
+              schema.pendingReminders.failed),
+        ]) {
+          final (table, clientId, attempts, lastError, failed) = queue;
+          await m.addColumn(table, clientId);
+          await m.addColumn(table, attempts);
+          await m.addColumn(table, lastError);
+          await m.addColumn(table, failed);
+        }
+        await _backfillClientIds();
+      },
+    ),
   );
+
+  /// v3: creates queued before the upgrade get a client id too, in the payload
+  /// sent to the server and on both rows, so their retries are idempotent like
+  /// new ones. Raw SQL on purpose: it must match the v3 tables, not whatever the
+  /// table classes look like in a later version.
+  Future<void> _backfillClientIds() async {
+    const queues = [
+      ('pending_notes', 'local_note_id', 'cached_notes'),
+      ('pending_tasks', 'local_task_id', 'cached_tasks'),
+      ('pending_reminders', 'local_reminder_id', 'cached_reminders'),
+    ];
+    for (final (queue, localColumn, cache) in queues) {
+      final rows = await customSelect(
+        'SELECT id, $localColumn AS local_id, payload FROM $queue',
+      ).get();
+      for (final row in rows) {
+        final clientId = const Uuid().v4();
+        var payload = row.read<String>('payload');
+        try {
+          final decoded = jsonDecode(payload);
+          if (decoded is Map) {
+            payload = jsonEncode({...decoded, 'clientId': clientId});
+          }
+        } on FormatException {
+          // Left as is: the sync marks an unreadable payload as failed.
+        }
+        await customUpdate(
+          'UPDATE $queue SET client_id = ?, payload = ? WHERE id = ?',
+          variables: [
+            Variable.withString(clientId),
+            Variable.withString(payload),
+            Variable.withInt(row.read<int>('id')),
+          ],
+        );
+        await customUpdate(
+          'UPDATE $cache SET client_id = ? WHERE id = ?',
+          variables: [
+            Variable.withString(clientId),
+            Variable.withInt(row.read<int>('local_id')),
+          ],
+        );
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sync queue bookkeeping (FE-03)
+  // ---------------------------------------------------------------------------
+
+  static const _queueSql = {
+    SyncEntity.note: ('pending_notes', 'local_note_id', 'cached_notes'),
+    SyncEntity.task: ('pending_tasks', 'local_task_id', 'cached_tasks'),
+    SyncEntity.reminder: ('pending_reminders', 'local_reminder_id', 'cached_reminders'),
+  };
+
+  TableInfo _queueTable(SyncEntity entity) => switch (entity) {
+    SyncEntity.note => pendingNotes,
+    SyncEntity.task => pendingTasks,
+    SyncEntity.reminder => pendingReminders,
+  };
+
+  TableInfo _cacheTable(SyncEntity entity) => switch (entity) {
+    SyncEntity.note => cachedNotes,
+    SyncEntity.task => cachedTasks,
+    SyncEntity.reminder => cachedReminders,
+  };
+
+  /// Counts a failed upload. [failed] marks it as refused for good, so the
+  /// automatic sync skips it until [resetSyncFailure].
+  Future<void> recordSyncAttempt(
+    SyncEntity entity,
+    int queueId, {
+    required String error,
+    required bool failed,
+  }) async {
+    final (queue, _, _) = _queueSql[entity]!;
+    await customUpdate(
+      'UPDATE $queue SET attempts = attempts + 1, last_error = ?, failed = ? WHERE id = ?',
+      variables: [
+        Variable.withString(error),
+        Variable.withBool(failed),
+        Variable.withInt(queueId),
+      ],
+      updates: {_queueTable(entity)},
+    );
+  }
+
+  /// Puts a failed item back in line for the next sync.
+  Future<void> resetSyncFailure(SyncEntity entity, int queueId) async {
+    final (queue, _, _) = _queueSql[entity]!;
+    await customUpdate(
+      'UPDATE $queue SET attempts = 0, last_error = NULL, failed = 0 WHERE id = ?',
+      variables: [Variable.withInt(queueId)],
+      updates: {_queueTable(entity)},
+    );
+  }
+
+  /// Drops a queued create the server refused, and the local-only row it
+  /// would have created.
+  Future<void> discardQueuedCreate(SyncEntity entity, int queueId) async {
+    final (queue, localColumn, cache) = _queueSql[entity]!;
+    await transaction(() async {
+      await customUpdate(
+        'DELETE FROM $cache WHERE server_id IS NULL AND id = '
+        '(SELECT $localColumn FROM $queue WHERE id = ?)',
+        variables: [Variable.withInt(queueId)],
+        updates: {_cacheTable(entity)},
+        updateKind: UpdateKind.delete,
+      );
+      await customUpdate(
+        'DELETE FROM $queue WHERE id = ?',
+        variables: [Variable.withInt(queueId)],
+        updates: {_queueTable(entity)},
+        updateKind: UpdateKind.delete,
+      );
+    });
+  }
+
+  /// Queued items the server refused for good, oldest first.
+  Stream<List<SyncFailure>> watchSyncFailures(int userId) {
+    final parts = <String>[];
+    for (final entity in SyncEntity.values) {
+      final (queue, localColumn, cache) = _queueSql[entity]!;
+      parts.add(
+        "SELECT '${entity.name}' AS entity, p.id AS queue_id, c.id AS local_id, "
+        "COALESCE(c.title, '') AS title, p.last_error AS last_error, "
+        'p.attempts AS attempts, p.queued_at AS queued_at '
+        'FROM $queue p LEFT JOIN $cache c ON c.id = p.$localColumn '
+        'WHERE p.user_id = ? AND p.failed = 1',
+      );
+    }
+    return customSelect(
+      '${parts.join(' UNION ALL ')} ORDER BY queued_at, queue_id',
+      variables: [for (final _ in SyncEntity.values) Variable.withInt(userId)],
+      readsFrom: {
+        pendingNotes,
+        pendingTasks,
+        pendingReminders,
+        cachedNotes,
+        cachedTasks,
+        cachedReminders,
+      },
+    ).watch().map(
+      (rows) => [
+        for (final row in rows)
+          SyncFailure(
+            entity: SyncEntity.values.byName(row.read<String>('entity')),
+            queueId: row.read<int>('queue_id'),
+            localId: row.readNullable<int>('local_id'),
+            title: row.read<String>('title'),
+            lastError: row.readNullable<String>('last_error'),
+            attempts: row.read<int>('attempts'),
+          ),
+      ],
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // Notes Operations
@@ -222,6 +437,7 @@ class AppDatabase extends _$AppDatabase {
     String? tags,
     String? createdAt,
     String? updatedAt,
+    required String clientId,
     required String payload,
   }) async {
     final now = DateTime.now().toIso8601String();
@@ -237,6 +453,7 @@ class AppDatabase extends _$AppDatabase {
           pinned: Value(pinned),
           tags: Value(tags),
           isPending: const Value(true),
+          clientId: Value(clientId),
         ),
       );
       await into(pendingNotes).insert(
@@ -244,6 +461,7 @@ class AppDatabase extends _$AppDatabase {
           userId: userId,
           localNoteId: localNoteId,
           payload: payload,
+          clientId: Value(clientId),
         ),
       );
       return localNoteId;
@@ -289,6 +507,18 @@ class AppDatabase extends _$AppDatabase {
     required int serverId,
   }) async {
     await transaction(() async {
+      // If a refresh already cached the server copy (the create succeeded but
+      // its response was lost), drop that copy so the local row keeps its id.
+      final local = await (select(cachedNotes)
+            ..where((note) => note.id.equals(localNoteId)))
+          .getSingleOrNull();
+      if (local != null) {
+        await (delete(cachedNotes)..where((note) =>
+              note.userId.equals(local.userId) &
+              note.serverId.equals(serverId) &
+              note.id.equals(localNoteId).not()))
+            .go();
+      }
       await (update(
         cachedNotes,
       )..where((note) => note.id.equals(localNoteId))).write(
@@ -378,6 +608,7 @@ class AppDatabase extends _$AppDatabase {
     String? priority,
     String? status,
     bool isCompleted = false,
+    required String clientId,
     required String payload,
   }) async {
     final now = DateTime.now().toIso8601String();
@@ -396,6 +627,7 @@ class AppDatabase extends _$AppDatabase {
           createdAt: Value(now),
           updatedAt: Value(now),
           isPending: const Value(true),
+          clientId: Value(clientId),
         ),
       );
       await into(pendingTasks).insert(
@@ -403,6 +635,7 @@ class AppDatabase extends _$AppDatabase {
           userId: userId,
           localTaskId: localTaskId,
           payload: payload,
+          clientId: Value(clientId),
         ),
       );
       return localTaskId;
@@ -422,6 +655,17 @@ class AppDatabase extends _$AppDatabase {
     required int serverId,
   }) async {
     await transaction(() async {
+      // See completePendingNote.
+      final local = await (select(cachedTasks)
+            ..where((task) => task.id.equals(localTaskId)))
+          .getSingleOrNull();
+      if (local != null) {
+        await (delete(cachedTasks)..where((task) =>
+              task.userId.equals(local.userId) &
+              task.serverId.equals(serverId) &
+              task.id.equals(localTaskId).not()))
+            .go();
+      }
       await (update(cachedTasks)..where((task) => task.id.equals(localTaskId))).write(
         CachedTasksCompanion(
           serverId: Value(serverId),
@@ -555,6 +799,7 @@ class AppDatabase extends _$AppDatabase {
     String? category,
     String? status,
     String? repeatInterval,
+    required String clientId,
     required String payload,
   }) async {
     final now = DateTime.now().toIso8601String();
@@ -572,6 +817,7 @@ class AppDatabase extends _$AppDatabase {
           createdAt: Value(now),
           updatedAt: Value(now),
           isPending: const Value(true),
+          clientId: Value(clientId),
         ),
       );
       await into(pendingReminders).insert(
@@ -579,6 +825,7 @@ class AppDatabase extends _$AppDatabase {
           userId: userId,
           localReminderId: localReminderId,
           payload: payload,
+          clientId: Value(clientId),
         ),
       );
       return localReminderId;
@@ -598,6 +845,17 @@ class AppDatabase extends _$AppDatabase {
     required int serverId,
   }) async {
     await transaction(() async {
+      // See completePendingNote.
+      final local = await (select(cachedReminders)
+            ..where((rem) => rem.id.equals(localReminderId)))
+          .getSingleOrNull();
+      if (local != null) {
+        await (delete(cachedReminders)..where((rem) =>
+              rem.userId.equals(local.userId) &
+              rem.serverId.equals(serverId) &
+              rem.id.equals(localReminderId).not()))
+            .go();
+      }
       await (update(cachedReminders)..where((rem) => rem.id.equals(localReminderId))).write(
         CachedRemindersCompanion(
           serverId: Value(serverId),

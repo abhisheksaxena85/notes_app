@@ -33,6 +33,10 @@ Future<void> initialize() async {
 
   USER_ID = getIt<Preference>().getInt(PreferenceKeys.USER_ID) ?? 0;
   getIt<OfflineSyncService>().start(USER_ID);
+  // Sync queued changes when the app returns to the foreground too, not only
+  // when connectivity changes. The listener registers itself with the binding
+  // and lives as long as the app.
+  AppLifecycleListener(onResume: getIt<OfflineSyncService>().onAppResumed);
   if (USER_ID != 0) {
     unawaited(
       getIt<ProfileRepo>().refreshProfile(USER_ID).catchError((

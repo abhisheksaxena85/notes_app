@@ -28,31 +28,43 @@ Future<void> configureDependencies() async {
   /// Local database
   getIt.registerLazySingleton<AppDatabase>(() => AppDatabase());
 
+  /// Background synchronization: the only path from the offline queues to
+  /// the server. Repositories ask it to sync after every local write.
+  getIt.registerLazySingleton<OfflineSyncService>(
+    () => OfflineSyncService(
+      client: getIt<ApiClient>(),
+      database: getIt<AppDatabase>(),
+      connectionChecker: InternetConnectionChecker.createInstance(),
+    ),
+  );
+
   /// Repositories
   getIt.registerLazySingleton<HomeRepo>(
     () => HomeRepo(client: getIt<ApiClient>(), database: getIt<AppDatabase>()),
   );
   getIt.registerLazySingleton<NoteRepo>(
-    () => NoteRepo(client: getIt<ApiClient>(), database: getIt<AppDatabase>()),
+    () => NoteRepo(
+      client: getIt<ApiClient>(),
+      database: getIt<AppDatabase>(),
+      syncService: getIt<OfflineSyncService>(),
+    ),
   );
   getIt.registerLazySingleton<ProfileRepo>(
     () =>
         ProfileRepo(client: getIt<ApiClient>(), database: getIt<AppDatabase>()),
   );
   getIt.registerLazySingleton<TaskRepo>(
-    () => TaskRepo(client: getIt<ApiClient>(), database: getIt<AppDatabase>()),
+    () => TaskRepo(
+      client: getIt<ApiClient>(),
+      database: getIt<AppDatabase>(),
+      syncService: getIt<OfflineSyncService>(),
+    ),
   );
   getIt.registerLazySingleton<ReminderRepo>(
-    () => ReminderRepo(client: getIt<ApiClient>(), database: getIt<AppDatabase>()),
-  );
-
-  /// Background synchronization
-  getIt.registerLazySingleton<OfflineSyncService>(
-    () => OfflineSyncService(
-      noteRepo: getIt<NoteRepo>(),
-      taskRepo: getIt<TaskRepo>(),
-      reminderRepo: getIt<ReminderRepo>(),
-      connectionChecker: InternetConnectionChecker.createInstance(),
+    () => ReminderRepo(
+      client: getIt<ApiClient>(),
+      database: getIt<AppDatabase>(),
+      syncService: getIt<OfflineSyncService>(),
     ),
   );
 }

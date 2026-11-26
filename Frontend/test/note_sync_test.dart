@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:notes_app/data/local/database/app_database.dart';
 import 'package:notes_app/data/network/api/api_client.dart';
 import 'package:notes_app/data/network/dio_client/dio_client.dart';
@@ -70,14 +69,25 @@ class SelectiveApiClient extends ApiClient {
 
 void main() {
   late AppDatabase database;
+  final services = <OfflineSyncService>[];
 
   setUp(() {
     database = AppDatabase.forTesting(NativeDatabase.memory());
   });
 
   tearDown(() async {
+    for (final service in services) {
+      await service.dispose();
+    }
+    services.clear();
     await database.close();
   });
+
+  OfflineSyncService serviceFor(ApiClient client) {
+    final service = OfflineSyncService(client: client, database: database);
+    services.add(service);
+    return service;
+  }
 
   CreateNoteRequestDto note(String title) => CreateNoteRequestDto(
         userId: 42,
@@ -88,20 +98,29 @@ void main() {
       );
 
   test(
-    'keeps a rejected note queued without throwing, and removes it after success',
+    'a note refused with success:false is marked failed; after a retry it syncs',
     () async {
       final client = FakeApiClient({'success': false, 'message': 'Not accepted'});
-      final repository = NoteRepo(client: client, database: database);
+      final service = serviceFor(client)..setUserId(42);
+      final repository = NoteRepo(
+        client: client,
+        database: database,
+        syncService: service,
+      );
       final localId = await repository.enqueueNote(note('Queued note'));
 
-      await repository.syncQueuedNotes(42);
-      expect(await database.getPendingNotes(42), hasLength(1));
+      await service.requestSync();
+      final queued = await database.getPendingNotes(42);
+      expect(queued, hasLength(1));
+      expect(queued.single.failed, isTrue);
+      expect(queued.single.lastError, 'Not accepted');
 
       client.createNoteResponse = {
         'success': true,
         'data': {'noteId': 99},
       };
-      await repository.syncQueuedNotes(42);
+      final failures = await service.watchFailures(42).first;
+      await service.retryFailed(failures);
 
       expect(await database.getPendingNotes(42), isEmpty);
       final synced = await database.getNote(42, 99);
@@ -114,13 +133,9 @@ void main() {
     'BE-01: a rejected note does not block the notes queued after it or the task queue',
     () async {
       final client = SelectiveApiClient();
-      final noteRepo = NoteRepo(client: client, database: database);
-      final taskRepo = TaskRepo(client: client, database: database);
-      final service = OfflineSyncService(
-        noteRepo: noteRepo,
-        taskRepo: taskRepo,
-        connectionChecker: InternetConnectionChecker.createInstance(),
-      );
+      final service = serviceFor(client);
+      final noteRepo = NoteRepo(client: client, database: database, syncService: service);
+      final taskRepo = TaskRepo(client: client, database: database, syncService: service);
 
       await noteRepo.enqueueNote(note('first'));
       await noteRepo.enqueueNote(note('rejected'));
@@ -128,13 +143,14 @@ void main() {
       await taskRepo.enqueueTask(CreateTaskRequestDto(userId: 42, title: 'task'));
 
       service.setUserId(42);
-      await service.syncPendingAll();
+      await service.requestSync();
 
       expect(client.createdNotes, ['first', 'third']);
       expect(client.createdTasks, ['task']);
       final stillQueued = await database.getPendingNotes(42);
       expect(stillQueued, hasLength(1));
       expect(stillQueued.single.payload, contains('rejected'));
+      expect(stillQueued.single.failed, isTrue);
       expect(await database.getPendingTasks(42), isEmpty);
     },
   );

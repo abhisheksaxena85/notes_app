@@ -6,9 +6,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface NotesRepository extends JpaRepository<NotesModel, Long> {
     List<NotesModel> findByUser_IdOrderByIsPinnedDescCreatedAtDesc(long userId);
+
+    Optional<NotesModel> findByUser_IdAndClientId(long userId, String clientId);
 
     @Query("SELECT n FROM NotesModel n WHERE n.user.id = :userId AND n.createdAt LIKE :datePrefix%")
     List<NotesModel> findByUserIdAndDatePrefix(@Param("userId") long userId, @Param("datePrefix") String datePrefix);

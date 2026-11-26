@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:notes_app/data/local/database/app_database.dart';
@@ -6,12 +7,19 @@ import 'package:notes_app/data/network/api/api_client.dart';
 import 'package:notes_app/data/network/dto/request/task/create_task_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/task/update_task_request_dto.dart';
 import 'package:notes_app/data/network/dto/response/task/task_item.dart';
+import 'package:notes_app/data/sync/offline_sync_service.dart';
+import 'package:uuid/uuid.dart';
 
 class TaskRepo {
   final ApiClient client;
   final AppDatabase database;
+  final OfflineSyncService syncService;
 
-  TaskRepo({required this.client, required this.database});
+  TaskRepo({
+    required this.client,
+    required this.database,
+    required this.syncService,
+  });
 
   Future<List<TaskItem>> getCachedTasks(int userId) async {
     final cached = await database.getTasksForUser(userId);
@@ -54,14 +62,17 @@ class TaskRepo {
     }
   }
 
-  Future<int> enqueueTask(CreateTaskRequestDto requestDto) {
+  /// Saves the task locally, queues its upload (tagged with a new client id
+  /// so a retried upload can't create it twice) and asks for a sync.
+  Future<int> enqueueTask(CreateTaskRequestDto requestDto) async {
     final userId = requestDto.userId;
     final title = requestDto.title;
     if (title.trim().isEmpty) {
       throw ArgumentError('A task requires a title.');
     }
 
-    return database.enqueueTask(
+    final clientId = const Uuid().v4();
+    final localId = await database.enqueueTask(
       userId: userId,
       title: title,
       description: requestDto.description,
@@ -71,52 +82,11 @@ class TaskRepo {
       priority: requestDto.priority ?? 'MEDIUM',
       status: requestDto.status ?? (requestDto.isCompleted ? 'COMPLETED' : 'PENDING'),
       isCompleted: requestDto.isCompleted,
-      payload: jsonEncode(requestDto.toJson()),
+      clientId: clientId,
+      payload: jsonEncode({...requestDto.toJson(), 'clientId': clientId}),
     );
-  }
-
-  Future<void> syncQueuedTasks(int userId) async {
-    final pendingList = await database.getPendingTasks(userId);
-    for (final pending in pendingList) {
-      try {
-        final decoded = jsonDecode(pending.payload);
-        if (decoded is! Map) continue;
-
-        final request = CreateTaskRequestDto.fromJson(
-          Map<String, dynamic>.from(decoded),
-        );
-
-        final response = await client.createTask(request);
-        if (response.statusCode == null ||
-            response.statusCode! < 200 ||
-            response.statusCode! >= 300) {
-          continue;
-        }
-
-        final body = response.data;
-        int? serverId;
-        if (body is Map && body['data'] is Map) {
-          final data = body['data'] as Map;
-          final rawId = data['taskId'] ?? data['id'];
-          if (rawId is int) {
-            serverId = rawId;
-          } else if (rawId is String) {
-            serverId = int.tryParse(rawId);
-          }
-        }
-
-        if (serverId != null) {
-          await database.completePendingTask(
-            queueId: pending.id,
-            localTaskId: pending.localTaskId,
-            serverId: serverId,
-          );
-        }
-      } catch (_) {
-        // Network or server error; keep in queue for next sync
-        break;
-      }
-    }
+    unawaited(syncService.requestSync());
+    return localId;
   }
 
   Future<void> toggleTaskStatus(int userId, int taskId, bool isCompleted) {

@@ -3,6 +3,7 @@ package com.example.notes_app.reminders.service;
 import com.example.notes_app.auth.model.UserModel;
 import com.example.notes_app.auth.repository.AuthRepository;
 import com.example.notes_app.common.ApiResponse;
+import com.example.notes_app.common.IdempotentCreate;
 import com.example.notes_app.common.exception.NotFoundException;
 import com.example.notes_app.reminders.dto.request.CreateReminderRequestDto;
 import com.example.notes_app.reminders.dto.request.UpdateReminderRequestDto;
@@ -32,11 +33,30 @@ public class ReminderService {
                 .orElseThrow(() -> new NotFoundException("Reminder not found"));
     }
 
-    @Transactional
+    /**
+     * Not @Transactional on purpose: see {@link IdempotentCreate}. A repeat with
+     * the same clientId returns the existing reminder with 200 instead of 201.
+     */
     public ResponseEntity<ApiResponse<CreateReminderResponseDto>> createReminder(CreateReminderRequestDto requestDto) {
         UserModel user = authRepository.findById(requestDto.getUserId())
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        String clientId = IdempotentCreate.normalize(requestDto.getClientId());
 
+        IdempotentCreate.Result<ReminderModel> result = IdempotentCreate.createOnce(
+                clientId,
+                () -> reminderRepository.findByUser_IdAndClientId(user.getId(), clientId),
+                () -> reminderRepository.save(newReminder(requestDto, user, clientId)));
+
+        if (!result.created()) {
+            return ResponseEntity.ok(new ApiResponse<>(true, "Reminder already created",
+                    new CreateReminderResponseDto(result.entity().getReminderId())));
+        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>(true, "Reminder created successfully",
+                        new CreateReminderResponseDto(result.entity().getReminderId())));
+    }
+
+    private static ReminderModel newReminder(CreateReminderRequestDto requestDto, UserModel user, String clientId) {
         ReminderModel reminder = new ReminderModel();
         reminder.setTitle(requestDto.getTitle());
         reminder.setRemindAt(requestDto.getRemindAt());
@@ -59,10 +79,8 @@ public class ReminderService {
         reminder.setCreatedAt(LocalDateTime.now().toString());
         reminder.setUpdatedAt(LocalDateTime.now().toString());
         reminder.setUser(user);
-
-        ReminderModel saved = reminderRepository.save(reminder);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>(true, "Reminder created successfully", new CreateReminderResponseDto(saved.getReminderId())));
+        reminder.setClientId(clientId);
+        return reminder;
     }
 
     public ResponseEntity<ApiResponse<List<ReminderModel>>> getAllReminders(long userId) {

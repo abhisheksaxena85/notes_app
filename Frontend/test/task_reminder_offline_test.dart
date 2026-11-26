@@ -14,6 +14,7 @@ import 'package:notes_app/data/network/dto/response/reminder/reminder_item.dart'
 import 'package:notes_app/data/network/dto/response/task/task_item.dart';
 import 'package:notes_app/data/repository/reminder/reminder_repo.dart';
 import 'package:notes_app/data/repository/task/task_repo.dart';
+import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
 import 'package:notes_app/views/screens/home/widgets/task_item_card.dart';
 
@@ -49,18 +50,36 @@ void main() {
   late RecordingApiClient client;
   late TaskRepo taskRepo;
   late ReminderRepo reminderRepo;
+  late OfflineSyncService syncService;
   const userId = 42;
 
   setUp(() {
     database = AppDatabase.forTesting(NativeDatabase.memory());
     client = RecordingApiClient();
-    taskRepo = TaskRepo(client: client, database: database);
-    reminderRepo = ReminderRepo(client: client, database: database);
+    syncService = OfflineSyncService(client: client, database: database);
+    taskRepo = TaskRepo(
+      client: client,
+      database: database,
+      syncService: syncService,
+    );
+    reminderRepo = ReminderRepo(
+      client: client,
+      database: database,
+      syncService: syncService,
+    );
   });
 
   tearDown(() async {
+    await syncService.dispose();
     await database.close();
   });
+
+  /// Turns syncing on only after the test has made its local changes, so the
+  /// upload sees the final state.
+  Future<void> syncNow() {
+    syncService.setUserId(userId);
+    return syncService.requestSync();
+  }
 
   Future<int> queueTask() => taskRepo.enqueueTask(
         CreateTaskRequestDto(userId: userId, title: 'Offline task'),
@@ -81,7 +100,7 @@ void main() {
       final localId = await queueTask();
 
       await taskRepo.deleteTask(userId, -localId);
-      await taskRepo.syncQueuedTasks(userId);
+      await syncNow();
 
       expect(await database.getPendingTasks(userId), isEmpty);
       expect(client.createdTasks, isEmpty);
@@ -92,7 +111,7 @@ void main() {
       final localId = await queueTask();
 
       await taskRepo.toggleTaskStatus(userId, -localId, true);
-      await taskRepo.syncQueuedTasks(userId);
+      await syncNow();
 
       expect(client.createdTasks, hasLength(1));
       expect(client.createdTasks.single.status, 'COMPLETED');
@@ -104,7 +123,7 @@ void main() {
       final localId = await queueReminder();
 
       await reminderRepo.deleteReminder(userId, -localId);
-      await reminderRepo.syncQueuedReminders(userId);
+      await syncNow();
 
       expect(await database.getPendingReminders(userId), isEmpty);
       expect(client.createdReminders, isEmpty);
@@ -114,7 +133,7 @@ void main() {
       final localId = await queueReminder();
 
       await reminderRepo.updateReminderStatus(userId, -localId, 'REJECTED');
-      await reminderRepo.syncQueuedReminders(userId);
+      await syncNow();
 
       expect(client.createdReminders.single.status, 'REJECTED');
     });
@@ -175,7 +194,7 @@ void main() {
       final localId = await queueTask();
 
       await taskRepo.setTaskStatus(userId, -localId, 'REJECTED');
-      await taskRepo.syncQueuedTasks(userId);
+      await syncNow();
 
       final cached = await taskRepo.getCachedTasks(userId);
       expect(cached.single.status, 'REJECTED');

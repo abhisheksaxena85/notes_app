@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:notes_app/data/local/database/app_database.dart';
@@ -6,12 +7,19 @@ import 'package:notes_app/data/network/api/api_client.dart';
 import 'package:notes_app/data/network/dto/request/reminder/create_reminder_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/reminder/update_reminder_request_dto.dart';
 import 'package:notes_app/data/network/dto/response/reminder/reminder_item.dart';
+import 'package:notes_app/data/sync/offline_sync_service.dart';
+import 'package:uuid/uuid.dart';
 
 class ReminderRepo {
   final ApiClient client;
   final AppDatabase database;
+  final OfflineSyncService syncService;
 
-  ReminderRepo({required this.client, required this.database});
+  ReminderRepo({
+    required this.client,
+    required this.database,
+    required this.syncService,
+  });
 
   Future<List<ReminderItem>> getCachedReminders(int userId) async {
     final cached = await database.getRemindersForUser(userId);
@@ -54,14 +62,17 @@ class ReminderRepo {
     }
   }
 
-  Future<int> enqueueReminder(CreateReminderRequestDto requestDto) {
+  /// Saves the reminder locally, queues its upload (tagged with a new client id
+  /// so a retried upload can't create it twice) and asks for a sync.
+  Future<int> enqueueReminder(CreateReminderRequestDto requestDto) async {
     final userId = requestDto.userId;
     final title = requestDto.title;
     if (title.trim().isEmpty) {
       throw ArgumentError('A reminder requires a title.');
     }
 
-    return database.enqueueReminder(
+    final clientId = const Uuid().v4();
+    final localId = await database.enqueueReminder(
       userId: userId,
       title: title,
       remindAt: requestDto.remindAt,
@@ -70,52 +81,11 @@ class ReminderRepo {
       category: requestDto.category ?? 'General',
       status: requestDto.status ?? 'PENDING',
       repeatInterval: requestDto.repeatInterval ?? 'NONE',
-      payload: jsonEncode(requestDto.toJson()),
+      clientId: clientId,
+      payload: jsonEncode({...requestDto.toJson(), 'clientId': clientId}),
     );
-  }
-
-  Future<void> syncQueuedReminders(int userId) async {
-    final pendingList = await database.getPendingReminders(userId);
-    for (final pending in pendingList) {
-      try {
-        final decoded = jsonDecode(pending.payload);
-        if (decoded is! Map) continue;
-
-        final request = CreateReminderRequestDto.fromJson(
-          Map<String, dynamic>.from(decoded),
-        );
-
-        final response = await client.createReminder(request);
-        if (response.statusCode == null ||
-            response.statusCode! < 200 ||
-            response.statusCode! >= 300) {
-          continue;
-        }
-
-        final body = response.data;
-        int? serverId;
-        if (body is Map && body['data'] is Map) {
-          final data = body['data'] as Map;
-          final rawId = data['reminderId'] ?? data['id'];
-          if (rawId is int) {
-            serverId = rawId;
-          } else if (rawId is String) {
-            serverId = int.tryParse(rawId);
-          }
-        }
-
-        if (serverId != null) {
-          await database.completePendingReminder(
-            queueId: pending.id,
-            localReminderId: pending.localReminderId,
-            serverId: serverId,
-          );
-        }
-      } catch (_) {
-        // Network or server error; keep in queue for next sync
-        break;
-      }
-    }
+    unawaited(syncService.requestSync());
+    return localId;
   }
 
   Future<void> updateReminderStatus(int userId, int reminderId, String status) async {

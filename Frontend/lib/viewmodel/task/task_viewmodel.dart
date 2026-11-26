@@ -76,7 +76,6 @@ class TaskViewmodel extends AsyncNotifier<TaskState> {
     );
 
     await _taskRepo.enqueueTask(request);
-    unawaited(_taskRepo.syncQueuedTasks(userId));
   }
 
   Future<void> toggleTaskStatus(int taskId, bool isCompleted) async {

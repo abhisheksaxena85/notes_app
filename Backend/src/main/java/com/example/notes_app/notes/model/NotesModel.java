@@ -6,7 +6,8 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "notes")
+@Table(name = "notes", uniqueConstraints = @UniqueConstraint(
+        name = "uk_notes_user_client", columnNames = {"user_id", "client_id"}))
 public class NotesModel {
     @Id
     @GeneratedValue(strategy =  GenerationType.IDENTITY)
@@ -33,6 +34,10 @@ public class NotesModel {
 
     @Column(name = "updatedAt")
     String updatedAt;
+
+    /** FE-03: id the app generated when it queued the create; unique per user. Null for old clients. */
+    @Column(name = "client_id", length = 36)
+    String clientId;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

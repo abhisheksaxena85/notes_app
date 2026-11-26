@@ -17,6 +17,7 @@ import 'package:notes_app/views/screens/home/widgets/notes_floating_action_butto
 import 'package:notes_app/views/screens/home/widgets/notes_header_widget.dart';
 import 'package:notes_app/views/screens/home/widgets/notes_loading_widget.dart';
 import 'package:notes_app/views/screens/home/widgets/reminder_item_card.dart';
+import 'package:notes_app/views/screens/home/widgets/sync_failures_banner.dart';
 import 'package:notes_app/views/screens/home/widgets/task_item_card.dart';
 import 'package:notes_app/views/screens/note_details/note_details_screen.dart';
 
@@ -264,6 +265,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             SizedBox(height: 14.h),
+
+            // Queued changes the server refused (retry / discard)
+            const SyncFailuresBanner(),
 
             // Segmented Filter Chips Row: All, Notes, Tasks, Reminders
             Padding(

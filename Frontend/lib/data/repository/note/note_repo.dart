@@ -1,5 +1,5 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -9,12 +9,12 @@ import 'package:notes_app/data/local/database/note_database_mapper.dart';
 import 'package:notes_app/data/network/api/api_client.dart';
 import 'package:notes_app/data/network/dto/request/note/create_note_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/note/update_note_request_dto.dart';
-import 'package:notes_app/data/network/dto/response/note/create_note_response_dto.dart';
 import 'package:notes_app/data/network/dto/response/note/delete_note_response_dto.dart';
 import 'package:notes_app/data/network/dto/response/note/note_details_response_dto.dart';
 import 'package:notes_app/data/network/dto/response/note/update_note_response_dto.dart';
-import 'package:notes_app/data/sync/sync_error.dart';
+import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/note_data_transfer_service.dart';
+import 'package:uuid/uuid.dart';
 
 class ImportResult {
   final int totalProcessed;
@@ -59,10 +59,28 @@ class ImportResult {
 class NoteRepo {
   final ApiClient client;
   final AppDatabase database;
+  final OfflineSyncService syncService;
 
-  NoteRepo({required this.client, required this.database});
+  NoteRepo({
+    required this.client,
+    required this.database,
+    required this.syncService,
+  });
 
-  Future<int> enqueueNote(CreateNoteRequestDto requestDto) {
+  /// Saves the note locally, queues its upload and asks for a sync.
+  Future<int> enqueueNote(CreateNoteRequestDto requestDto) async {
+    final localId = await _queueNote(requestDto);
+    unawaited(syncService.requestSync());
+    return localId;
+  }
+
+  /// Stores the note and its queued create, tagged with a new client id so a
+  /// retried upload can't create it twice on the server.
+  Future<int> _queueNote(
+    CreateNoteRequestDto requestDto, {
+    String? createdAt,
+    String? updatedAt,
+  }) {
     final userId = requestDto.userId;
     final title = requestDto.title;
     final content = requestDto.content;
@@ -70,6 +88,7 @@ class NoteRepo {
       throw ArgumentError('A note needs a user ID, title, and content.');
     }
 
+    final clientId = const Uuid().v4();
     return database.enqueueNote(
       userId: userId,
       title: title,
@@ -77,49 +96,10 @@ class NoteRepo {
       category: requestDto.category ?? 'General',
       pinned: requestDto.pinned ?? false,
       tags: requestDto.tags,
-      payload: jsonEncode(requestDto.toJson()),
-    );
-  }
-
-  /// Uploads queued notes in order. A note the server refuses (4xx or
-  /// `success:false`) is skipped so it cannot block the notes queued after it;
-  /// a transient failure (offline, timeout, 5xx) stops the loop and is rethrown.
-  Future<void> syncQueuedNotes(int userId) async {
-    final pendingNotes = await database.getPendingNotes(userId);
-    for (final pendingNote in pendingNotes) {
-      try {
-        await _uploadQueuedNote(pendingNote);
-      } catch (error) {
-        if (classifySyncError(error) == SyncErrorKind.transient) rethrow;
-        log('Queued note ${pendingNote.id} was rejected: ${describeSyncError(error)}');
-      }
-    }
-  }
-
-  Future<void> _uploadQueuedNote(PendingNote pendingNote) async {
-    final decodedPayload = jsonDecode(pendingNote.payload);
-    if (decodedPayload is! Map) {
-      throw const FormatException('Queued note payload must be an object.');
-    }
-
-    final request = CreateNoteRequestDto.fromJson(
-      Map<String, dynamic>.from(decodedPayload),
-    );
-    final response = await client.createNote(request);
-    ensureSuccessStatus(response);
-
-    final result = CreateNoteResponseDto.fromJson(response.data);
-    final serverId = result.data?.noteId;
-    if (result.success != true || serverId == null) {
-      throw SyncRejectedException(
-        result.message ?? 'The server did not create the note.',
-      );
-    }
-
-    await database.completePendingNote(
-      queueId: pendingNote.id,
-      localNoteId: pendingNote.localNoteId,
-      serverId: serverId,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      clientId: clientId,
+      payload: jsonEncode({...requestDto.toJson(), 'clientId': clientId}),
     );
   }
 
@@ -340,25 +320,17 @@ class NoteRepo {
         }
 
         // 3. New Note -> Enqueue in local DB with isPending: true
-        final createRequest = CreateNoteRequestDto(
-          userId: userId,
-          title: normalizedTitle,
-          content: content,
-          category: item.category ?? 'General',
-          pinned: item.pinned,
-          tags: item.tags,
-        );
-
-        await database.enqueueNote(
-          userId: userId,
-          title: normalizedTitle,
-          content: content,
-          category: item.category ?? 'General',
-          pinned: item.pinned,
-          tags: item.tags,
+        await _queueNote(
+          CreateNoteRequestDto(
+            userId: userId,
+            title: normalizedTitle,
+            content: content,
+            category: item.category ?? 'General',
+            pinned: item.pinned,
+            tags: item.tags,
+          ),
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
-          payload: jsonEncode(createRequest.toJson()),
         );
         importedCount++;
       } catch (e) {
@@ -366,16 +338,12 @@ class NoteRepo {
       }
     }
 
-    // 4. Sync newly imported notes to server via API
+    // 4. Upload the new notes through the sync service. Anything it could not
+    // send stays safely queued in the local database.
     bool syncedToServer = false;
     if (importedCount > 0) {
-      try {
-        await syncQueuedNotes(userId);
-        syncedToServer = true;
-      } catch (e) {
-        // Network unavailable or server error; notes remain safely queued in Drift DB
-        syncedToServer = false;
-      }
+      await syncService.requestSync();
+      syncedToServer = (await database.getPendingNotes(userId)).isEmpty;
     }
 
     return ImportResult(

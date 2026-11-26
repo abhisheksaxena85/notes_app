@@ -7,6 +7,7 @@ import com.example.notes_app.reminders.dto.request.UpdateReminderRequestDto;
 import com.example.notes_app.reminders.dto.response.CreateReminderResponseDto;
 import com.example.notes_app.reminders.model.ReminderModel;
 import com.example.notes_app.reminders.service.ReminderService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,7 @@ public class ReminderController {
     private ReminderService reminderService;
 
     @PostMapping("/create-reminder")
-    public ResponseEntity<ApiResponse<CreateReminderResponseDto>> createReminder(@RequestBody CreateReminderRequestDto requestDto) {
+    public ResponseEntity<ApiResponse<CreateReminderResponseDto>> createReminder(@Valid @RequestBody CreateReminderRequestDto requestDto) {
         return reminderService.createReminder(requestDto);
     }
 

@@ -8,6 +8,9 @@ class CreateReminderRequestDto {
   final String? status;
   final String? repeatInterval;
 
+  /// FE-03: idempotency key, so a retried create can't make a duplicate.
+  final String? clientId;
+
   CreateReminderRequestDto({
     required this.userId,
     required this.title,
@@ -17,6 +20,7 @@ class CreateReminderRequestDto {
     this.category,
     this.status,
     this.repeatInterval,
+    this.clientId,
   });
 
   Map<String, dynamic> toJson() {
@@ -29,6 +33,7 @@ class CreateReminderRequestDto {
       if (category != null) 'category': category,
       if (status != null) 'status': status,
       if (repeatInterval != null) 'repeatInterval': repeatInterval,
+      if (clientId != null) 'clientId': clientId,
     };
   }
 
@@ -42,6 +47,7 @@ class CreateReminderRequestDto {
       category: json['category'] as String?,
       status: json['status'] as String?,
       repeatInterval: json['repeatInterval'] as String?,
+      clientId: json['clientId'] as String?,
     );
   }
 }

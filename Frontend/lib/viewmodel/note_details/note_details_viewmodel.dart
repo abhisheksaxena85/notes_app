@@ -9,7 +9,6 @@ import 'package:notes_app/data/local/shared_preference/preference_keys.dart';
 import 'package:notes_app/data/network/dto/request/note/create_note_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/note/update_note_request_dto.dart';
 import 'package:notes_app/data/repository/note/note_repo.dart';
-import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/viewmodel/note_details/note_details_state.dart';
@@ -163,7 +162,6 @@ class NoteDetailsViewmodel extends AsyncNotifier<NoteDetailsState> {
             tags: tags,
           ),
         );
-        unawaited(getIt<OfflineSyncService>().syncPendingNotes());
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             successSnackBar("Note saved. Syncing in the background."),

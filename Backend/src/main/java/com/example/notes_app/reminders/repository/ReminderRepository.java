@@ -7,9 +7,12 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ReminderRepository extends JpaRepository<ReminderModel, Long> {
+    Optional<ReminderModel> findByUser_IdAndClientId(long userId, String clientId);
+
     @Query("SELECT r FROM ReminderModel r WHERE r.user.id = :userId ORDER BY r.status ASC, r.remindAt ASC")
     List<ReminderModel> findByUserId(@Param("userId") long userId);
 

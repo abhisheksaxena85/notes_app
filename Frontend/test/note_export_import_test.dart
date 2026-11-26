@@ -8,6 +8,7 @@ import 'package:notes_app/data/network/dio_client/dio_client.dart';
 import 'package:notes_app/data/network/dto/request/note/create_note_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/note/update_note_request_dto.dart';
 import 'package:notes_app/data/repository/note/note_repo.dart';
+import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/note_data_transfer_service.dart';
 
 class FakeExportImportApiClient extends ApiClient {
@@ -225,14 +226,22 @@ Simple Note,Just plain content,General,false,,,
     late AppDatabase database;
     late FakeExportImportApiClient client;
     late NoteRepo repository;
+    late OfflineSyncService syncService;
 
     setUp(() {
       database = AppDatabase.forTesting(NativeDatabase.memory());
       client = FakeExportImportApiClient();
-      repository = NoteRepo(client: client, database: database);
+      syncService = OfflineSyncService(client: client, database: database)
+        ..setUserId(42);
+      repository = NoteRepo(
+        client: client,
+        database: database,
+        syncService: syncService,
+      );
     });
 
     tearDown(() async {
+      await syncService.dispose();
       await database.close();
     });
 
