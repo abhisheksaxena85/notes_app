@@ -176,6 +176,64 @@ class ReminderRepo {
     unawaited(syncService.requestSync());
   }
 
+  /// REM-05: the user answered [occurrence] of a repeating reminder ("Done" /
+  /// "Not done", [outcome] COMPLETED or MISSED). Locally the reminder moves to
+  /// its next occurrence, stays PENDING and records the answer; the server
+  /// gets `complete-occurrence`, which does the same and is idempotent by
+  /// occurrence. A one-off reminder just takes [outcome] as its status.
+  Future<void> completeOccurrence(
+    int userId,
+    CachedReminder row,
+    String occurrence,
+    String outcome,
+  ) async {
+    final itemId = itemIdOf(row);
+    final at = parseWallClock(occurrence);
+    final next = at == null
+        ? null
+        : nextOccurrence(
+            start: parseWallClock(row.startAt) ?? at,
+            interval: row.repeatInterval,
+            after: at,
+          );
+    if (next == null) {
+      await updateReminderStatus(userId, itemId, outcome);
+      return;
+    }
+    final remindAt = formatWallClock(next);
+    final values = {
+      'remindAt': remindAt,
+      'dueDate': formatDueDate(next),
+      'dueTime': formatDueTime(next),
+      'startAt': row.startAt ?? row.remindAt,
+      'lastOutcome': outcome,
+      'lastOutcomeAt': formatWallClock(at!),
+    };
+    await database.recordItemChange(
+      entity: SyncEntity.reminder,
+      userId: userId,
+      itemId: itemId,
+      op: 'occurrence',
+      changes: {'occurrence': formatWallClock(at), 'outcome': outcome},
+      // A create that was never sent just carries the new values.
+      createChanges: values,
+      applyToRow: (localId) => _writeRow(
+        localId,
+        CachedRemindersCompanion(
+          remindAt: Value(remindAt),
+          dueDate: Value(values['dueDate']),
+          dueTime: Value(values['dueTime']),
+          startAt: Value(values['startAt']),
+          status: const Value('PENDING'),
+          lastOutcome: Value(outcome),
+          lastOutcomeAt: Value(values['lastOutcomeAt']),
+          snoozedUntil: const Value(null),
+        ),
+      ),
+    );
+    unawaited(syncService.requestSync());
+  }
+
   /// REM-05 catch-up: a repeating reminder whose occurrence passed without an
   /// answer (the app was closed) moves to [next], keeping its anchor, and
   /// records the missed occurrence. Queued like any edit.

@@ -152,6 +152,11 @@ class SyncQueueProcessor {
           serverId,
           status: payload['status'] as String?,
         ),
+      (SyncEntity.reminder, 'occurrence') => await client.completeReminderOccurrence(
+          serverId,
+          occurrence: payload['occurrence'] as String,
+          outcome: payload['outcome'] as String,
+        ),
       (SyncEntity.reminder, 'delete') => await client.deleteReminder(serverId),
       _ => throw FormatException('Unknown change ${entity.name} ${mutation.op}'),
     };

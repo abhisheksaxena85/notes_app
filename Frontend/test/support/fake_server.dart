@@ -199,6 +199,24 @@ class FakeServer extends ApiClient {
   Future<Response> deleteReminder(int reminderId) =>
       _remove('deleteReminder', reminders, reminderId);
 
+  /// Like the backend: a one-off takes the outcome as status; a repeating
+  /// reminder only records the answer once per occurrence (the date math is
+  /// the backend's, so here it just records what was answered).
+  @override
+  Future<Response> completeReminderOccurrence(
+    int reminderId, {
+    required String occurrence,
+    required String outcome,
+  }) {
+    final row = reminders[reminderId];
+    final repeating = row != null && (row['repeatInterval'] ?? 'NONE') != 'NONE';
+    return _change('completeReminderOccurrence', reminders, reminderId, {
+      if (!repeating) 'status': outcome,
+      'lastOutcome': outcome,
+      'lastOutcomeAt': occurrence,
+    });
+  }
+
   @override
   Future<Response> getUserDetails(ProfileRequestDto requestDto) => _handle(
         'getUserDetails',

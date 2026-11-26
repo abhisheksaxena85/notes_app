@@ -184,7 +184,7 @@ class PendingMutations extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get userId => integer()();
   TextColumn get entity => text()(); // note | task | reminder
-  TextColumn get op => text()(); // update | status | delete
+  TextColumn get op => text()(); // update | status | delete | occurrence (reminders)
   IntColumn get localId => integer().nullable()();
   IntColumn get serverId => integer().nullable()();
   TextColumn get clientId => text().nullable()();
@@ -206,7 +206,17 @@ class PendingMutations extends Table {
   PendingMutations,
 ])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(driftDatabase(name: 'notes_app'));
+  /// The app database. Shared across isolates (REM-04): the notification
+  /// action handler can run in a background isolate while the app is alive,
+  /// and both then talk to one database isolate, so writes don't fight over
+  /// the file and the app's watch streams see the background's changes.
+  AppDatabase()
+    : super(
+        driftDatabase(
+          name: 'notes_app',
+          native: const DriftNativeOptions(shareAcrossIsolates: true),
+        ),
+      );
 
   AppDatabase.forTesting(super.executor);
 
@@ -719,6 +729,11 @@ class AppDatabase extends _$AppDatabase {
   /// exist on the server with the old values), the change is also queued as a
   /// mutation that replays after the create. Otherwise it is queued as [op].
   ///
+  /// [createChanges] is what to merge into a queued create when it differs
+  /// from the mutation payload (REM-05: an answered occurrence is sent as
+  /// `{occurrence, outcome}` but a never-sent create just needs the new
+  /// `remindAt`). Defaults to [changes].
+  ///
   /// Throws [StateError] if the item doesn't exist (or is deleted).
   Future<void> recordItemChange({
     required SyncEntity entity,
@@ -726,6 +741,7 @@ class AppDatabase extends _$AppDatabase {
     required int itemId,
     required String op,
     required Map<String, dynamic> changes,
+    Map<String, dynamic>? createChanges,
     required Future<void> Function(int localId) applyToRow,
   }) {
     return transaction(() async {
@@ -741,7 +757,7 @@ class AppDatabase extends _$AppDatabase {
         final decoded = jsonDecode(create.payload);
         final payload = {
           if (decoded is Map) ...Map<String, dynamic>.from(decoded),
-          ...changes,
+          ...(createChanges ?? changes),
         };
         // The edit may fix why the server refused it, so it is retried.
         await customUpdate(

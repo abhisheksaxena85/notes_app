@@ -189,6 +189,19 @@ class ApiClient {
     );
   }
 
+  /// REM-07: "Done" / "Not done" for one occurrence ([outcome] COMPLETED or
+  /// MISSED). Idempotent by [occurrence] on the server.
+  Future<Response> completeReminderOccurrence(
+    int reminderId, {
+    required String occurrence,
+    required String outcome,
+  }) async {
+    return _dio.put(
+      ApiEndpoints.COMPLETE_REMINDER_OCCURRENCE,
+      data: {'reminderId': reminderId, 'occurrence': occurrence, 'outcome': outcome},
+    );
+  }
+
   Future<Response> deleteReminder(int reminderId) async {
     return _dio.delete(
       ApiEndpoints.DELETE_REMINDER,

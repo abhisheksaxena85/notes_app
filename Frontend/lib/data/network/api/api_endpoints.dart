@@ -33,4 +33,5 @@ class ApiEndpoints {
   static String UPDATE_REMINDER = "/reminders/update-reminder";
   static String UPDATE_REMINDER_STATUS = "/reminders/update-status";
   static String DELETE_REMINDER = "/reminders/delete-reminder";
+  static String COMPLETE_REMINDER_OCCURRENCE = "/reminders/complete-occurrence";
 }

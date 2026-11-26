@@ -2,18 +2,22 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:notes_app/data/local/shared_preference/preference.dart';
 import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/connectivity_service.dart';
+import 'package:notes_app/utils/services/notification_background.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
+import 'package:notes_app/utils/services/reminder_action_handler.dart';
 import 'package:notes_app/utils/services/reminder_scheduler.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
 import 'package:notes_app/views/screens/splash/splash_screen.dart';
 import 'package:notes_app/views/widgets/connectivity_snackbar_listener.dart';
+import 'package:notes_app/views/widgets/reminder_answer_sheet.dart';
 
 import 'package:notes_app/data/di/dependency_injection.dart';
 
@@ -36,12 +40,21 @@ Future<void> initialize() async {
 
   // REM-01: time zones, channels and the notification callbacks. Never
   // blocks startup: without notifications the app still works.
+  final notifications = getIt<NotificationService>();
+  void onResponse(NotificationResponse response) => routeNotificationResponse(
+    response,
+    handler: () => getIt<ReminderActionHandler>(),
+    messenger: scaffoldMessengerKey,
+  );
   try {
-    await getIt<NotificationService>().init(
-      onForegroundResponse: (response) =>
-          log('Notification response ${response.actionId} (app running)'),
+    await notifications.init(
+      onForegroundResponse: onResponse,
       onBackgroundResponse: notificationTapBackground,
     );
+    // REM-04: the app was started by tapping a notification (cold start).
+    final launch = await notifications.launchDetails();
+    final response = launch?.notificationResponse;
+    if (launch?.didNotificationLaunchApp == true && response != null) onResponse(response);
   } catch (error, stackTrace) {
     log('Notifications are unavailable: $error', stackTrace: stackTrace);
   }

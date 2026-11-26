@@ -228,7 +228,8 @@ class NotificationService {
   /// creates the Android channels and registers the tap/action callbacks.
   ///
   /// [onBackgroundResponse] must be a top-level function annotated with
-  /// `@pragma('vm:entry-point')` (see `notificationTapBackground`).
+  /// `@pragma('vm:entry-point')` (see `notificationTapBackground` in
+  /// notification_background.dart).
   Future<void> init({
     required DidReceiveNotificationResponseCallback onForegroundResponse,
     DidReceiveBackgroundNotificationResponseCallback? onBackgroundResponse,
@@ -468,12 +469,4 @@ class NotificationService {
     presentList: true,
     presentSound: true,
   );
-}
-
-/// Runs when the user taps a notification action while the app isn't
-/// running (or on Android, for every action that doesn't open the app). It
-/// runs in a separate background isolate. REM-04 handles the answer here.
-@pragma('vm:entry-point')
-void notificationTapBackground(NotificationResponse response) {
-  log('Notification action ${response.actionId} received in the background');
 }

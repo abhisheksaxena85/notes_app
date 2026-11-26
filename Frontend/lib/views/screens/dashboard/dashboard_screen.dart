@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
+import 'package:notes_app/utils/services/reminder_action_handler.dart';
 import 'package:notes_app/views/screens/calendar/calendar_screen.dart';
 import 'package:notes_app/views/screens/home/home_screen.dart';
 import 'package:notes_app/views/screens/profile/profile_screen.dart';
+import 'package:notes_app/views/widgets/reminder_answer_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -16,6 +19,36 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
+  bool _prompting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    reminderPromptRequests.addListener(_showReminderPrompt);
+    // A notification tap that launched the app arrived before this screen.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showReminderPrompt());
+  }
+
+  @override
+  void dispose() {
+    reminderPromptRequests.removeListener(_showReminderPrompt);
+    super.dispose();
+  }
+
+  /// REM-04: a tapped reminder notification opens the Workspace and asks
+  /// "Did you complete it?".
+  Future<void> _showReminderPrompt() async {
+    final payload = reminderPromptRequests.value;
+    if (payload == null || _prompting || !mounted) return;
+    reminderPromptRequests.value = null;
+    _prompting = true;
+    try {
+      setState(() => _currentIndex = 0);
+      await promptForReminder(context, getIt<ReminderActionHandler>(), payload);
+    } finally {
+      _prompting = false;
+    }
+  }
 
   final List<Widget> _pages = const [
     HomeScreen(),
