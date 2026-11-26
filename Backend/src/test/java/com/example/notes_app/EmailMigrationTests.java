@@ -109,6 +109,6 @@ public class EmailMigrationTests {
         String url = newDatabaseUrl();
         var result = flyway(url).migrate();
         assertTrue(result.success);
-        assertEquals("2", result.targetSchemaVersion);
+        assertEquals("3", result.targetSchemaVersion);
     }
 }

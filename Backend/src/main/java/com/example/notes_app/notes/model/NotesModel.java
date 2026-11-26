@@ -12,10 +12,11 @@ public class NotesModel {
     @GeneratedValue(strategy =  GenerationType.IDENTITY)
     long noteId;
 
-    @Column(name = "title")
+    // Widened on existing databases by Flyway V3 (was VARCHAR(255)).
+    @Column(name = "title", length = NoteLimits.TITLE_MAX)
     String title;
 
-    @Column(name = "content")
+    @Column(name = "content", columnDefinition = "LONGTEXT")
     String content;
 
     @Column(name = "category")

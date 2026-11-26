@@ -14,7 +14,7 @@ class OfflineSyncService {
 
   StreamSubscription<InternetConnectionStatus>? _subscription;
   int? _userId;
-  bool _isSyncing = false;
+  Future<void>? _running;
   bool _syncAgain = false;
 
   OfflineSyncService({
@@ -39,32 +39,51 @@ class OfflineSyncService {
     unawaited(syncPendingAll());
   }
 
-  Future<void> syncPendingAll() async {
-    if (_isSyncing) {
+  /// Runs one sync pass. If a pass is already running, it is asked to go
+  /// round once more and the returned future completes when it finishes.
+  Future<void> syncPendingAll() {
+    final running = _running;
+    if (running != null) {
       _syncAgain = true;
-      return;
+      return running;
     }
-    if (_userId == null || _userId == 0) return;
+    if (_userId == null || _userId == 0) return Future.value();
 
-    _isSyncing = true;
+    final run = _runSyncLoop();
+    _running = run;
+    return run;
+  }
+
+  Future<void> _runSyncLoop() async {
     try {
       do {
         _syncAgain = false;
         final userId = _userId;
         if (userId != null && userId != 0) {
-          await noteRepo.syncQueuedNotes(userId);
+          // Each entity type syncs on its own, so a failure in one queue does
+          // not stop the others.
+          await _syncEntity('notes', () => noteRepo.syncQueuedNotes(userId));
           if (taskRepo != null) {
-            await taskRepo!.syncQueuedTasks(userId);
+            await _syncEntity('tasks', () => taskRepo!.syncQueuedTasks(userId));
           }
           if (reminderRepo != null) {
-            await reminderRepo!.syncQueuedReminders(userId);
+            await _syncEntity(
+              'reminders',
+              () => reminderRepo!.syncQueuedReminders(userId),
+            );
           }
         }
       } while (_syncAgain);
-    } catch (error, stackTrace) {
-      log('Failed to sync queued items: $error', stackTrace: stackTrace);
     } finally {
-      _isSyncing = false;
+      _running = null;
+    }
+  }
+
+  Future<void> _syncEntity(String name, Future<void> Function() sync) async {
+    try {
+      await sync();
+    } catch (error, stackTrace) {
+      log('Failed to sync queued $name: $error', stackTrace: stackTrace);
     }
   }
 

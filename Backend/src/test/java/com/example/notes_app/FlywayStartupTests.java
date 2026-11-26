@@ -26,7 +26,7 @@ public class FlywayStartupTests {
         String version = jdbcTemplate.queryForObject(
                 "SELECT \"version\" FROM \"flyway_schema_history\" WHERE \"success\" = TRUE ORDER BY \"installed_rank\" DESC LIMIT 1",
                 String.class);
-        assertEquals("2", version);
+        assertEquals("3", version);
 
         // Fresh database: V2 is a no-op and Hibernate creates the table with the named unique key.
         Integer emailConstraints = jdbcTemplate.queryForObject(

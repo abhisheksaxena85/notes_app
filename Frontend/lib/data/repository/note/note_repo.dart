@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -12,6 +13,7 @@ import 'package:notes_app/data/network/dto/response/note/create_note_response_dt
 import 'package:notes_app/data/network/dto/response/note/delete_note_response_dto.dart';
 import 'package:notes_app/data/network/dto/response/note/note_details_response_dto.dart';
 import 'package:notes_app/data/network/dto/response/note/update_note_response_dto.dart';
+import 'package:notes_app/data/sync/sync_error.dart';
 import 'package:notes_app/utils/services/note_data_transfer_service.dart';
 
 class ImportResult {
@@ -79,38 +81,46 @@ class NoteRepo {
     );
   }
 
+  /// Uploads queued notes in order. A note the server refuses (4xx or
+  /// `success:false`) is skipped so it cannot block the notes queued after it;
+  /// a transient failure (offline, timeout, 5xx) stops the loop and is rethrown.
   Future<void> syncQueuedNotes(int userId) async {
     final pendingNotes = await database.getPendingNotes(userId);
     for (final pendingNote in pendingNotes) {
-      final decodedPayload = jsonDecode(pendingNote.payload);
-      if (decodedPayload is! Map) {
-        throw const FormatException('Queued note payload must be an object.');
+      try {
+        await _uploadQueuedNote(pendingNote);
+      } catch (error) {
+        if (classifySyncError(error) == SyncErrorKind.transient) rethrow;
+        log('Queued note ${pendingNote.id} was rejected: ${describeSyncError(error)}');
       }
+    }
+  }
 
-      final request = CreateNoteRequestDto.fromJson(
-        Map<String, dynamic>.from(decodedPayload),
-      );
-      final response = await client.createNote(request);
-      if (response.statusCode == null ||
-          response.statusCode! < 200 ||
-          response.statusCode! >= 300) {
-        throw HttpException((response.statusCode ?? 500).toString());
-      }
+  Future<void> _uploadQueuedNote(PendingNote pendingNote) async {
+    final decodedPayload = jsonDecode(pendingNote.payload);
+    if (decodedPayload is! Map) {
+      throw const FormatException('Queued note payload must be an object.');
+    }
 
-      final result = CreateNoteResponseDto.fromJson(response.data);
-      final serverId = result.data?.noteId;
-      if (result.success != true || serverId == null) {
-        throw StateError(
-          result.message ?? 'The server did not create the note.',
-        );
-      }
+    final request = CreateNoteRequestDto.fromJson(
+      Map<String, dynamic>.from(decodedPayload),
+    );
+    final response = await client.createNote(request);
+    ensureSuccessStatus(response);
 
-      await database.completePendingNote(
-        queueId: pendingNote.id,
-        localNoteId: pendingNote.localNoteId,
-        serverId: serverId,
+    final result = CreateNoteResponseDto.fromJson(response.data);
+    final serverId = result.data?.noteId;
+    if (result.success != true || serverId == null) {
+      throw SyncRejectedException(
+        result.message ?? 'The server did not create the note.',
       );
     }
+
+    await database.completePendingNote(
+      queueId: pendingNote.id,
+      localNoteId: pendingNote.localNoteId,
+      serverId: serverId,
+    );
   }
 
   Future<UpdateNoteResponseDto> updateNote(

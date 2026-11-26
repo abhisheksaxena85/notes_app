@@ -11,6 +11,7 @@ import com.example.notes_app.notes.dto.response.ExportNotesResponseDto;
 import com.example.notes_app.notes.dto.response.UpdateNoteResponseDto;
 import com.example.notes_app.notes.model.NotesModel;
 import com.example.notes_app.notes.service.NotesService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,12 +36,12 @@ public class NotesController {
     }
 
     @PostMapping("/create-note")
-    public ResponseEntity<ApiResponse<CreateNoteResponseDto>> createNote(@RequestBody CreateNoteRequestDto requestDto){
+    public ResponseEntity<ApiResponse<CreateNoteResponseDto>> createNote(@Valid @RequestBody CreateNoteRequestDto requestDto){
         return notesService.createNote(requestDto);
     }
 
     @PutMapping("/update-note")
-    public ResponseEntity<ApiResponse<UpdateNoteResponseDto>> updateNote(@RequestBody UpdateNoteRequestDto requestDto){
+    public ResponseEntity<ApiResponse<UpdateNoteResponseDto>> updateNote(@Valid @RequestBody UpdateNoteRequestDto requestDto){
         return notesService.updateNote(requestDto);
     }
 
