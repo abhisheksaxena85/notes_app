@@ -1,3 +1,5 @@
+// SCREAMING_CASE is this project's convention for endpoint constants.
+// ignore_for_file: non_constant_identifier_names
 class ApiEndpoints {
   static String LOGIN = "/auth/login";
   static String CREATE_USER = "/auth/create-user";

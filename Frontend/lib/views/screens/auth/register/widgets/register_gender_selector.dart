@@ -19,29 +19,32 @@ Widget registerGenderSelector({
         ),
       ),
       SizedBox(height: 8.h),
-      Row(
-        children: [
-          _genderOption(
-            label: 'Male',
-            value: 'male',
-            selectedGender: selectedGender,
-            onGenderChanged: onGenderChanged,
-          ),
-          SizedBox(width: 24.w),
-          _genderOption(
-            label: 'Female',
-            value: 'female',
-            selectedGender: selectedGender,
-            onGenderChanged: onGenderChanged,
-          ),
-          SizedBox(width: 24.w),
-          _genderOption(
-            label: 'Other',
-            value: 'other',
-            selectedGender: selectedGender,
-            onGenderChanged: onGenderChanged,
-          ),
-        ],
+      RadioGroup<String>(
+        groupValue: selectedGender,
+        onChanged: (val) {
+          if (val != null) onGenderChanged(val);
+        },
+        child: Row(
+          children: [
+            _genderOption(
+              label: 'Male',
+              value: 'male',
+              onGenderChanged: onGenderChanged,
+            ),
+            SizedBox(width: 24.w),
+            _genderOption(
+              label: 'Female',
+              value: 'female',
+              onGenderChanged: onGenderChanged,
+            ),
+            SizedBox(width: 24.w),
+            _genderOption(
+              label: 'Other',
+              value: 'other',
+              onGenderChanged: onGenderChanged,
+            ),
+          ],
+        ),
       ),
     ],
   );
@@ -50,7 +53,6 @@ Widget registerGenderSelector({
 Widget _genderOption({
   required String label,
   required String value,
-  required String selectedGender,
   required Function(String gender) onGenderChanged,
 }) {
   return GestureDetector(
@@ -60,10 +62,6 @@ Widget _genderOption({
       children: [
         Radio<String>(
           value: value,
-          groupValue: selectedGender,
-          onChanged: (val) {
-            if (val != null) onGenderChanged(val);
-          },
           activeColor: AppColors.priBlue30,
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,

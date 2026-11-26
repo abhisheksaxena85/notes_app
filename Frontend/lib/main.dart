@@ -16,6 +16,7 @@ import 'package:notes_app/data/di/dependency_injection.dart';
 
 GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 bool isInternetConnected = false;
+// ignore: non_constant_identifier_names
 int USER_ID = 0;
 
 void main() async {
