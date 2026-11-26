@@ -13,7 +13,12 @@ import java.util.Optional;
 public interface ReminderRepository extends JpaRepository<ReminderModel, Long> {
     Optional<ReminderModel> findByUser_IdAndClientId(long userId, String clientId);
 
-    @Query("SELECT r FROM ReminderModel r WHERE r.user.id = :userId ORDER BY r.status ASC, r.remindAt ASC")
+    /** BE-04: pending first, then missed, completed, rejected; earliest first within each. */
+    @Query("SELECT r FROM ReminderModel r WHERE r.user.id = :userId ORDER BY CASE"
+            + " WHEN r.status = com.example.notes_app.common.ItemStatus.PENDING THEN 0"
+            + " WHEN r.status = com.example.notes_app.common.ItemStatus.MISSED THEN 1"
+            + " WHEN r.status = com.example.notes_app.common.ItemStatus.COMPLETED THEN 2"
+            + " ELSE 3 END, r.remindAt ASC")
     List<ReminderModel> findByUserId(@Param("userId") long userId);
 
     @Query("SELECT r FROM ReminderModel r WHERE r.user.id = :userId AND r.dueDate = :date ORDER BY r.dueTime ASC")

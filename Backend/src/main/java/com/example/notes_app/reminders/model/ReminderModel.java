@@ -1,11 +1,14 @@
 package com.example.notes_app.reminders.model;
 
 import com.example.notes_app.auth.model.UserModel;
+import com.example.notes_app.common.ItemStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Data
 @Entity
@@ -33,11 +36,17 @@ public class ReminderModel {
     @Column(name = "category")
     private String category;
 
+    // BE-04: enums stored by name in a VARCHAR column (not a MySQL ENUM), so
+    // existing rows still map and new values only need a code change.
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "status", nullable = false)
-    private String status; // PENDING, COMPLETED, REJECTED, MISSED
+    private ItemStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "repeat_interval")
-    private String repeatInterval; // NONE, DAILY, WEEKLY, MONTHLY
+    private RepeatInterval repeatInterval;
 
     @Column(name = "created_at")
     private String createdAt;

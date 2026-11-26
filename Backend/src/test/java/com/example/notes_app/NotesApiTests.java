@@ -215,7 +215,7 @@ public class NotesApiTests {
         // 3. Toggle Task Status to COMPLETED
         var toggleTaskResp = taskService.toggleStatus(taskId, "COMPLETED");
         assertTrue(toggleTaskResp.getBody().isSuccess());
-        assertEquals("COMPLETED", toggleTaskResp.getBody().getData().getStatus());
+        assertEquals(com.example.notes_app.common.ItemStatus.COMPLETED, toggleTaskResp.getBody().getData().getStatus());
         assertTrue(toggleTaskResp.getBody().getData().isCompleted());
 
         // 4. Verify Calendar Summary Aggregates Tasks & Reminders

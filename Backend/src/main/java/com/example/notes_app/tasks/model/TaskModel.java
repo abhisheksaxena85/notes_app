@@ -1,11 +1,14 @@
 package com.example.notes_app.tasks.model;
 
 import com.example.notes_app.auth.model.UserModel;
+import com.example.notes_app.common.ItemStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Data
 @Entity
@@ -33,12 +36,18 @@ public class TaskModel {
     @Column(name = "category")
     private String category;
 
+    // BE-04: enums stored by name in a VARCHAR column (see ReminderModel).
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "priority")
-    private String priority; // LOW, MEDIUM, HIGH
+    private Priority priority;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "status", nullable = false)
-    private String status; // PENDING, COMPLETED, REJECTED, MISSED
+    private ItemStatus status;
 
+    /** Always {@code status == COMPLETED}; set only by TaskService.applyStatus. */
     @Column(name = "is_completed", nullable = false)
     private boolean isCompleted;
 

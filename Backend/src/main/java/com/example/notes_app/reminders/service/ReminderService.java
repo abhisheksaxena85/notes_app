@@ -4,12 +4,16 @@ import com.example.notes_app.auth.model.UserModel;
 import com.example.notes_app.auth.repository.AuthRepository;
 import com.example.notes_app.common.ApiResponse;
 import com.example.notes_app.common.IdempotentCreate;
+import com.example.notes_app.common.ItemStatus;
 import com.example.notes_app.common.Timestamps;
+import com.example.notes_app.common.WallClock;
+import com.example.notes_app.common.exception.BadRequestException;
 import com.example.notes_app.common.exception.NotFoundException;
 import com.example.notes_app.reminders.dto.request.CreateReminderRequestDto;
 import com.example.notes_app.reminders.dto.request.UpdateReminderRequestDto;
 import com.example.notes_app.reminders.dto.response.CreateReminderResponseDto;
 import com.example.notes_app.reminders.model.ReminderModel;
+import com.example.notes_app.reminders.model.RepeatInterval;
 import com.example.notes_app.reminders.repository.ReminderRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -38,6 +43,8 @@ public class ReminderService {
      * the same clientId returns the existing reminder with 200 instead of 201.
      */
     public ResponseEntity<ApiResponse<CreateReminderResponseDto>> createReminder(CreateReminderRequestDto requestDto) {
+        // Validate before the lookup so a bad request is a 400 whatever the user id.
+        ReminderModel draft = newReminder(requestDto);
         UserModel user = authRepository.findById(requestDto.getUserId())
                 .orElseThrow(() -> new NotFoundException("User not found"));
         String clientId = IdempotentCreate.normalize(requestDto.getClientId());
@@ -45,7 +52,11 @@ public class ReminderService {
         IdempotentCreate.Result<ReminderModel> result = IdempotentCreate.createOnce(
                 clientId,
                 () -> reminderRepository.findByUser_IdAndClientId(user.getId(), clientId),
-                () -> reminderRepository.save(newReminder(requestDto, user, clientId)));
+                () -> {
+                    draft.setUser(user);
+                    draft.setClientId(clientId);
+                    return reminderRepository.save(draft);
+                });
 
         if (!result.created()) {
             return ResponseEntity.ok(new ApiResponse<>(true, "Reminder already created",
@@ -56,31 +67,50 @@ public class ReminderService {
                         new CreateReminderResponseDto(result.entity().getReminderId())));
     }
 
-    private static ReminderModel newReminder(CreateReminderRequestDto requestDto, UserModel user, String clientId) {
+    /** A validated, unsaved reminder without its user and client id. */
+    private static ReminderModel newReminder(CreateReminderRequestDto requestDto) {
+        if (requestDto.getRemindAt() == null || requestDto.getRemindAt().isBlank()) {
+            throw new BadRequestException("remindAt is required");
+        }
         ReminderModel reminder = new ReminderModel();
-        reminder.setTitle(requestDto.getTitle());
-        reminder.setRemindAt(requestDto.getRemindAt());
-
-        String dueDate = requestDto.getDueDate();
-        if ((dueDate == null || dueDate.isEmpty()) && requestDto.getRemindAt() != null && requestDto.getRemindAt().length() >= 10) {
-            dueDate = requestDto.getRemindAt().substring(0, 10);
-        }
-        reminder.setDueDate(dueDate);
-
-        String dueTime = requestDto.getDueTime();
-        if ((dueTime == null || dueTime.isEmpty()) && requestDto.getRemindAt() != null && requestDto.getRemindAt().length() >= 16) {
-            dueTime = requestDto.getRemindAt().substring(11, 16);
-        }
-        reminder.setDueTime(dueTime);
-
+        reminder.setTitle(requireTitle(requestDto.getTitle()));
+        applyRemindAt(reminder, requestDto.getRemindAt(), requestDto.getDueDate(), requestDto.getDueTime());
         reminder.setCategory(requestDto.getCategory() != null ? requestDto.getCategory() : "General");
-        reminder.setStatus(requestDto.getStatus() != null ? requestDto.getStatus() : "PENDING");
-        reminder.setRepeatInterval(requestDto.getRepeatInterval() != null ? requestDto.getRepeatInterval() : "NONE");
+        ItemStatus status = ItemStatus.parse(requestDto.getStatus());
+        reminder.setStatus(status != null ? status : ItemStatus.PENDING);
+        RepeatInterval interval = RepeatInterval.parse(requestDto.getRepeatInterval());
+        reminder.setRepeatInterval(interval != null ? interval : RepeatInterval.NONE);
         reminder.setCreatedAt(Timestamps.now());
         reminder.setUpdatedAt(Timestamps.now());
-        reminder.setUser(user);
-        reminder.setClientId(clientId);
         return reminder;
+    }
+
+    private static String requireTitle(String title) {
+        if (title == null || title.isBlank()) {
+            throw new BadRequestException("title is required");
+        }
+        return title;
+    }
+
+    /**
+     * BE-04: sets {@code remindAt} and keeps {@code dueDate}/{@code dueTime} in
+     * step with it. Explicit values win; otherwise they are derived from
+     * {@code remindAt}, so moving a reminder to another day also moves it on
+     * the calendar and in get-by-date.
+     */
+    private static void applyRemindAt(ReminderModel reminder, String remindAt, String dueDate, String dueTime) {
+        LocalDateTime at = WallClock.parseDateTime("remindAt", remindAt);
+        reminder.setRemindAt(WallClock.format(at));
+        reminder.setDueDate(isBlank(dueDate)
+                ? WallClock.formatDate(at.toLocalDate())
+                : WallClock.formatDate(WallClock.parseDate("dueDate", dueDate)));
+        reminder.setDueTime(isBlank(dueTime)
+                ? WallClock.formatTime(at.toLocalTime())
+                : WallClock.formatTime(WallClock.parseTime("dueTime", dueTime)));
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     public ResponseEntity<ApiResponse<List<ReminderModel>>> getAllReminders(long userId) {
@@ -97,13 +127,22 @@ public class ReminderService {
     public ResponseEntity<ApiResponse<ReminderModel>> updateReminder(UpdateReminderRequestDto requestDto) {
         ReminderModel reminder = requireReminder(requestDto.getReminderId());
 
-        if (requestDto.getTitle() != null) reminder.setTitle(requestDto.getTitle());
-        if (requestDto.getRemindAt() != null) reminder.setRemindAt(requestDto.getRemindAt());
-        if (requestDto.getDueDate() != null) reminder.setDueDate(requestDto.getDueDate());
-        if (requestDto.getDueTime() != null) reminder.setDueTime(requestDto.getDueTime());
+        if (requestDto.getTitle() != null) reminder.setTitle(requireTitle(requestDto.getTitle()));
+        if (requestDto.getRemindAt() != null) {
+            applyRemindAt(reminder, requestDto.getRemindAt(), requestDto.getDueDate(), requestDto.getDueTime());
+        } else {
+            if (requestDto.getDueDate() != null) {
+                reminder.setDueDate(WallClock.formatDate(WallClock.parseDate("dueDate", requestDto.getDueDate())));
+            }
+            if (requestDto.getDueTime() != null) {
+                reminder.setDueTime(WallClock.formatTime(WallClock.parseTime("dueTime", requestDto.getDueTime())));
+            }
+        }
         if (requestDto.getCategory() != null) reminder.setCategory(requestDto.getCategory());
-        if (requestDto.getStatus() != null) reminder.setStatus(requestDto.getStatus());
-        if (requestDto.getRepeatInterval() != null) reminder.setRepeatInterval(requestDto.getRepeatInterval());
+        ItemStatus status = ItemStatus.parse(requestDto.getStatus());
+        if (status != null) reminder.setStatus(status);
+        RepeatInterval interval = RepeatInterval.parse(requestDto.getRepeatInterval());
+        if (interval != null) reminder.setRepeatInterval(interval);
         reminder.setUpdatedAt(Timestamps.now());
 
         ReminderModel saved = reminderRepository.save(reminder);
@@ -112,9 +151,12 @@ public class ReminderService {
 
     @Transactional
     public ResponseEntity<ApiResponse<ReminderModel>> updateStatus(long reminderId, String status) {
+        ItemStatus requested = ItemStatus.parse(status);
         ReminderModel reminder = requireReminder(reminderId);
 
-        String newStatus = status != null ? status.toUpperCase() : ("COMPLETED".equalsIgnoreCase(reminder.getStatus()) ? "PENDING" : "COMPLETED");
+        // Without a status the call toggles between COMPLETED and PENDING.
+        ItemStatus newStatus = requested != null ? requested
+                : (reminder.getStatus() == ItemStatus.COMPLETED ? ItemStatus.PENDING : ItemStatus.COMPLETED);
         reminder.setStatus(newStatus);
         reminder.setUpdatedAt(Timestamps.now());
 

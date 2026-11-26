@@ -84,7 +84,7 @@ class TimezoneBucketingTests {
         TaskModel task = new TaskModel();
         task.setTitle("task " + createdAt);
         task.setDueDate(dueDate);
-        task.setStatus("PENDING");
+        task.setStatus(com.example.notes_app.common.ItemStatus.PENDING);
         task.setCreatedAt(createdAt);
         task.setUpdatedAt(createdAt);
         task.setUser(user);

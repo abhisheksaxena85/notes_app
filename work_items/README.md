@@ -50,7 +50,7 @@ Priority: **P0** = security hole or data loss, fix first · **P1** = broken beha
 | ☑ | [BE-01](BE-01-note-content-255-limit.md) | Notes over 255 characters fail to save and block the whole sync queue | P0 | — |
 | ☑ | [BE-02](BE-02-server-timezone-dates.md) | Server timestamps use server-local time, so items land on the wrong calendar day | P1 | — |
 | ☑ | [BE-03](BE-03-http-status-and-errors.md) | Failures return HTTP 200 and raw exception text | P1 | — |
-| ☐ | [BE-04](BE-04-reminder-service-bugs.md) | Reminder service: completed sort first, stale dueDate after edit, no validation | P1 | — |
+| ☑ | [BE-04](BE-04-reminder-service-bugs.md) | Reminder service: completed sort first, stale dueDate after edit, no validation | P1 | — |
 | ☐ | [BE-05](BE-05-entity-lombok-and-misc.md) | `@Data` on JPA entities plus small service bugs | P2 | — |
 | ☑ | [BE-06](BE-06-docker-port-and-ci.md) | CI workflow can't find the Dockerfile; container port mismatch; no tests in CI | P1 | — |
 | ☐ | [BE-07](BE-07-springdoc-boot4-compat.md) | Check springdoc 2.x works with Spring Boot 4 | P2 | — |
