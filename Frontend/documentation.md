@@ -117,7 +117,7 @@ lib/
 │   ├── res/
 │   │   └── snackbar.dart                 # Custom animated Snackbars (Success, Error, Waiting)
 │   ├── services/
-│   │   └── internet_connection_service.dart # Real-time network status stream & toasts
+│   │   └── connectivity_service.dart # The app's one network status stream (get_it)
 │   └── themes/
 │       └── app_theme.dart                # Material 3 global theme definition
 ├── viewmodel/                            # State management layer (Riverpod)
@@ -518,12 +518,12 @@ The sync service features a re-entrant lock pattern:
 ---
 
 ### 8.10 Network Connectivity Monitoring & Feedback
-- **Files**: [`lib/utils/services/internet_connection_service.dart`](file:///Volumes/Crucial_X6/Documents/Projects/Full%20Stack%20Projects/Notes%20App/Frontend/lib/utils/services/internet_connection_service.dart), [`lib/utils/res/snackbar.dart`](file:///Volumes/Crucial_X6/Documents/Projects/Full%20Stack%20Projects/Notes%20App/Frontend/lib/utils/res/snackbar.dart)
+- **Files**: [`lib/utils/services/connectivity_service.dart`](Frontend/lib/utils/services/connectivity_service.dart), [`lib/views/widgets/connectivity_snackbar_listener.dart`](Frontend/lib/views/widgets/connectivity_snackbar_listener.dart), [`lib/utils/res/snackbar.dart`](Frontend/lib/utils/res/snackbar.dart)
 - **Implementation**:
-  - Root widget listener invokes `internetStatusListener(context)`.
-  - Monitors `InternetConnectionChecker.createInstance().onStatusChange`.
-  - Includes debouncing timers to avoid spamming toasts during intermittent flakiness.
-  - Displays green `successSnackBar("Internet connected")` or red `failedSnackBar("Internet disconnected")`.
+  - `ConnectivityService` (get_it singleton, started once in `initialize()`) owns the only `InternetConnectionChecker` subscription. It exposes `isOnline` and a broadcast `online` stream that emits only changes (`slow` counts as online).
+  - `OfflineSyncService` subscribes to `online` and syncs when it turns `true`.
+  - `ConnectivitySnackbarListener` sits above `MaterialApp`, so app rebuilds keep its state: it subscribes once, cancels in `dispose`, and shows snackbars through `scaffoldMessengerKey` (`main.dart`).
+  - A change must last 2 s before it is shown; "Back online" only appears after "You're offline" was shown.
 
 ---
 

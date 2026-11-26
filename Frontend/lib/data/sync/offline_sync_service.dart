@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
-import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:notes_app/data/local/database/app_database.dart';
 import 'package:notes_app/data/local/database/sync_queue_models.dart';
 import 'package:notes_app/data/network/api/api_client.dart';
 import 'package:notes_app/data/sync/sync_queue_processor.dart';
+import 'package:notes_app/utils/services/connectivity_service.dart';
 
 /// The only way queued offline changes reach the server.
 ///
@@ -21,12 +21,12 @@ import 'package:notes_app/data/sync/sync_queue_processor.dart';
 /// can offer retry and discard.
 class OfflineSyncService {
   final AppDatabase database;
-  final InternetConnectionChecker? connectionChecker;
+  final ConnectivityService? connectivity;
   final Duration minRetryDelay;
   final Duration maxRetryDelay;
   final SyncQueueProcessor _processor;
 
-  StreamSubscription<InternetConnectionStatus>? _subscription;
+  StreamSubscription<bool>? _subscription;
   int? _userId;
   Future<void>? _running;
   bool _syncAgain = false;
@@ -43,7 +43,7 @@ class OfflineSyncService {
   OfflineSyncService({
     required ApiClient client,
     required this.database,
-    this.connectionChecker,
+    this.connectivity,
     this.minRetryDelay = const Duration(seconds: 5),
     this.maxRetryDelay = const Duration(minutes: 5),
   }) : _processor = SyncQueueProcessor(client: client, database: database);
@@ -53,10 +53,8 @@ class OfflineSyncService {
   /// Starts listening for connectivity and syncs for [userId] right away.
   void start(int userId) {
     _userId = userId;
-    _subscription ??= connectionChecker?.onStatusChange.listen((status) {
-      if (status == InternetConnectionStatus.connected) {
-        _automaticTrigger();
-      }
+    _subscription ??= connectivity?.online.listen((online) {
+      if (online) _automaticTrigger();
     });
     unawaited(requestSync());
   }

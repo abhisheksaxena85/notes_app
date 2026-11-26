@@ -1,4 +1,3 @@
-import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:get_it/get_it.dart';
 import 'package:notes_app/data/local/database/app_database.dart';
 import 'package:notes_app/data/local/shared_preference/preference.dart';
@@ -11,6 +10,7 @@ import 'package:notes_app/data/repository/reminder/reminder_repo.dart';
 import 'package:notes_app/data/repository/task/task_repo.dart';
 import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
+import 'package:notes_app/utils/services/connectivity_service.dart';
 
 var getIt = GetIt.instance;
 
@@ -29,13 +29,20 @@ Future<void> configureDependencies() async {
   /// Local database
   getIt.registerLazySingleton<AppDatabase>(() => AppDatabase());
 
+  /// Connectivity: the only network checker in the app. Started once in
+  /// `initialize()` and shared by the sync service and the snackbars.
+  getIt.registerLazySingleton<ConnectivityService>(
+    () => ConnectivityService.device(),
+    dispose: (service) => service.dispose(),
+  );
+
   /// Background synchronization: the only path from the offline queues to
   /// the server. Repositories ask it to sync after every local write.
   getIt.registerLazySingleton<OfflineSyncService>(
     () => OfflineSyncService(
       client: getIt<ApiClient>(),
       database: getIt<AppDatabase>(),
-      connectionChecker: InternetConnectionChecker.createInstance(),
+      connectivity: getIt<ConnectivityService>(),
     ),
   );
 
