@@ -1,6 +1,7 @@
 package com.example.notes_app.reminders.controller;
 
 import com.example.notes_app.common.ApiResponse;
+import com.example.notes_app.common.exception.BadRequestException;
 import com.example.notes_app.reminders.dto.request.CreateReminderRequestDto;
 import com.example.notes_app.reminders.dto.request.UpdateReminderRequestDto;
 import com.example.notes_app.reminders.dto.response.CreateReminderResponseDto;
@@ -52,7 +53,10 @@ public class ReminderController {
     public ResponseEntity<ApiResponse<Boolean>> deleteReminder(
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) Long reminderId) {
-        long targetId = id != null ? id : (reminderId != null ? reminderId : 0L);
+        Long targetId = id != null ? id : reminderId;
+        if (targetId == null) {
+            throw new BadRequestException("Reminder id is required");
+        }
         return reminderService.deleteReminder(targetId);
     }
 }

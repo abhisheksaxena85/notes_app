@@ -9,6 +9,8 @@ import com.example.notes_app.auth.dto.response.SignupResponseDto;
 import com.example.notes_app.auth.dto.response.UserDetailsResponseDto;
 import com.example.notes_app.auth.service.AuthService;
 import com.example.notes_app.common.ApiResponse;
+import com.example.notes_app.common.exception.BadRequestException;
+import com.example.notes_app.common.exception.NotFoundException;
 import com.example.notes_app.notes.dto.request.CreateNoteRequestDto;
 import com.example.notes_app.notes.dto.request.UpdateNoteRequestDto;
 import com.example.notes_app.notes.dto.response.CalendarSummaryResponseDto;
@@ -166,8 +168,7 @@ public class NotesApiTests {
         ResponseEntity<ApiResponse<NotesModel>> deleteResp = notesService.deleteNote(testNoteId);
         assertTrue(deleteResp.getBody().isSuccess());
 
-        ResponseEntity<ApiResponse<NotesModel>> checkResp = notesService.getNoteDetails(testNoteId);
-        assertFalse(checkResp.getBody().isSuccess());
+        assertThrows(NotFoundException.class, () -> notesService.getNoteDetails(testNoteId));
     }
 
     @Test
@@ -231,7 +232,7 @@ public class NotesApiTests {
         assertTrue(day.getTasks().stream().anyMatch(t -> t.getTaskId() == taskId));
         assertTrue(day.getReminders().stream().anyMatch(r -> r.getReminderId() == reminderId));
         assertEquals(summary.getCountsByDate().get(today.toString()).intValue(), day.getTotalCount());
-        assertFalse(notesService.getDayActivity(testUserId, "not-a-date").getBody().isSuccess());
+        assertThrows(BadRequestException.class, () -> notesService.getDayActivity(testUserId, "not-a-date"));
 
         // 6. Cleanup
         assertTrue(taskService.deleteTask(taskId).getBody().isSuccess());

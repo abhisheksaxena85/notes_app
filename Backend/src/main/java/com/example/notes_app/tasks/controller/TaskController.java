@@ -1,6 +1,7 @@
 package com.example.notes_app.tasks.controller;
 
 import com.example.notes_app.common.ApiResponse;
+import com.example.notes_app.common.exception.BadRequestException;
 import com.example.notes_app.tasks.dto.request.CreateTaskRequestDto;
 import com.example.notes_app.tasks.dto.request.UpdateTaskRequestDto;
 import com.example.notes_app.tasks.dto.response.CreateTaskResponseDto;
@@ -57,7 +58,10 @@ public class TaskController {
     public ResponseEntity<ApiResponse<Boolean>> deleteTask(
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) Long taskId) {
-        long targetId = id != null ? id : (taskId != null ? taskId : 0L);
+        Long targetId = id != null ? id : taskId;
+        if (targetId == null) {
+            throw new BadRequestException("Task id is required");
+        }
         return taskService.deleteTask(targetId);
     }
 }

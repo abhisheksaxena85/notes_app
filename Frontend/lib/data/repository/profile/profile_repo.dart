@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:notes_app/data/local/database/app_database.dart';
 import 'package:notes_app/data/network/api/api_client.dart';
@@ -93,6 +94,7 @@ class ProfileRepo {
     );
   }
 
+  /// Throws a `DioException` (400) when the old password is wrong.
   Future<bool> changePassword({
     required int userId,
     required String oldPassword,
@@ -109,10 +111,16 @@ class ProfileRepo {
     return response.data['success'] == true;
   }
 
+  /// Deletes the account. A 404 means it is already gone on the server, which
+  /// is treated as success so local data is still cleared.
   Future<void> deleteUser(int userId) async {
-    final response = await client.deleteUser(userId);
-    if (response.statusCode != 200) {
-      throw HttpException((response.statusCode ?? 500).toString());
+    try {
+      final response = await client.deleteUser(userId);
+      if (response.statusCode != 200) {
+        throw HttpException((response.statusCode ?? 500).toString());
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode != 404) rethrow;
     }
     await (database.delete(database.cachedNotes)..where((n) => n.userId.equals(userId))).go();
     await (database.delete(database.cachedProfiles)..where((p) => p.userId.equals(userId))).go();

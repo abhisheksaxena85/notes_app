@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notes_app/data/network/dto/request/register/register_request_dto.dart';
 import 'package:notes_app/data/network/dto/response/register/register_response_dto.dart';
 import 'package:notes_app/data/repository/auth/register/register_repo.dart';
+import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/viewmodel/auth/register/register_state.dart';
 
@@ -145,7 +146,11 @@ class RegisterViewmodel extends AsyncNotifier<RegisterState> {
       return;
     } catch (e) {
       log("Error while registering user! $e");
-      state = AsyncError(e.toString(), StackTrace.current);
+      final message = userMessage(e);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(failedSnackBar(message));
+      }
+      state = AsyncError(message, StackTrace.current);
     } finally {
       state = AsyncData(RegisterState(registerData: registerData));
     }

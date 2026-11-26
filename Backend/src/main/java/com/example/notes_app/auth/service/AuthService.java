@@ -6,6 +6,10 @@ import com.example.notes_app.auth.model.UserModel;
 import com.example.notes_app.auth.repository.AuthRepository;
 import com.example.notes_app.common.ApiResponse;
 import com.example.notes_app.common.PasswordHashing;
+import com.example.notes_app.common.exception.BadRequestException;
+import com.example.notes_app.common.exception.ConflictException;
+import com.example.notes_app.common.exception.NotFoundException;
+import com.example.notes_app.common.exception.UnauthorizedException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,145 +26,94 @@ public class AuthService {
 
     @Transactional
     public ResponseEntity<ApiResponse<UserDetailsResponseDto>> getUserDetails(UserDetailsRequestDto requestDto) {
-        ApiResponse<UserDetailsResponseDto> response;
-        try {
-            UserModel user = repository.findById(requestDto.getId()).orElse(null);
-            if (user == null) {
-                throw new Exception("User Not found");
-            }
-            UserDetailsResponseDto responseDto = new UserDetailsResponseDto();
-            responseDto.setId(user.getId());
-            responseDto.setName(user.getName());
-            responseDto.setEmail(user.getEmail());
-            responseDto.setMobile(user.getMobile());
-            responseDto.setGender(user.getGender());
-            response = new ApiResponse<>(true, "User details found", responseDto);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-        } catch (Exception e) {
-            response = new ApiResponse<>(false, e.getMessage(), null);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-        }
+        UserModel user = repository.findById(requestDto.getId())
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        UserDetailsResponseDto responseDto = new UserDetailsResponseDto();
+        responseDto.setId(user.getId());
+        responseDto.setName(user.getName());
+        responseDto.setEmail(user.getEmail());
+        responseDto.setMobile(user.getMobile());
+        responseDto.setGender(user.getGender());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponse<>(true, "User details found", responseDto));
     }
 
     @Transactional
     public ResponseEntity<ApiResponse<LoginResponseDto>> login(LoginRequestDto requestDto) {
-        ApiResponse<LoginResponseDto> response;
-        try {
-            UserModel user = repository.findByEmail(requestDto.getEmail()).orElse(null);
-            if (user == null) {
-                throw new Exception("User does not exists!");
-            }
-            boolean isValidPassword = passwordHashing.verifyPassword(requestDto.getPassword(), user.getPassword());
-            if (!isValidPassword) {
-                throw new Exception("Password does not match!");
-            }
-            LoginResponseDto responseDto = new LoginResponseDto();
-            responseDto.setUserId(user.getId());
-            response = new ApiResponse<>(true, "User logged in successfully!", responseDto);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-        } catch (Exception e) {
-            response = new ApiResponse<>(false, e.getMessage(), null);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
+        UserModel user = repository.findByEmail(requestDto.getEmail())
+                .orElseThrow(() -> new UnauthorizedException("User does not exist!"));
+        boolean isValidPassword = passwordHashing.verifyPassword(requestDto.getPassword(), user.getPassword());
+        if (!isValidPassword) {
+            throw new UnauthorizedException("Password does not match!");
         }
+        LoginResponseDto responseDto = new LoginResponseDto();
+        responseDto.setUserId(user.getId());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponse<>(true, "User logged in successfully!", responseDto));
     }
 
     @Transactional
     public ResponseEntity<ApiResponse<SignupResponseDto>> createNewUser(SignupRequestDto requestDto) {
-        ApiResponse<SignupResponseDto> response;
-        try {
-            /// Validate if user already exists
-            UserModel currentUser = repository.findByEmail(requestDto.getEmail()).orElse(null);
-            if (currentUser != null) {
-                throw new Exception("Email id already used by another user");
-            }
-
-            String hashedPassword = passwordHashing.hashPassword(requestDto.getPassword()); // Hasing plain password
-            UserModel newUser = new UserModel();
-            newUser.setName(requestDto.getName());
-            newUser.setEmail(requestDto.getEmail());
-            newUser.setMobile(requestDto.getMobile());
-            newUser.setGender(requestDto.getGender());
-            newUser.setPassword(hashedPassword);
-            UserModel savedUser = repository.save(newUser);
-
-            SignupResponseDto responseDto = new SignupResponseDto();
-            responseDto.setUserId(savedUser.getId());
-            response = new ApiResponse<>(true, "User created successfully!", responseDto);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-        } catch (Exception e) {
-            response = new ApiResponse<>(false, e.getMessage(), null);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
+        if (repository.findByEmail(requestDto.getEmail()).isPresent()) {
+            throw new ConflictException("Email id already used by another user");
         }
+
+        String hashedPassword = passwordHashing.hashPassword(requestDto.getPassword());
+        UserModel newUser = new UserModel();
+        newUser.setName(requestDto.getName());
+        newUser.setEmail(requestDto.getEmail());
+        newUser.setMobile(requestDto.getMobile());
+        newUser.setGender(requestDto.getGender());
+        newUser.setPassword(hashedPassword);
+        UserModel savedUser = repository.save(newUser);
+
+        SignupResponseDto responseDto = new SignupResponseDto();
+        responseDto.setUserId(savedUser.getId());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponse<>(true, "User created successfully!", responseDto));
     }
 
     @Transactional
     public ResponseEntity<ApiResponse<DeleteUserResponseDto>> deleteUser(DeleteUserRequestDto requestDto) {
-        ApiResponse<DeleteUserResponseDto> response;
-        try {
-            UserModel user = repository.findById(requestDto.getId()).orElse(null);
-            String responseMsg = "";
-            if (user != null) {
-                repository.deleteById(requestDto.getId());
-                responseMsg = "User deleted successfully!";
-            } else {
-                responseMsg = "User does not exists!";
-            }
-            DeleteUserResponseDto responseDto = new DeleteUserResponseDto();
-            responseDto.setDeleted(true);
-            response = new ApiResponse<>(true, responseMsg, responseDto);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-        } catch (Exception e) {
-            response = new ApiResponse<>(false, "Failed to delete user!", null);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
+        if (!repository.existsById(requestDto.getId())) {
+            throw new NotFoundException("User not found");
         }
+        repository.deleteById(requestDto.getId());
+        DeleteUserResponseDto responseDto = new DeleteUserResponseDto();
+        responseDto.setDeleted(true);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponse<>(true, "User deleted successfully!", responseDto));
     }
 
     @Transactional
     public ResponseEntity<ApiResponse<UpdateUserResponseDto>> updateUser(UpdateUserRequestDto requestDto) {
-        ApiResponse<UpdateUserResponseDto> response;
-        try {
-            String responseMsg = "";
-            UserModel currentUser = repository.findById(requestDto.getUserId()).orElse(null);
-            if (currentUser == null) {
-                throw new Exception("User does not exists to update details!");
-            }
-            currentUser.setName(requestDto.getName() != null ? requestDto.getName() : currentUser.getName());
-            currentUser.setMobile(requestDto.getMobile() != null ? requestDto.getMobile() : currentUser.getMobile());
-            currentUser.setGender(requestDto.getGender() != null ? requestDto.getGender() : currentUser.getGender());
-            repository.save(currentUser);
-            responseMsg = "User details updated successfully!";
-            UpdateUserResponseDto responseDto = new UpdateUserResponseDto();
-            responseDto.setUserId(requestDto.getUserId());
-            responseDto.setName(requestDto.getName());
-            responseDto.setMobile(requestDto.getMobile());
-            responseDto.setGender(requestDto.getGender());
-            response = new ApiResponse<>(true, responseMsg, responseDto);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-        } catch (Exception e) {
-            response = new ApiResponse<>(false, "Failed to update user", null);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-        }
+        UserModel currentUser = repository.findById(requestDto.getUserId())
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        currentUser.setName(requestDto.getName() != null ? requestDto.getName() : currentUser.getName());
+        currentUser.setMobile(requestDto.getMobile() != null ? requestDto.getMobile() : currentUser.getMobile());
+        currentUser.setGender(requestDto.getGender() != null ? requestDto.getGender() : currentUser.getGender());
+        repository.save(currentUser);
+        UpdateUserResponseDto responseDto = new UpdateUserResponseDto();
+        responseDto.setUserId(requestDto.getUserId());
+        responseDto.setName(requestDto.getName());
+        responseDto.setMobile(requestDto.getMobile());
+        responseDto.setGender(requestDto.getGender());
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponse<>(true, "User details updated successfully!", responseDto));
     }
 
     @Transactional
     public ResponseEntity<ApiResponse<Boolean>> changePassword(ChangePasswordRequestDto requestDto) {
-        ApiResponse<Boolean> response;
-        try {
-            UserModel user = repository.findById(requestDto.getUserId()).orElse(null);
-            if (user == null) {
-                throw new Exception("User not found!");
-            }
-            boolean isValidPassword = passwordHashing.verifyPassword(requestDto.getOldPassword(), user.getPassword());
-            if (!isValidPassword) {
-                throw new Exception("Old password does not match!");
-            }
-            user.setPassword(passwordHashing.hashPassword(requestDto.getNewPassword()));
-            repository.save(user);
-            response = new ApiResponse<>(true, "Password changed successfully!", true);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
-        } catch (Exception e) {
-            response = new ApiResponse<>(false, "Failed to change password: " + e.getMessage(), false);
-            return ResponseEntity.status(HttpStatus.OK).body(response);
+        UserModel user = repository.findById(requestDto.getUserId())
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        boolean isValidPassword = passwordHashing.verifyPassword(requestDto.getOldPassword(), user.getPassword());
+        if (!isValidPassword) {
+            // 400, not 401: the caller is known, only the confirmation input is wrong.
+            throw new BadRequestException("Old password does not match!");
         }
+        user.setPassword(passwordHashing.hashPassword(requestDto.getNewPassword()));
+        repository.save(user);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponse<>(true, "Password changed successfully!", true));
     }
 }

@@ -10,6 +10,7 @@ import 'package:notes_app/data/network/dto/request/note/create_note_request_dto.
 import 'package:notes_app/data/network/dto/request/note/update_note_request_dto.dart';
 import 'package:notes_app/data/repository/note/note_repo.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
+import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/viewmodel/note_details/note_details_state.dart';
 
@@ -68,7 +69,7 @@ class NoteDetailsViewmodel extends AsyncNotifier<NoteDetailsState> {
       );
     } catch (e, st) {
       log("Error while fetching note details: $e");
-      state = AsyncError(e.toString(), st);
+      state = AsyncError(userMessage(e), st);
     }
   }
 
@@ -174,7 +175,7 @@ class NoteDetailsViewmodel extends AsyncNotifier<NoteDetailsState> {
       log("Error while saving note: $e");
       if (context.mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(failedSnackBar("An error occurred: $e"));
+            .showSnackBar(failedSnackBar(userMessage(e)));
       }
     } finally {
       if (state.value != null) {
@@ -210,7 +211,7 @@ class NoteDetailsViewmodel extends AsyncNotifier<NoteDetailsState> {
       log("Error while deleting note: $e");
       if (context.mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(failedSnackBar("An error occurred: $e"));
+            .showSnackBar(failedSnackBar(userMessage(e)));
       }
     } finally {
       if (state.value != null) {

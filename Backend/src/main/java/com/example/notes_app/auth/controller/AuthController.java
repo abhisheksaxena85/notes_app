@@ -4,6 +4,7 @@ import com.example.notes_app.auth.dto.request.*;
 import com.example.notes_app.auth.dto.response.*;
 import com.example.notes_app.auth.service.AuthService;
 import com.example.notes_app.common.ApiResponse;
+import com.example.notes_app.common.exception.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -45,6 +46,8 @@ public class AuthController {
             requestDto.setId(paramId);
         } else if (bodyDto != null) {
             requestDto.setId(bodyDto.getId());
+        } else {
+            throw new BadRequestException("User id is required");
         }
         return service.deleteUser(requestDto);
     }

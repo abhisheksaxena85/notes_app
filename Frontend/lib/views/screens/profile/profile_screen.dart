@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/views/screens/profile/widgets/build_profile_widget.dart';
 import 'package:notes_app/views/screens/profile/widgets/profile_error_widget.dart';
@@ -18,7 +19,7 @@ class ProfileScreen extends ConsumerWidget {
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not refresh profile: $error')),
+        SnackBar(content: Text('Could not refresh profile. ${userMessage(error)}')),
       );
     }
   }
@@ -50,7 +51,7 @@ class ProfileScreen extends ConsumerWidget {
             );
           },
           error: (error, stack) => profileErrorWidget(
-            message: error.toString(),
+            message: userMessage(error),
             onRetry: () => _refreshProfile(context, notifier.getUserDetails),
           ),
           loading: () => profileLoadingWidget(),

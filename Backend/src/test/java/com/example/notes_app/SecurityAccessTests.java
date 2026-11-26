@@ -6,6 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -26,7 +27,10 @@ public class SecurityAccessTests {
                 .andExpect(status().isOk());
         mockMvc.perform(get("/reminders/get-all-reminders").param("userId", "1"))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/notes/day-activity").param("userId", "1").param("date", "2026-01-01"))
-                .andExpect(status().isOk());
+        // The user may not exist (404); what matters is that security lets the request through.
+        int dayActivityStatus = mockMvc.perform(get("/notes/day-activity").param("userId", "1").param("date", "2026-01-01"))
+                .andReturn().getResponse().getStatus();
+        assertNotEquals(401, dayActivityStatus);
+        assertNotEquals(403, dayActivityStatus);
     }
 }

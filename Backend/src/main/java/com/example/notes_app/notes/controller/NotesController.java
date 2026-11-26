@@ -1,6 +1,7 @@
 package com.example.notes_app.notes.controller;
 
 import com.example.notes_app.common.ApiResponse;
+import com.example.notes_app.common.exception.BadRequestException;
 import com.example.notes_app.notes.dto.request.CreateNoteRequestDto;
 import com.example.notes_app.notes.dto.request.UpdateNoteRequestDto;
 import com.example.notes_app.notes.dto.response.CalendarSummaryResponseDto;
@@ -52,7 +53,10 @@ public class NotesController {
     public ResponseEntity<ApiResponse<NotesModel>> deleteNote(
             @RequestParam(name = "id", required = false) Long paramId,
             @RequestBody(required = false) Long bodyId){
-        long targetId = paramId != null ? paramId : (bodyId != null ? bodyId : 0L);
+        Long targetId = paramId != null ? paramId : bodyId;
+        if (targetId == null) {
+            throw new BadRequestException("Note id is required");
+        }
         return notesService.deleteNote(targetId);
     }
 

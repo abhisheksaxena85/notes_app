@@ -12,6 +12,7 @@ import 'package:notes_app/data/repository/profile/profile_repo.dart';
 import 'package:notes_app/main.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
+import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/utils/services/local_reminder_service.dart';
 import 'package:notes_app/utils/services/note_data_transfer_service.dart';
@@ -264,7 +265,7 @@ class BuildProfileWidget extends ConsumerWidget {
                               } catch (e) {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    failedSnackBar("Failed to update profile: $e"),
+                                    failedSnackBar(userMessage(e)),
                                   );
                                 }
                               } finally {
@@ -1167,7 +1168,7 @@ class BuildProfileWidget extends ConsumerWidget {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    failedSnackBar("Failed to delete account: $e"),
+                    failedSnackBar(userMessage(e)),
                   );
                 }
               }

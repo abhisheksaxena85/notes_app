@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:notes_app/data/local/database/app_database.dart';
 import 'package:notes_app/data/local/database/note_database_mapper.dart';
@@ -188,12 +189,28 @@ class NoteRepo {
   }
 
   Future<DeleteNoteResponseDto> deleteNote(int id) async {
-    final response = await client.deleteNote(id);
+    final Response response;
+    try {
+      response = await client.deleteNote(id);
+    } on DioException catch (e) {
+      // 404: the server no longer has the note, so drop the stale local copy
+      // too, then let the caller show "Note not found".
+      if (e.response?.statusCode == 404) {
+        await _deleteCachedNote(id);
+      }
+      rethrow;
+    }
     if (response.statusCode != 200) {
       throw HttpException((response.statusCode ?? 500).toString());
     }
-    await (database.delete(database.cachedNotes)..where((n) => n.serverId.equals(id))).go();
+    await _deleteCachedNote(id);
     return DeleteNoteResponseDto.fromJson(response.data);
+  }
+
+  Future<void> _deleteCachedNote(int serverId) async {
+    await (database.delete(database.cachedNotes)
+          ..where((n) => n.serverId.equals(serverId)))
+        .go();
   }
 
   Future<Map<String, dynamic>> exportNotes(int userId) async {

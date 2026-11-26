@@ -11,6 +11,7 @@ import 'package:notes_app/data/network/dto/response/login/login_response_dto.dar
 import 'package:notes_app/data/repository/auth/login/login_repo.dart';
 import 'package:notes_app/data/repository/profile/profile_repo.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
+import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/viewmodel/auth/login/login_state.dart';
 import 'package:notes_app/views/screens/dashboard/dashboard_screen.dart';
@@ -110,7 +111,11 @@ class LoginViewmodel extends AsyncNotifier<LoginState> {
       return;
     } catch (e) {
       log("Error while logging in user! $e");
-      state = AsyncError(e.toString(), StackTrace.current);
+      final message = userMessage(e);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(failedSnackBar(message));
+      }
+      state = AsyncError(message, StackTrace.current);
     } finally {
       state = AsyncData(LoginState(loginData: loginData));
     }
