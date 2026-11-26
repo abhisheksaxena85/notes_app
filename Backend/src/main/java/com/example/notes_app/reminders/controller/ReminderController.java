@@ -2,6 +2,7 @@ package com.example.notes_app.reminders.controller;
 
 import com.example.notes_app.common.ApiResponse;
 import com.example.notes_app.common.exception.BadRequestException;
+import com.example.notes_app.reminders.dto.request.CompleteOccurrenceRequestDto;
 import com.example.notes_app.reminders.dto.request.CreateReminderRequestDto;
 import com.example.notes_app.reminders.dto.request.UpdateReminderRequestDto;
 import com.example.notes_app.reminders.dto.response.CreateReminderResponseDto;
@@ -50,7 +51,14 @@ public class ReminderController {
         return reminderService.updateStatus(reminderId, status);
     }
 
-    @DeleteMapping("/delete-reminder")
+    /** REM-07: "Done" / "Not done" for one occurrence; idempotent by occurrence. */
+    @PutMapping("/complete-occurrence")
+    public ResponseEntity<ApiResponse<ReminderModel>> completeOccurrence(
+            @Valid @RequestBody CompleteOccurrenceRequestDto requestDto) {
+        return reminderService.completeOccurrence(requestDto);
+    }
+
+        @DeleteMapping("/delete-reminder")
     public ResponseEntity<ApiResponse<Boolean>> deleteReminder(
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) Long reminderId) {

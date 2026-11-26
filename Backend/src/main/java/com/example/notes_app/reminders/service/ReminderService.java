@@ -9,10 +9,12 @@ import com.example.notes_app.common.Timestamps;
 import com.example.notes_app.common.WallClock;
 import com.example.notes_app.common.exception.BadRequestException;
 import com.example.notes_app.common.exception.NotFoundException;
+import com.example.notes_app.reminders.dto.request.CompleteOccurrenceRequestDto;
 import com.example.notes_app.reminders.dto.request.CreateReminderRequestDto;
 import com.example.notes_app.reminders.dto.request.UpdateReminderRequestDto;
 import com.example.notes_app.reminders.dto.response.CreateReminderResponseDto;
 import com.example.notes_app.reminders.model.ReminderModel;
+import com.example.notes_app.reminders.model.ReminderOutcome;
 import com.example.notes_app.reminders.model.RepeatInterval;
 import com.example.notes_app.reminders.repository.ReminderRepository;
 import jakarta.transaction.Transactional;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class ReminderService {
@@ -75,6 +78,9 @@ public class ReminderService {
         ReminderModel reminder = new ReminderModel();
         reminder.setTitle(requireTitle(requestDto.getTitle()));
         applyRemindAt(reminder, requestDto.getRemindAt(), requestDto.getDueDate(), requestDto.getDueTime());
+        reminder.setStartAt(isBlank(requestDto.getStartAt())
+                ? reminder.getRemindAt()
+                : WallClock.format(WallClock.parseDateTime("startAt", requestDto.getStartAt())));
         reminder.setCategory(requestDto.getCategory() != null ? requestDto.getCategory() : "General");
         ItemStatus status = ItemStatus.parse(requestDto.getStatus());
         reminder.setStatus(status != null ? status : ItemStatus.PENDING);
@@ -129,7 +135,12 @@ public class ReminderService {
 
         if (requestDto.getTitle() != null) reminder.setTitle(requireTitle(requestDto.getTitle()));
         if (requestDto.getRemindAt() != null) {
+            String previous = reminder.getRemindAt();
             applyRemindAt(reminder, requestDto.getRemindAt(), requestDto.getDueDate(), requestDto.getDueTime());
+            // REM-07: moving remindAt without a startAt re-anchors the series there.
+            if (isBlank(requestDto.getStartAt()) && !Objects.equals(previous, reminder.getRemindAt())) {
+                reminder.setStartAt(reminder.getRemindAt());
+            }
         } else {
             if (requestDto.getDueDate() != null) {
                 reminder.setDueDate(WallClock.formatDate(WallClock.parseDate("dueDate", requestDto.getDueDate())));
@@ -143,6 +154,15 @@ public class ReminderService {
         if (status != null) reminder.setStatus(status);
         RepeatInterval interval = RepeatInterval.parse(requestDto.getRepeatInterval());
         if (interval != null) reminder.setRepeatInterval(interval);
+        if (!isBlank(requestDto.getStartAt())) {
+            reminder.setStartAt(WallClock.format(WallClock.parseDateTime("startAt", requestDto.getStartAt())));
+        }
+        ReminderOutcome outcome = ReminderOutcome.parse(requestDto.getLastOutcome());
+        if (outcome != null) {
+            reminder.setLastOutcome(outcome);
+            reminder.setLastOutcomeAt(isBlank(requestDto.getLastOutcomeAt()) ? null
+                    : WallClock.format(WallClock.parseDateTime("lastOutcomeAt", requestDto.getLastOutcomeAt())));
+        }
         reminder.setUpdatedAt(Timestamps.now());
 
         ReminderModel saved = reminderRepository.save(reminder);
@@ -162,6 +182,47 @@ public class ReminderService {
 
         ReminderModel saved = reminderRepository.save(reminder);
         return ResponseEntity.ok(new ApiResponse<>(true, "Reminder status updated", saved));
+    }
+
+    /**
+     * REM-07: the user answered one occurrence ("Done" / "Not done").
+     *
+     * <ul>
+     *   <li>One-off reminder: the status becomes the outcome.</li>
+     *   <li>Repeating reminder: only when {@code occurrence} is the current
+     *       {@code remindAt}, the reminder moves to its next occurrence (anchored
+     *       to {@code startAt}), stays PENDING and records the outcome. Any other
+     *       occurrence was already handled (a retried or duplicated request), so
+     *       the reminder is returned unchanged: the call is idempotent.</li>
+     * </ul>
+     */
+    @Transactional
+    public ResponseEntity<ApiResponse<ReminderModel>> completeOccurrence(CompleteOccurrenceRequestDto requestDto) {
+        LocalDateTime occurrence = WallClock.parseDateTime("occurrence", requestDto.getOccurrence());
+        ReminderOutcome outcome = ReminderOutcome.parse(requestDto.getOutcome());
+        if (outcome == null) {
+            throw new BadRequestException("outcome is required");
+        }
+        ReminderModel reminder = requireReminder(requestDto.getReminderId());
+        RepeatInterval interval = reminder.getRepeatInterval() != null ? reminder.getRepeatInterval() : RepeatInterval.NONE;
+
+        if (interval == RepeatInterval.NONE) {
+            reminder.setStatus(outcome == ReminderOutcome.COMPLETED ? ItemStatus.COMPLETED : ItemStatus.MISSED);
+        } else {
+            LocalDateTime current = WallClock.tryParseDateTime(reminder.getRemindAt()).orElse(null);
+            if (!occurrence.equals(current)) {
+                return ResponseEntity.ok(new ApiResponse<>(true, "Occurrence already handled", reminder));
+            }
+            LocalDateTime start = WallClock.tryParseDateTime(reminder.getStartAt()).orElse(current);
+            applyRemindAt(reminder, WallClock.format(RecurrenceCalculator.next(start, interval, occurrence)), null, null);
+            reminder.setStatus(ItemStatus.PENDING);
+        }
+        reminder.setLastOutcome(outcome);
+        reminder.setLastOutcomeAt(WallClock.format(occurrence));
+        reminder.setUpdatedAt(Timestamps.now());
+
+        ReminderModel saved = reminderRepository.save(reminder);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Occurrence recorded", saved));
     }
 
     @Transactional

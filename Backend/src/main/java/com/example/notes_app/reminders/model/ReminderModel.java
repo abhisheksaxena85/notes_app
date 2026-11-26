@@ -48,6 +48,24 @@ public class ReminderModel {
     @Column(name = "repeat_interval")
     private RepeatInterval repeatInterval;
 
+    /**
+     * REM-07: first occurrence of the series (wall clock). Repeats are anchored
+     * to it, so a monthly reminder on the 31st comes back to the 31st after a
+     * short month. {@code remindAt} is always the next pending occurrence.
+     */
+    @Column(name = "start_at")
+    private String startAt;
+
+    /** REM-07: answer to the last handled occurrence of a repeating reminder. */
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "last_outcome", length = 16)
+    private ReminderOutcome lastOutcome;
+
+    /** REM-07: which occurrence {@link #lastOutcome} is for (wall clock). */
+    @Column(name = "last_outcome_at")
+    private String lastOutcomeAt;
+
     @Column(name = "created_at")
     private String createdAt;
 

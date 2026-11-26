@@ -16,4 +16,14 @@ public class UpdateReminderRequestDto {
     private String category;
     private String status;
     private String repeatInterval;
+
+    /**
+     * REM-07: first occurrence of the series. When remindAt changes without it,
+     * the new remindAt becomes the start (the user re-anchored the series).
+     */
+    private String startAt;
+
+    /** REM-07: answer to the last handled occurrence (COMPLETED or MISSED), e.g. after a catch-up. */
+    private String lastOutcome;
+    private String lastOutcomeAt;
 }

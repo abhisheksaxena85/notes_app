@@ -44,7 +44,7 @@ public class ClientIdMigrationTests {
             }
 
             var result = flyway(url).migrate();
-            assertEquals("5", result.targetSchemaVersion);
+            assertEquals("6", result.targetSchemaVersion);
 
             try (Statement statement = connection.createStatement()) {
                 for (String table : new String[]{"notes", "tasks", "reminders"}) {
