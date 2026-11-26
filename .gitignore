@@ -1,0 +1,13 @@
+# OS
+.DS_Store
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Personal Claude Code settings
+.claude/settings.local.json
+
+# Secrets
+.env
