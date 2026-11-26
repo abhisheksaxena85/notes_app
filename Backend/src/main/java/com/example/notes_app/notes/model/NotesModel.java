@@ -24,6 +24,9 @@ public class NotesModel {
     @Column(name="isPinned")
     boolean isPinned;
 
+    @Column(name = "tags", columnDefinition = "TEXT")
+    String tags;
+
     @Column(name = "createdAt")
     String createdAt;
 

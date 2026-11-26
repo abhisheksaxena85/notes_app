@@ -16,7 +16,13 @@ public class AuthController {
     AuthService service;
 
     @GetMapping("/user-details-by-userid")
-    public ResponseEntity<ApiResponse<UserDetailsResponseDto>> getUserDetails(UserDetailsRequestDto requestDto) {
+    public ResponseEntity<ApiResponse<UserDetailsResponseDto>> getUserDetails(
+            @RequestParam(name = "id", required = false) Long paramId,
+            UserDetailsRequestDto requestDto) {
+        if (paramId != null) {
+            requestDto = new UserDetailsRequestDto();
+            requestDto.setId(paramId);
+        }
         return service.getUserDetails(requestDto);
     }
 
@@ -31,12 +37,25 @@ public class AuthController {
     }
 
     @DeleteMapping("/delete-user")
-    public ResponseEntity<ApiResponse<DeleteUserResponseDto>> deleteUser(DeleteUserRequestDto reqeustDto) {
-        return service.deleteUser(reqeustDto);
+    public ResponseEntity<ApiResponse<DeleteUserResponseDto>> deleteUser(
+            @RequestParam(name = "id", required = false) Long paramId,
+            @RequestBody(required = false) DeleteUserRequestDto bodyDto) {
+        DeleteUserRequestDto requestDto = new DeleteUserRequestDto();
+        if (paramId != null) {
+            requestDto.setId(paramId);
+        } else if (bodyDto != null) {
+            requestDto.setId(bodyDto.getId());
+        }
+        return service.deleteUser(requestDto);
     }
 
     @PutMapping("/update-user")
     public ResponseEntity<ApiResponse<UpdateUserResponseDto>> updateUser(@RequestBody UpdateUserRequestDto requestDto) {
         return service.updateUser(requestDto);
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<ApiResponse<Boolean>> changePassword(@RequestBody ChangePasswordRequestDto requestDto) {
+        return service.changePassword(requestDto);
     }
 }

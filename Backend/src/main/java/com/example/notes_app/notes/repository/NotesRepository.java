@@ -2,7 +2,21 @@ package com.example.notes_app.notes.repository;
 
 import com.example.notes_app.notes.model.NotesModel;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
 
 public interface NotesRepository extends JpaRepository<NotesModel, Long> {
+    List<NotesModel> findByUser_IdOrderByIsPinnedDescCreatedAtDesc(long userId);
 
+    @Query("SELECT n FROM NotesModel n WHERE n.user.id = :userId AND n.createdAt LIKE :datePrefix%")
+    List<NotesModel> findByUserIdAndDatePrefix(@Param("userId") long userId, @Param("datePrefix") String datePrefix);
+
+    @Query("SELECT n FROM NotesModel n WHERE n.user.id = :userId AND (" +
+           "LOWER(n.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(n.content) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(n.category) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(n.tags) LIKE LOWER(CONCAT('%', :query, '%')))")
+    List<NotesModel> searchNotes(@Param("userId") long userId, @Param("query") String query);
 }

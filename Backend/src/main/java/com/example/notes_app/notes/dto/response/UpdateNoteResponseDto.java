@@ -9,6 +9,7 @@ public class UpdateNoteResponseDto {
     private String content;
     private String category;
     private boolean isPinned;
+    private String tags;
     private String updateAt;
     private String createdAt;
 }

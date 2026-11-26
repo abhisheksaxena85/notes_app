@@ -1,0 +1,23 @@
+package com.example.notes_app.tasks.dto.request;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class CreateTaskRequestDto {
+    private long userId;
+    private String title;
+    private String description;
+    private String dueDate; // YYYY-MM-DD
+    private String dueTime; // HH:mm
+    private String category;
+    private String priority; // LOW, MEDIUM, HIGH
+    private String status; // PENDING, COMPLETED, REJECTED, MISSED
+    // Lombok exposes this as "completed"; accept the "isCompleted" key the client sends.
+    @JsonProperty("isCompleted")
+    private boolean isCompleted;
+}

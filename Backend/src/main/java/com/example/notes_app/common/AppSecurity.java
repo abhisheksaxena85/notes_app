@@ -15,7 +15,10 @@ public class AppSecurity {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/notes/**",                 "/swagger-ui/**",
+                        // NOTE: the client does not send credentials yet, so data routes are open
+                        // consistently with /notes/**. Lock these down together once JWT auth lands.
+                        .requestMatchers("/auth/**", "/notes/**", "/tasks/**", "/reminders/**",
+                                "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/v3/api-docs.yaml").permitAll()

@@ -1,6 +1,8 @@
 package com.example.notes_app.auth.model;
 
 import com.example.notes_app.notes.model.NotesModel;
+import com.example.notes_app.reminders.model.ReminderModel;
+import com.example.notes_app.tasks.model.TaskModel;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -38,4 +40,18 @@ public class UserModel {
             orphanRemoval = true
     )
     private List<NotesModel> articles = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true
+    )
+    private List<TaskModel> tasks = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true
+    )
+    private List<ReminderModel> reminders = new ArrayList<>();
 }

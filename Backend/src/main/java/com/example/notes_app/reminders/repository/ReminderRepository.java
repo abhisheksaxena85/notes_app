@@ -1,0 +1,21 @@
+package com.example.notes_app.reminders.repository;
+
+import com.example.notes_app.reminders.model.ReminderModel;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface ReminderRepository extends JpaRepository<ReminderModel, Long> {
+    @Query("SELECT r FROM ReminderModel r WHERE r.user.id = :userId ORDER BY r.status ASC, r.remindAt ASC")
+    List<ReminderModel> findByUserId(@Param("userId") long userId);
+
+    @Query("SELECT r FROM ReminderModel r WHERE r.user.id = :userId AND r.dueDate = :date ORDER BY r.dueTime ASC")
+    List<ReminderModel> findByUserIdAndDueDate(@Param("userId") long userId, @Param("date") String date);
+
+    @Query("SELECT r FROM ReminderModel r WHERE r.user.id = :userId AND (r.dueDate LIKE CONCAT(:monthPrefix, '%') OR (r.dueDate IS NULL AND r.remindAt LIKE CONCAT(:monthPrefix, '%')))")
+    List<ReminderModel> findByUserIdAndMonth(@Param("userId") long userId, @Param("monthPrefix") String monthPrefix);
+}

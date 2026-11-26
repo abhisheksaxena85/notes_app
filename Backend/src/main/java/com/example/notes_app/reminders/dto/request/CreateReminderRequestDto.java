@@ -1,0 +1,19 @@
+package com.example.notes_app.reminders.dto.request;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class CreateReminderRequestDto {
+    private long userId;
+    private String title;
+    private String remindAt; // YYYY-MM-DDTHH:mm:ss
+    private String dueDate; // YYYY-MM-DD
+    private String dueTime; // HH:mm
+    private String category;
+    private String status; // PENDING, COMPLETED, REJECTED, MISSED
+    private String repeatInterval; // NONE, DAILY, WEEKLY, MONTHLY
+}

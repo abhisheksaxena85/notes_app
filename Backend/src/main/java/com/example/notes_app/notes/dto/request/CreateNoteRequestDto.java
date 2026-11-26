@@ -9,4 +9,5 @@ public class CreateNoteRequestDto {
     private String content;
     private String category;
     private boolean isPinned;
+    private String tags;
 }

@@ -141,4 +141,26 @@ public class AuthService {
             return ResponseEntity.status(HttpStatus.OK).body(response);
         }
     }
+
+    @Transactional
+    public ResponseEntity<ApiResponse<Boolean>> changePassword(ChangePasswordRequestDto requestDto) {
+        ApiResponse<Boolean> response;
+        try {
+            UserModel user = repository.findById(requestDto.getUserId()).orElse(null);
+            if (user == null) {
+                throw new Exception("User not found!");
+            }
+            boolean isValidPassword = passwordHashing.verifyPassword(requestDto.getOldPassword(), user.getPassword());
+            if (!isValidPassword) {
+                throw new Exception("Old password does not match!");
+            }
+            user.setPassword(passwordHashing.hashPassword(requestDto.getNewPassword()));
+            repository.save(user);
+            response = new ApiResponse<>(true, "Password changed successfully!", true);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        } catch (Exception e) {
+            response = new ApiResponse<>(false, "Failed to change password: " + e.getMessage(), false);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        }
+    }
 }
