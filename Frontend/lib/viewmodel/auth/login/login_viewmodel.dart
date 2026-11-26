@@ -71,7 +71,8 @@ class LoginViewmodel extends AsyncNotifier<LoginState> {
     state = AsyncLoading();
     try {
       final email = emailController.text.trim();
-      final password = passwordController.text.trim();
+      // Passwords are never trimmed: spaces are part of the password.
+      final password = passwordController.text;
       LoginResponseDto response = await _loginRepo.login(
         LoginRequestDto(email: email, password: password),
       );

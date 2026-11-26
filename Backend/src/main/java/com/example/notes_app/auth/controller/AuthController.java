@@ -3,8 +3,13 @@ package com.example.notes_app.auth.controller;
 import com.example.notes_app.auth.dto.request.*;
 import com.example.notes_app.auth.dto.response.*;
 import com.example.notes_app.auth.service.AuthService;
+import com.example.notes_app.auth.service.EmailNormalizer;
+import com.example.notes_app.auth.service.LoginRateLimiter;
 import com.example.notes_app.common.ApiResponse;
 import com.example.notes_app.common.exception.BadRequestException;
+import com.example.notes_app.common.exception.UnauthorizedException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +20,9 @@ public class AuthController {
 
     @Autowired
     AuthService service;
+
+    @Autowired
+    LoginRateLimiter loginRateLimiter;
 
     @GetMapping("/user-details-by-userid")
     public ResponseEntity<ApiResponse<UserDetailsResponseDto>> getUserDetails(
@@ -28,12 +36,23 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponseDto>> loginUser(@RequestBody LoginRequestDto requestDto) {
-        return service.login(requestDto);
+    public ResponseEntity<ApiResponse<LoginResponseDto>> loginUser(
+            @Valid @RequestBody LoginRequestDto requestDto, HttpServletRequest request) {
+        String clientIp = request.getRemoteAddr();
+        String email = EmailNormalizer.normalize(requestDto.getEmail());
+        loginRateLimiter.checkAllowed(clientIp, email);
+        try {
+            ResponseEntity<ApiResponse<LoginResponseDto>> response = service.login(requestDto);
+            loginRateLimiter.recordSuccess(email);
+            return response;
+        } catch (UnauthorizedException e) {
+            loginRateLimiter.recordFailure(clientIp, email);
+            throw e;
+        }
     }
 
     @PostMapping("/create-user")
-    public ResponseEntity<ApiResponse<SignupResponseDto>> createNewUser(@RequestBody SignupRequestDto requestDto) {
+    public ResponseEntity<ApiResponse<SignupResponseDto>> createNewUser(@Valid @RequestBody SignupRequestDto requestDto) {
         return service.createNewUser(requestDto);
     }
 
@@ -53,12 +72,12 @@ public class AuthController {
     }
 
     @PutMapping("/update-user")
-    public ResponseEntity<ApiResponse<UpdateUserResponseDto>> updateUser(@RequestBody UpdateUserRequestDto requestDto) {
+    public ResponseEntity<ApiResponse<UpdateUserResponseDto>> updateUser(@Valid @RequestBody UpdateUserRequestDto requestDto) {
         return service.updateUser(requestDto);
     }
 
     @PutMapping("/change-password")
-    public ResponseEntity<ApiResponse<Boolean>> changePassword(@RequestBody ChangePasswordRequestDto requestDto) {
+    public ResponseEntity<ApiResponse<Boolean>> changePassword(@Valid @RequestBody ChangePasswordRequestDto requestDto) {
         return service.changePassword(requestDto);
     }
 }

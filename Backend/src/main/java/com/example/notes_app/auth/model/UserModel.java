@@ -11,7 +11,9 @@ import java.util.List;
 
 @Data
 @Entity
-@Table(name = "users")
+// The unique index is created by Flyway migration V2 on existing databases; the
+// name must match so Hibernate's ddl-auto=update sees it and doesn't add another.
+@Table(name = "users", uniqueConstraints = @UniqueConstraint(name = "uk_users_email", columnNames = "email"))
 public class UserModel {
 
     @Id
@@ -22,7 +24,8 @@ public class UserModel {
     @Column(name = "name", columnDefinition = "TEXT")
     String name;
 
-    @Column(name = "email", columnDefinition = "TEXT")
+    /** Always stored trimmed and lower-cased (see EmailNormalizer). 320 = max email length. */
+    @Column(name = "email", length = 320)
     String email;
 
     @Column(name = "password", columnDefinition = "TEXT")

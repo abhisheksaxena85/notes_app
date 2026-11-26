@@ -12,9 +12,12 @@ import com.example.notes_app.common.exception.NotFoundException;
 import com.example.notes_app.common.exception.UnauthorizedException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -23,6 +26,21 @@ public class AuthService {
 
     @Autowired
     PasswordHashing passwordHashing;
+
+    static final String INVALID_CREDENTIALS = "Invalid email or password";
+    static final String EMAIL_IN_USE = "Email id already used by another user";
+
+    private volatile String dummyPasswordHash;
+
+    /** A real BCrypt hash to compare against when the email is unknown. */
+    private String dummyPasswordHash() {
+        String hash = dummyPasswordHash;
+        if (hash == null) {
+            hash = passwordHashing.hashPassword(UUID.randomUUID().toString());
+            dummyPasswordHash = hash;
+        }
+        return hash;
+    }
 
     @Transactional
     public ResponseEntity<ApiResponse<UserDetailsResponseDto>> getUserDetails(UserDetailsRequestDto requestDto) {
@@ -40,11 +58,13 @@ public class AuthService {
 
     @Transactional
     public ResponseEntity<ApiResponse<LoginResponseDto>> login(LoginRequestDto requestDto) {
-        UserModel user = repository.findByEmail(requestDto.getEmail())
-                .orElseThrow(() -> new UnauthorizedException("User does not exist!"));
-        boolean isValidPassword = passwordHashing.verifyPassword(requestDto.getPassword(), user.getPassword());
-        if (!isValidPassword) {
-            throw new UnauthorizedException("Password does not match!");
+        UserModel user = repository.findByEmail(EmailNormalizer.normalize(requestDto.getEmail())).orElse(null);
+        // Unknown email and wrong password must be indistinguishable (same status,
+        // message and roughly the same time), so a hash check runs either way.
+        String hashToCheck = user != null ? user.getPassword() : dummyPasswordHash();
+        boolean isValidPassword = passwordHashing.verifyPassword(requestDto.getPassword(), hashToCheck);
+        if (user == null || !isValidPassword) {
+            throw new UnauthorizedException(INVALID_CREDENTIALS);
         }
         LoginResponseDto responseDto = new LoginResponseDto();
         responseDto.setUserId(user.getId());
@@ -54,18 +74,26 @@ public class AuthService {
 
     @Transactional
     public ResponseEntity<ApiResponse<SignupResponseDto>> createNewUser(SignupRequestDto requestDto) {
-        if (repository.findByEmail(requestDto.getEmail()).isPresent()) {
-            throw new ConflictException("Email id already used by another user");
+        String email = EmailNormalizer.normalize(requestDto.getEmail());
+        if (repository.findByEmail(email).isPresent()) {
+            throw new ConflictException(EMAIL_IN_USE);
         }
 
         String hashedPassword = passwordHashing.hashPassword(requestDto.getPassword());
         UserModel newUser = new UserModel();
         newUser.setName(requestDto.getName());
-        newUser.setEmail(requestDto.getEmail());
+        newUser.setEmail(email);
         newUser.setMobile(requestDto.getMobile());
         newUser.setGender(requestDto.getGender());
         newUser.setPassword(hashedPassword);
-        UserModel savedUser = repository.save(newUser);
+        UserModel savedUser;
+        try {
+            // Flush now so a concurrent signup that slipped past the check above
+            // hits the unique index here and becomes a 409, not a 500.
+            savedUser = repository.saveAndFlush(newUser);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException(EMAIL_IN_USE);
+        }
 
         SignupResponseDto responseDto = new SignupResponseDto();
         responseDto.setUserId(savedUser.getId());

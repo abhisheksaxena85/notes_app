@@ -91,16 +91,25 @@ class RegisterViewmodel extends AsyncNotifier<RegisterState> {
     );
   }
 
-  void validatePassword(String value) {
-    if (value.isEmpty || value == "") {
-      state = AsyncData(
-        state.value?.copyWith(passwordErrorMsg: "Field can't be empty") ??
-            RegisterState(),
-      );
-      return;
+  /// Same rule as the server (SignupRequestDto): 8 to 72 characters.
+  static const int minPasswordLength = 8;
+  static const int maxPasswordLength = 72;
+
+  static String? passwordValidationError(String value) {
+    if (value.isEmpty) return "Field can't be empty";
+    if (value.length < minPasswordLength) {
+      return "Password must be at least $minPasswordLength characters";
     }
+    if (value.length > maxPasswordLength) {
+      return "Password must be at most $maxPasswordLength characters";
+    }
+    return null;
+  }
+
+  void validatePassword(String value) {
     state = AsyncData(
-      state.value?.copyWith(passwordErrorMsg: "") ?? RegisterState(),
+      state.value?.copyWith(passwordErrorMsg: passwordValidationError(value) ?? "") ??
+          RegisterState(),
     );
   }
 
@@ -112,12 +121,21 @@ class RegisterViewmodel extends AsyncNotifier<RegisterState> {
   }
 
   Future<void> registerUser(BuildContext context) async {
+    // Check before AsyncLoading: the finally block below resets the state.
+    final passwordError = passwordValidationError(passwordController.text);
+    if (passwordError != null) {
+      state = AsyncData(
+        (state.value ?? RegisterState()).copyWith(passwordErrorMsg: passwordError),
+      );
+      return;
+    }
     state = AsyncLoading();
     try {
       final name = nameController.text.trim();
       final email = emailController.text.trim();
       final mobile = mobileController.text.trim();
-      final password = passwordController.text.trim();
+      // Passwords are never trimmed: spaces are part of the password.
+      final password = passwordController.text;
       RegisterResponseDto response = await _registerRepo.register(
         RegisterRequestDto(
           name: name,
