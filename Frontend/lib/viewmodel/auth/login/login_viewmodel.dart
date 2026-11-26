@@ -71,7 +71,6 @@ class LoginViewmodel extends AsyncNotifier<LoginState> {
     try {
       final email = emailController.text.trim();
       final password = passwordController.text.trim();
-      log("Login Attempt: $email, $password");
       LoginResponseDto response = await _loginRepo.login(
         LoginRequestDto(email: email, password: password),
       );

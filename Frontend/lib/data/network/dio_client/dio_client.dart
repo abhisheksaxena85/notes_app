@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:notes_app/data/network/interceptors/auth_interceptor.dart';
 import 'package:notes_app/data/network/interceptors/logging_interceptor.dart';
 import 'package:notes_app/data/network/interceptors/retry_interceptor.dart';
@@ -26,7 +27,8 @@ class DioClient {
 
     dio.interceptors.addAll([
       AuthInterceptor(),
-      LoggingInterceptor(),
+      // Bodies can contain passwords and note text: never log them in release.
+      if (kDebugMode) LoggingInterceptor(),
       RetryInterceptor(dio),
     ]);
 

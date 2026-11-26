@@ -117,7 +117,6 @@ class RegisterViewmodel extends AsyncNotifier<RegisterState> {
       final email = emailController.text.trim();
       final mobile = mobileController.text.trim();
       final password = passwordController.text.trim();
-      log("Register Attempt: $name, $email, $mobile, $selectedGender");
       RegisterResponseDto response = await _registerRepo.register(
         RegisterRequestDto(
           name: name,

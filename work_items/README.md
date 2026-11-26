@@ -41,7 +41,7 @@ Priority: **P0** = security hole or data loss, fix first · **P1** = broken beha
 | ☐ | [SEC-01](SEC-01-backend-jwt-auth-and-ownership.md) | Backend: real authentication (JWT) and per-user ownership checks | P0 | — |
 | ☐ | [SEC-02](SEC-02-frontend-token-auth.md) | Frontend: send and store the auth token, handle 401 | P0 | SEC-01 |
 | ☑ | [SEC-03](SEC-03-leaked-db-password.md) | DB password committed to git: rotate it and move secrets to env | P0 | — |
-| ☐ | [SEC-04](SEC-04-passwords-in-logs.md) | Passwords and request bodies written to logs (also in release builds) | P0 | — |
+| ☑ | [SEC-04](SEC-04-passwords-in-logs.md) | Passwords and request bodies written to logs (also in release builds) | P0 | — |
 | ☐ | [SEC-05](SEC-05-auth-hardening.md) | Auth hardening: account enumeration, email uniqueness, input validation | P1 | — |
 
 ### Backend
