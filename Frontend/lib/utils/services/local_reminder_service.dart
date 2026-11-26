@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/data/local/shared_preference/preference.dart';
 
+/// The "Daily reminder" and "Weekly summary" settings, stored on this
+/// device. DigestScheduler (REM-08) schedules the notifications for them.
 class LocalReminderService {
   static const String keyDailyReminder = "daily_reminder_enabled";
   static const String keyDailyReminderTime = "daily_reminder_time";
@@ -22,23 +24,30 @@ class LocalReminderService {
     return const TimeOfDay(hour: 9, minute: 0);
   }
 
-  static Future<void> setDailyReminder(bool enabled, {TimeOfDay? time}) async {
-    final pref = getIt<Preference>();
-    await pref.setBool(keyDailyReminder, enabled);
-    if (time != null) {
-      await pref.setString(
-        keyDailyReminderTime,
-        "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}",
-      );
-    }
-  }
+  static Future<void> setDailyReminder(bool enabled, {TimeOfDay? time}) =>
+      save(getIt<Preference>(), daily: enabled, dailyTime: time);
 
   static bool isWeeklySummaryEnabled() {
     return getIt<Preference>().getBool(keyWeeklySummary) ?? false;
   }
 
-  static Future<void> setWeeklySummary(bool enabled) async {
-    final pref = getIt<Preference>();
-    await pref.setBool(keyWeeklySummary, enabled);
+  static Future<void> setWeeklySummary(bool enabled) =>
+      save(getIt<Preference>(), weekly: enabled);
+
+  /// Saves whichever settings are given.
+  static Future<void> save(
+    Preference pref, {
+    bool? daily,
+    TimeOfDay? dailyTime,
+    bool? weekly,
+  }) async {
+    if (daily != null) await pref.setBool(keyDailyReminder, daily);
+    if (dailyTime != null) {
+      await pref.setString(
+        keyDailyReminderTime,
+        "${dailyTime.hour.toString().padLeft(2, '0')}:${dailyTime.minute.toString().padLeft(2, '0')}",
+      );
+    }
+    if (weekly != null) await pref.setBool(keyWeeklySummary, weekly);
   }
 }

@@ -11,6 +11,7 @@ import 'package:notes_app/data/repository/task/task_repo.dart';
 import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/connectivity_service.dart';
+import 'package:notes_app/utils/services/digest_scheduler.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
 import 'package:notes_app/utils/services/reminder_action_handler.dart';
@@ -115,6 +116,16 @@ Future<void> configureDependencies() async {
       currentUserId: () => getIt<SessionService>().userId,
     ),
     dispose: (scheduler) => scheduler.dispose(),
+  );
+
+  /// Daily reminder and weekly summary notifications (REM-08).
+  getIt.registerLazySingleton<DigestScheduler>(
+    () => DigestScheduler(
+      notifications: getIt<NotificationService>(),
+      preference: getIt<Preference>(),
+      database: getIt<AppDatabase>(),
+      currentUserId: () => getIt<SessionService>().userId,
+    ),
   );
 
   /// Done / Not done / Snooze answers given while the app runs (REM-04). The

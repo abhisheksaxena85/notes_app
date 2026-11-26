@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
+import 'package:notes_app/utils/services/digest_scheduler.dart';
 import 'package:notes_app/utils/services/reminder_action_handler.dart';
 import 'package:notes_app/views/screens/calendar/calendar_screen.dart';
 import 'package:notes_app/views/screens/home/home_screen.dart';
@@ -41,6 +42,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final payload = reminderPromptRequests.value;
     if (payload == null || _prompting || !mounted) return;
     reminderPromptRequests.value = null;
+    // REM-08: a digest opens the Workspace (daily) or the Calendar (weekly).
+    final digest = digestKindOf(payload);
+    if (digest != null) {
+      setState(() => _currentIndex = digest == 'weekly' ? 1 : 0);
+      return;
+    }
     _prompting = true;
     try {
       setState(() => _currentIndex = 0);

@@ -138,6 +138,50 @@ Future<void> showExactAlarmPrompt(
   if (open == true) await permissions.requestExact();
 }
 
+/// REM-08: before turning on a digest. Asks if the OS can still ask;
+/// otherwise explains and offers the OS settings. True if allowed.
+Future<bool> ensureNotificationsAllowed(
+  BuildContext context,
+  NotificationPermissionService permissions,
+) async {
+  final status = await permissions.refresh();
+  if (status.alertsOn) return true;
+  if (status.permission != NotificationPermission.permanentlyDenied && await permissions.request()) {
+    return true;
+  }
+  if (!context.mounted) return false;
+  final palette = context.daymark;
+  final open = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: palette.surface,
+      title: Text(
+        'Notifications are off',
+        style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: palette.ink),
+      ),
+      content: Text(
+        'Daymark needs permission to send notifications for this. You can turn it on in Settings.',
+        style: GoogleFonts.inter(color: palette.muted, height: 1.4),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: Text('Not now', style: GoogleFonts.inter(color: palette.muted)),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: Text(
+            'Open settings',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: palette.accent),
+          ),
+        ),
+      ],
+    ),
+  );
+  if (open == true) await permissions.openSettings();
+  return false;
+}
+
 /// The text of the notification status row in Profile → Notifications.
 String notificationStatusLabel(NotificationStatus status) => switch (status.permission) {
   NotificationPermission.granted => status.exactAllowed ? 'On' : 'On, but may be late',

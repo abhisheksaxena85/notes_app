@@ -23,7 +23,7 @@
 | | Horizontal Weekly Strip Sync | Complete | Shared State Selection | Widget Test |
 | | Day Note Filtering | Complete | Available (`/notes/get-notes-by-date`) | Widget Test |
 | **Settings & Preferences** | Light / Dark / System Theme | Complete | Local `themeModeProvider` | Unit Test |
-| | Local Notifications / Reminders | In Progress | Local Notification Service (No Backend) | Unit Test |
+| | Local Notifications / Reminders | Complete (device QA pending, REM-09) | NotificationService, ReminderScheduler, ReminderActionHandler, DigestScheduler (flutter_local_notifications) | Unit + Widget Tests |
 | | JSON Backup / Export | In Progress | Available (`/notes/export` + Local) | Unit Test |
 | | Help & FAQ | In Progress | In-App Help Modal | Visual / Unit Test |
 | | About Daymark | In Progress | In-App About Modal | Visual / Unit Test |
@@ -31,6 +31,6 @@
 ## 2. Gaps Being Closed in Current Phase
 1. **Frontend Backend Mapping**: Wire `tags` into `NoteItem`, `CachedNote`, `CreateNoteRequestDto`, and `UpdateNoteRequestDto`.
 2. **Profile Actions**: Connect Edit Profile dialog, Change Password dialog, and Delete Account confirmation.
-3. **Local Reminders**: Add local notification scheduling service for Daily reminder and Weekly summary with time selection.
+3. **Local Reminders**: Done (REM-01…REM-08): reminder notifications with Done / Not done / Snooze, Daily reminder and Weekly summary. Device QA in `work_items/REM-09-results.md`.
 4. **JSON Backup / Export**: Implement formatted versioned JSON export with clipboard copy and file share.
 5. **Calendar Integration**: Full binding between server-backed note dates and calendar activity indicators.

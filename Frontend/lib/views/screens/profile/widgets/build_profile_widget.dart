@@ -13,7 +13,7 @@ import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
-import 'package:notes_app/utils/services/local_reminder_service.dart';
+import 'package:notes_app/utils/services/digest_scheduler.dart';
 import 'package:notes_app/utils/services/note_data_transfer_service.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
@@ -305,9 +305,10 @@ class BuildProfileWidget extends ConsumerWidget {
 
   void _showNotificationsModal(BuildContext context) {
     final palette = context.daymark;
-    bool isDaily = LocalReminderService.isDailyReminderEnabled();
-    TimeOfDay reminderTime = LocalReminderService.getDailyReminderTime();
-    bool isWeekly = LocalReminderService.isWeeklySummaryEnabled();
+    final digests = getIt<DigestScheduler>();
+    bool isDaily = digests.dailyEnabled;
+    TimeOfDay reminderTime = digests.dailyTime;
+    bool isWeekly = digests.weeklyEnabled;
     final permissions = getIt<NotificationPermissionService>();
     permissions.refresh();
 
@@ -385,8 +386,10 @@ class BuildProfileWidget extends ConsumerWidget {
                         value: isDaily,
                         activeThumbColor: palette.accent,
                         onChanged: (val) async {
+                          // REM-08: only on if notifications are allowed.
+                          if (val && !await ensureNotificationsAllowed(context, permissions)) return;
                           setModalState(() => isDaily = val);
-                          await LocalReminderService.setDailyReminder(val, time: reminderTime);
+                          await digests.setDaily(val, time: reminderTime);
                         },
                       ),
                     ],
@@ -401,7 +404,7 @@ class BuildProfileWidget extends ConsumerWidget {
                         );
                         if (picked != null) {
                           setModalState(() => reminderTime = picked);
-                          await LocalReminderService.setDailyReminder(true, time: picked);
+                          await digests.setDaily(true, time: picked);
                         }
                       },
                       icon: Icon(Icons.access_time_rounded, size: 16.sp, color: palette.accent),
@@ -446,8 +449,9 @@ class BuildProfileWidget extends ConsumerWidget {
                         value: isWeekly,
                         activeThumbColor: palette.accent,
                         onChanged: (val) async {
+                          if (val && !await ensureNotificationsAllowed(context, permissions)) return;
                           setModalState(() => isWeekly = val);
-                          await LocalReminderService.setWeeklySummary(val);
+                          await digests.setWeekly(val);
                         },
                       ),
                     ],

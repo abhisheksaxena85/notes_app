@@ -9,6 +9,7 @@ import 'package:notes_app/data/local/shared_preference/preference.dart';
 import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/connectivity_service.dart';
+import 'package:notes_app/utils/services/digest_scheduler.dart';
 import 'package:notes_app/utils/services/notification_background.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
@@ -69,6 +70,9 @@ Future<void> initialize() async {
   final scheduler = getIt<ReminderScheduler>()
     ..start(userChanges: session.changes, permission: permissions.status);
   unawaited(scheduler.reconcile());
+  // REM-08: digests that are on but missing, and fresh weekly counts.
+  final digests = getIt<DigestScheduler>();
+  unawaited(digests.reconcile());
   // Sync queued changes when the app returns to the foreground too, not only
   // when connectivity changes. The listener registers itself with the binding
   // and lives as long as the app.
@@ -79,6 +83,7 @@ Future<void> initialize() async {
       unawaited(permissions.refresh());
       // REM-03: time zone changes and occurrences missed while closed.
       unawaited(scheduler.onAppResumed());
+      unawaited(digests.reconcile());
     },
   );
 }
