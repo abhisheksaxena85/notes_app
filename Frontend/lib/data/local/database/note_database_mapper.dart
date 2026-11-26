@@ -46,6 +46,7 @@ class NoteDatabaseMapper {
       updatedAt: Value(note.updatedAt),
       pinned: Value(note.pinned ?? false),
       tags: Value(note.tags),
+      clientId: Value(note.clientId),
     );
   }
 

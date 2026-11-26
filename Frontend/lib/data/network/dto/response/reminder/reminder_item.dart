@@ -11,6 +11,8 @@ class ReminderItem {
   final String repeatInterval; // NONE, DAILY, WEEKLY, MONTHLY
   final String? createdAt;
   final String? updatedAt;
+  /// FE-03 idempotency key the item was created with (null for old items).
+  final String? clientId;
 
   ReminderItem({
     this.reminderId,
@@ -23,6 +25,7 @@ class ReminderItem {
     this.repeatInterval = 'NONE',
     this.createdAt,
     this.updatedAt,
+    this.clientId,
   });
 
   /// Status to render: an overdue one-off PENDING reminder is shown as MISSED.
@@ -68,6 +71,7 @@ class ReminderItem {
       repeatInterval: json['repeatInterval']?.toString().toUpperCase() ?? 'NONE',
       createdAt: json['createdAt']?.toString(),
       updatedAt: json['updatedAt']?.toString(),
+      clientId: json['clientId']?.toString(),
     );
   }
 
@@ -83,6 +87,7 @@ class ReminderItem {
       'repeatInterval': repeatInterval,
       if (createdAt != null) 'createdAt': createdAt,
       if (updatedAt != null) 'updatedAt': updatedAt,
+      if (clientId != null) 'clientId': clientId,
     };
   }
 
@@ -97,6 +102,7 @@ class ReminderItem {
     String? repeatInterval,
     String? createdAt,
     String? updatedAt,
+    String? clientId,
   }) {
     return ReminderItem(
       reminderId: reminderId ?? this.reminderId,
@@ -109,6 +115,7 @@ class ReminderItem {
       repeatInterval: repeatInterval ?? this.repeatInterval,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      clientId: clientId ?? this.clientId,
     );
   }
 }

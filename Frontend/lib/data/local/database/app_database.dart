@@ -413,20 +413,11 @@ class AppDatabase extends _$AppDatabase {
     return query.getSingleOrNull();
   }
 
+  /// Merges a fresh server list into the cache; see [_mergeServerRows].
   Future<void> replaceServerNotes(
     int userId,
     List<CachedNotesCompanion> notes,
-  ) async {
-    await transaction(() async {
-      await (delete(cachedNotes)..where(
-            (note) => note.userId.equals(userId) & note.isPending.equals(false),
-          ))
-          .go();
-      for (final note in notes) {
-        await into(cachedNotes).insertOnConflictUpdate(note);
-      }
-    });
-  }
+  ) => _mergeServerRows(_notesRows, userId, notes);
 
   Future<int> enqueueNote({
     required int userId,
@@ -533,8 +524,124 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  Future<void> saveServerNote(CachedNotesCompanion note) async {
-    await into(cachedNotes).insertOnConflictUpdate(note);
+  Future<void> saveServerNote(CachedNotesCompanion note) =>
+      _upsertByServerId(_notesRows, note);
+
+  // ---------------------------------------------------------------------------
+  // Server rows: upsert and merge (FE-04)
+  // ---------------------------------------------------------------------------
+
+  late final _notesRows = _ServerRows<$CachedNotesTable, CachedNote, CachedNotesCompanion>(
+    table: cachedNotes,
+    id: (t) => t.id,
+    userId: (t) => t.userId,
+    serverId: (t) => t.serverId,
+    clientId: (t) => t.clientId,
+    isPending: (t) => t.isPending,
+    companionUserId: (c) => c.userId,
+    companionServerId: (c) => c.serverId,
+    companionClientId: (c) => c.clientId,
+  );
+
+  late final _tasksRows = _ServerRows<$CachedTasksTable, CachedTask, CachedTasksCompanion>(
+    table: cachedTasks,
+    id: (t) => t.id,
+    userId: (t) => t.userId,
+    serverId: (t) => t.serverId,
+    clientId: (t) => t.clientId,
+    isPending: (t) => t.isPending,
+    companionUserId: (c) => c.userId,
+    companionServerId: (c) => c.serverId,
+    companionClientId: (c) => c.clientId,
+  );
+
+  late final _remindersRows =
+      _ServerRows<$CachedRemindersTable, CachedReminder, CachedRemindersCompanion>(
+    table: cachedReminders,
+    id: (t) => t.id,
+    userId: (t) => t.userId,
+    serverId: (t) => t.serverId,
+    clientId: (t) => t.clientId,
+    isPending: (t) => t.isPending,
+    companionUserId: (c) => c.userId,
+    companionServerId: (c) => c.serverId,
+    companionClientId: (c) => c.clientId,
+  );
+
+  /// Writes a server copy over the cached row with the same (userId, serverId)
+  /// and keeps that row's local id; inserts it if it is not cached yet.
+  /// (`insertOnConflictUpdate` only targets the primary key, which server
+  /// copies don't carry, so it broke the unique (userId, serverId) key.)
+  /// Returns the local id.
+  Future<int> _upsertByServerId<T extends Table, D, C extends UpdateCompanion<D>>(
+    _ServerRows<T, D, C> rows,
+    C row,
+  ) {
+    return transaction(() async {
+      final serverId = rows.companionServerId(row);
+      if (!serverId.present || serverId.value == null) {
+        return into(rows.table).insert(row);
+      }
+      final t = rows.table.asDslTable;
+      final match = rows.userId(t).equals(rows.companionUserId(row).value) &
+          rows.serverId(t).equals(serverId.value!);
+      final existing = await (selectOnly(rows.table)
+            ..addColumns([rows.id(t)])
+            ..where(match))
+          .map((r) => r.read(rows.id(t))!)
+          .getSingleOrNull();
+      if (existing == null) return into(rows.table).insert(row);
+      await (update(rows.table)..where((_) => match)).write(row);
+      return existing;
+    });
+  }
+
+  /// A refresh from the server, as a merge in one transaction:
+  /// - each server item is upserted by (userId, serverId), keeping its local
+  ///   id (stable ids, no delete-and-reinsert flicker);
+  /// - rows with local changes not yet on the server (`isPending`) win: they
+  ///   are neither overwritten nor deleted until the queue has replayed them;
+  /// - a server item whose clientId matches a create still queued here (its
+  ///   response was lost) is skipped; the retried create links the two;
+  /// - synced rows missing from the server list are deleted;
+  /// - local-only rows (no serverId) are never touched.
+  Future<void> _mergeServerRows<T extends Table, D, C extends UpdateCompanion<D>>(
+    _ServerRows<T, D, C> rows,
+    int userId,
+    List<C> serverRows,
+  ) {
+    return transaction(() async {
+      final t = rows.table.asDslTable;
+      final pending = await (selectOnly(rows.table)
+            ..addColumns([rows.serverId(t), rows.clientId(t)])
+            ..where(rows.userId(t).equals(userId) & rows.isPending(t).equals(true)))
+          .get();
+      final pendingServerIds = {
+        for (final r in pending) ?r.read(rows.serverId(t)),
+      };
+      final pendingClientIds = {
+        for (final r in pending) ?r.read(rows.clientId(t)),
+      };
+
+      final listedServerIds = <int>{};
+      for (final row in serverRows) {
+        final serverId = rows.companionServerId(row);
+        if (!serverId.present || serverId.value == null) continue;
+        listedServerIds.add(serverId.value!);
+        if (pendingServerIds.contains(serverId.value)) continue;
+        final clientId = rows.companionClientId(row);
+        if (clientId.present && pendingClientIds.contains(clientId.value)) continue;
+        await _upsertByServerId(rows, row);
+      }
+
+      await (delete(rows.table)
+            ..where((_) =>
+                rows.userId(t).equals(userId) &
+                rows.serverId(t).isNotNull() &
+                rows.serverId(t).isNotIn(listedServerIds) &
+                rows.isPending(t).equals(false)))
+          .go();
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -676,38 +783,14 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// Merges a fresh server list into the cache; see [_mergeServerRows].
   Future<void> replaceServerTasks(
     int userId,
     List<CachedTasksCompanion> tasks,
-  ) async {
-    await transaction(() async {
-      await (delete(cachedTasks)..where(
-            (task) => task.userId.equals(userId) & task.isPending.equals(false),
-          ))
-          .go();
-      for (final task in tasks) {
-        await into(cachedTasks).insertOnConflictUpdate(task);
-      }
-    });
-  }
+  ) => _mergeServerRows(_tasksRows, userId, tasks);
 
-  /// Upserts by (userId, serverId). `insertOnConflictUpdate` only targets the
-  /// primary key, so a companion without a local id would violate the unique
-  /// (userId, serverId) key when the server copy is already cached.
-  Future<void> saveServerTask(CachedTasksCompanion task) async {
-    await transaction(() async {
-      final serverId = task.serverId.present ? task.serverId.value : null;
-      if (serverId != null) {
-        final updated = await (update(cachedTasks)
-              ..where((t) =>
-                  t.userId.equals(task.userId.value) &
-                  t.serverId.equals(serverId)))
-            .write(task);
-        if (updated > 0) return;
-      }
-      await into(cachedTasks).insert(task);
-    });
-  }
+  Future<void> saveServerTask(CachedTasksCompanion task) =>
+      _upsertByServerId(_tasksRows, task);
 
   Future<PendingTask?> getPendingTaskForLocalId(int localTaskId) {
     return (select(pendingTasks)
@@ -866,36 +949,14 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// Merges a fresh server list into the cache; see [_mergeServerRows].
   Future<void> replaceServerReminders(
     int userId,
     List<CachedRemindersCompanion> reminders,
-  ) async {
-    await transaction(() async {
-      await (delete(cachedReminders)..where(
-            (rem) => rem.userId.equals(userId) & rem.isPending.equals(false),
-          ))
-          .go();
-      for (final reminder in reminders) {
-        await into(cachedReminders).insertOnConflictUpdate(reminder);
-      }
-    });
-  }
+  ) => _mergeServerRows(_remindersRows, userId, reminders);
 
-  /// Upserts by (userId, serverId); see [saveServerTask].
-  Future<void> saveServerReminder(CachedRemindersCompanion reminder) async {
-    await transaction(() async {
-      final serverId = reminder.serverId.present ? reminder.serverId.value : null;
-      if (serverId != null) {
-        final updated = await (update(cachedReminders)
-              ..where((r) =>
-                  r.userId.equals(reminder.userId.value) &
-                  r.serverId.equals(serverId)))
-            .write(reminder);
-        if (updated > 0) return;
-      }
-      await into(cachedReminders).insert(reminder);
-    });
-  }
+  Future<void> saveServerReminder(CachedRemindersCompanion reminder) =>
+      _upsertByServerId(_remindersRows, reminder);
 
   Future<PendingReminder?> getPendingReminderForLocalId(int localReminderId) {
     return (select(pendingReminders)
@@ -938,4 +999,30 @@ class AppDatabase extends _$AppDatabase {
       }
     });
   }
+}
+
+/// Column accessors for the three cached tables that mirror server rows
+/// (notes, tasks, reminders), so upsert and merge are written once.
+class _ServerRows<T extends Table, D, C extends UpdateCompanion<D>> {
+  final TableInfo<T, D> table;
+  final GeneratedColumn<int> Function(T) id;
+  final GeneratedColumn<int> Function(T) userId;
+  final GeneratedColumn<int> Function(T) serverId;
+  final GeneratedColumn<String> Function(T) clientId;
+  final GeneratedColumn<bool> Function(T) isPending;
+  final Value<int> Function(C) companionUserId;
+  final Value<int?> Function(C) companionServerId;
+  final Value<String?> Function(C) companionClientId;
+
+  const _ServerRows({
+    required this.table,
+    required this.id,
+    required this.userId,
+    required this.serverId,
+    required this.clientId,
+    required this.isPending,
+    required this.companionUserId,
+    required this.companionServerId,
+    required this.companionClientId,
+  });
 }

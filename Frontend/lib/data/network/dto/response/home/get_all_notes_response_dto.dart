@@ -37,6 +37,9 @@ class NoteItem {
   bool? pinned;
   @JsonKey(name: "tags")
   String? tags;
+  /// FE-03 idempotency key the note was created with (null for old notes).
+  @JsonKey(name: "clientId", includeIfNull: false)
+  String? clientId;
 
   NoteItem({
     this.noteId,
@@ -47,6 +50,7 @@ class NoteItem {
     this.updatedAt,
     this.pinned,
     this.tags,
+    this.clientId,
   });
 
   List<String> get tagsList {

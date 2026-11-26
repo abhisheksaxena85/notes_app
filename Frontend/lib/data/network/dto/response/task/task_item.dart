@@ -12,6 +12,8 @@ class TaskItem {
   final bool isCompleted;
   final String? createdAt;
   final String? updatedAt;
+  /// FE-03 idempotency key the item was created with (null for old items).
+  final String? clientId;
 
   TaskItem({
     this.taskId,
@@ -25,6 +27,7 @@ class TaskItem {
     this.isCompleted = false,
     this.createdAt,
     this.updatedAt,
+    this.clientId,
   });
 
   /// Status to render: an overdue PENDING task is shown as MISSED.
@@ -69,6 +72,7 @@ class TaskItem {
       isCompleted: parsedCompleted || statusStr == 'COMPLETED',
       createdAt: json['createdAt']?.toString(),
       updatedAt: json['updatedAt']?.toString(),
+      clientId: json['clientId']?.toString(),
     );
   }
 
@@ -85,6 +89,7 @@ class TaskItem {
       'isCompleted': isCompleted,
       if (createdAt != null) 'createdAt': createdAt,
       if (updatedAt != null) 'updatedAt': updatedAt,
+      if (clientId != null) 'clientId': clientId,
     };
   }
 
@@ -100,6 +105,7 @@ class TaskItem {
     bool? isCompleted,
     String? createdAt,
     String? updatedAt,
+    String? clientId,
   }) {
     return TaskItem(
       taskId: taskId ?? this.taskId,
@@ -113,6 +119,7 @@ class TaskItem {
       isCompleted: isCompleted ?? this.isCompleted,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      clientId: clientId ?? this.clientId,
     );
   }
 }

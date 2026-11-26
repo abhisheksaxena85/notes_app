@@ -34,6 +34,7 @@ class TaskDatabaseMapper {
       createdAt: Value(task.createdAt),
       updatedAt: Value(task.updatedAt),
       isPending: const Value(false),
+      clientId: Value(task.clientId),
     );
   }
 }

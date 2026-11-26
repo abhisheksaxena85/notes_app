@@ -33,6 +33,7 @@ NoteItem _$NoteItemFromJson(Map<String, dynamic> json) => NoteItem(
   updatedAt: json['updatedAt'] as String?,
   pinned: json['pinned'] as bool?,
   tags: json['tags'] as String?,
+  clientId: json['clientId'] as String?,
 );
 
 Map<String, dynamic> _$NoteItemToJson(NoteItem instance) => <String, dynamic>{
@@ -44,4 +45,5 @@ Map<String, dynamic> _$NoteItemToJson(NoteItem instance) => <String, dynamic>{
   'updatedAt': instance.updatedAt,
   'pinned': instance.pinned,
   'tags': instance.tags,
+  'clientId': ?instance.clientId,
 };

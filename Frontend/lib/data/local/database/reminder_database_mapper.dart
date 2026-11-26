@@ -34,6 +34,7 @@ class ReminderDatabaseMapper {
       createdAt: Value(reminder.createdAt),
       updatedAt: Value(reminder.updatedAt),
       isPending: const Value(false),
+      clientId: Value(reminder.clientId),
     );
   }
 }
