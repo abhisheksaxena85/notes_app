@@ -5,7 +5,6 @@
 > **Target Audience**: AI Engineering Agents / Senior Software Engineers  
 > **Status**: Ready for Implementation (Do NOT modify without running test suites)  
 > **Scope**: Backend (`/Backend` - Spring Boot 3.x, MySQL, JPA) and Frontend (`/Frontend` - Flutter 3.x, Riverpod, Drift SQLite, Dio)
-> **Master File Location**: `../instruction_work.md` (Repository Root)
 
 ---
 
