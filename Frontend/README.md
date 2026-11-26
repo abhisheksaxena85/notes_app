@@ -100,7 +100,16 @@ Detailed specifications and implementation mapping can be found in the `docs/` f
 
 ## 🔔 Local Reminders & Notifications
 
-As per architectural requirements, **no reminder or notification logic resides on the backend**:
-- Handled entirely on the mobile client via `lib/utils/services/local_reminder_service.dart`.
-- Supports configurable daily reminder times (TimePicker) and weekly summaries.
-- Settings are persisted across app restarts using local preferences and do not sync to remote servers.
+Reminders fire as **local** OS notifications (`flutter_local_notifications`), even when the app is closed; the server stores reminders and answers but never pushes anything.
+- `NotificationService`: plugin setup, channels, permissions. Android, iOS and macOS only; a no-op on web, Windows and Linux (the notification settings are hidden there).
+- `ReminderScheduler`: keeps the scheduled notifications equal to the reminders in Drift (nearest 50, wall-clock times in the device zone).
+- `ReminderActionHandler`: **Done / Not done / Snooze 10 min** from the notification. Saved locally first and synced later; with the app killed it runs in a background isolate (`notification_background.dart`).
+- `DigestScheduler`: the Daily reminder and Weekly summary settings in Profile → Notifications.
+
+### Known OEM limitations
+Some Android brands (Samsung, Xiaomi, OnePlus, Huawei, Oppo/Vivo and others) stop apps in the background more aggressively than stock Android. If reminders arrive late or not at all on such a phone:
+- turn off battery optimisation for Daymark (Settings → Apps → Daymark → Battery → Unrestricted / "Don't optimise");
+- allow auto-start / background activity where the phone has that setting;
+- on Android 12+, allow **Alarms & reminders** for Daymark (Profile → Notifications shows "On, but may be late" when it is off).
+
+See https://dontkillmyapp.com for per-brand steps. Device test results: `work_items/REM-09-results.md`.
