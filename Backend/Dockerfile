@@ -12,8 +12,8 @@ RUN mvn -B dependency:go-offline
 # Copy application source code
 COPY src ./src
 
-# Compile, test and package the application
-RUN mvn clean package -DskipTests
+# Package the application. Tests run in CI (.github/workflows/ci.yml), not here.
+RUN mvn -B clean package -DskipTests
 
 
 # Stage 2: Run the packaged application
@@ -21,14 +21,16 @@ FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
+# Run as an unprivileged user, not root
+RUN groupadd --system app && useradd --system --gid app --no-create-home app
+
 # Copy the JAR from the build stage
 COPY --from=build /workspace/target/*.jar /app/app.jar
 
-# Spring Boot will use port 80 inside this container
-ENV PORT=80
+USER app
 
-# Document the port used by the application
-EXPOSE 80
+# Spring listens on $PORT (server.port=${PORT:8080}); 8080 when PORT is unset.
+EXPOSE 8080
 
 # Start the Spring Boot application
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

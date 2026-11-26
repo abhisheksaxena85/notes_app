@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+      - name: Test
+        run: ./mvnw -B test
+
+  frontend:
+    name: Flutter analyze and test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          # Keep in step with the Flutter used locally (`flutter --version`).
+          flutter-version: "3.47.2"
+          cache: true
+      - name: Install packages
+        run: flutter pub get
+      # Generated Drift/json files are committed, so build_runner isn't needed.
+      - name: Analyze
+        run: flutter analyze
+      - name: Test
+        run: flutter test
+
+  docker:
+    name: Docker image
+    needs: backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: docker build Backend --file Backend/Dockerfile --tag daymark-backend:${{ github.sha }}
+      # To publish the image to GHCR, give this job `packages: write`
+      # permission and uncomment:
+      # - name: Log in to GHCR
+      #   run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      # - name: Push
+      #   run: |
+      #     image=ghcr.io/${{ github.repository_owner }}/daymark-backend
+      #     docker tag daymark-backend:${{ github.sha }} $image:${{ github.sha }}
+      #     docker push $image:${{ github.sha }}
