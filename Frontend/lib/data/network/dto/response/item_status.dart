@@ -27,3 +27,18 @@ class ItemStatus {
     return status;
   }
 }
+
+/// REM-05: choices for a repeating reminder. They answer the current
+/// occurrence (the reminder then moves to the next one) instead of setting
+/// a permanent status.
+class RepeatingChoice {
+  static const doneToday = 'occurrence:COMPLETED';
+  static const missedToday = 'occurrence:MISSED';
+
+  /// Ends the series: the reminder is completed and stops alerting.
+  static const stop = 'stop';
+
+  /// The outcome of an occurrence choice, or null for [stop] / a status.
+  static String? outcomeOf(String choice) =>
+      choice.startsWith('occurrence:') ? choice.substring('occurrence:'.length) : null;
+}

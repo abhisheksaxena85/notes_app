@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/data/network/dto/request/reminder/create_reminder_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/reminder/update_reminder_request_dto.dart';
+import 'package:notes_app/data/network/dto/response/item_status.dart';
 import 'package:notes_app/data/repository/reminder/reminder_repo.dart';
 import 'package:notes_app/viewmodel/reminder/reminder_state.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
@@ -80,6 +81,22 @@ class ReminderViewmodel extends AsyncNotifier<ReminderState> {
   Future<void> updateReminderStatus(int reminderId, String status) async {
     final userId = getUserId();
     await _reminderRepo.updateReminderStatus(userId, reminderId, status);
+  }
+
+  /// REM-05: answers the current occurrence of a repeating reminder
+  /// (COMPLETED or MISSED); it moves to the next one and stays pending.
+  Future<void> answerOccurrence(int reminderId, String outcome) async {
+    final userId = getUserId();
+    await _reminderRepo.answerCurrentOccurrence(userId, reminderId, outcome);
+  }
+
+  /// A status picked on a reminder card, or a [RepeatingChoice] for a
+  /// repeating one.
+  Future<void> applyChoice(int reminderId, String choice) {
+    final outcome = RepeatingChoice.outcomeOf(choice);
+    if (outcome != null) return answerOccurrence(reminderId, outcome);
+    if (choice == RepeatingChoice.stop) return updateReminderStatus(reminderId, 'COMPLETED');
+    return updateReminderStatus(reminderId, choice);
   }
 
   Future<void> updateReminder(UpdateReminderRequestDto requestDto) async {

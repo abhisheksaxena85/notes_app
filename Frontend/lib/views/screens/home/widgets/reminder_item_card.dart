@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:notes_app/data/network/dto/response/item_status.dart';
 import 'package:notes_app/data/network/dto/response/reminder/reminder_item.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
+import 'package:notes_app/utils/reminder_time.dart';
 import 'package:notes_app/views/screens/home/widgets/item_status_sheet.dart';
 
 Widget reminderItemCard({
@@ -18,6 +20,7 @@ Widget reminderItemCard({
   final String status = reminder.effectiveStatus();
   final bool isCompleted = status == 'COMPLETED';
   final bool isMissedOrRejected = status == 'MISSED' || status == 'REJECTED';
+  final bool repeating = reminder.repeatInterval != 'NONE';
 
   // Left Status Strip Color
   Color stripColor;
@@ -75,6 +78,7 @@ Widget reminderItemCard({
                           final selected = await showItemStatusSheet(
                             context,
                             currentStatus: reminder.status,
+                            repeating: repeating && reminder.status == 'PENDING',
                           );
                           if (selected != null) onStatusSelected(selected);
                         },
@@ -91,8 +95,11 @@ Widget reminderItemCard({
                             // Status Toggle Icon Button
                             GestureDetector(
                               onTap: () {
-                                final nextStatus =
-                                    isCompleted ? 'PENDING' : 'COMPLETED';
+                                // REM-05: a pending repeat is done for this
+                                // occurrence only, then moves to the next.
+                                final nextStatus = repeating && !isCompleted
+                                    ? RepeatingChoice.doneToday
+                                    : (isCompleted ? 'PENDING' : 'COMPLETED');
                                 onStatusChange(nextStatus);
                               },
                               behavior: HitTestBehavior.opaque,
@@ -258,6 +265,19 @@ Widget reminderItemCard({
                                   ),
                                 ),
 
+                              // REM-05: how the last occurrence went
+                              if (repeating && _lastOutcomeLabel(reminder) != null)
+                                Text(
+                                  _lastOutcomeLabel(reminder)!,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: reminder.lastOutcome == 'COMPLETED'
+                                        ? const Color(0xFF0A5B2F)
+                                        : const Color(0xFFB95E58),
+                                  ),
+                                ),
+
                               // Missed / Rejected Status Tag
                               if (isMissedOrRejected)
                                 Container(
@@ -305,4 +325,14 @@ String _formatReminderTime(ReminderItem reminder) {
     return reminder.remindAt.replaceFirst('T', ' ').substring(0, 16);
   }
   return reminder.remindAt;
+}
+
+/// "Last: done ✓" / "Last: missed (Nov 25)" for a repeating reminder.
+String? _lastOutcomeLabel(ReminderItem reminder) {
+  final outcome = reminder.lastOutcome;
+  if (outcome == null) return null;
+  final at = parseWallClock(reminder.lastOutcomeAt);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  final when = at == null ? '' : ' (${months[at.month - 1]} ${at.day})';
+  return outcome == 'COMPLETED' ? 'Last: done ✓$when' : 'Last: missed$when';
 }

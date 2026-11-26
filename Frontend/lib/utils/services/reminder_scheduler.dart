@@ -202,18 +202,21 @@ class ReminderScheduler {
   }
 
   Future<void> _reconcileOnce() async {
-    if (!notifications.isSupported) return;
     final userId = currentUserId();
     if (userId == 0) return;
-    // Without permission nothing would show; keep what is scheduled, it
-    // works again as soon as permission is back.
-    if (!await notifications.areEnabled()) return;
 
     final now = _now();
     var rows = await database.getRemindersForUser(userId);
+    // Repeats move on everywhere, even where nothing can be scheduled (web,
+    // desktop, notifications off), so the Workspace never shows a stale one.
     if (await _catchUp(userId, rows, now)) {
       rows = await database.getRemindersForUser(userId);
     }
+
+    if (!notifications.isSupported) return;
+    // Without permission nothing would show; keep what is scheduled, it
+    // works again as soon as permission is back.
+    if (!await notifications.areEnabled()) return;
 
     final use24h = _use24h();
     final wanted = <_Desired>[];

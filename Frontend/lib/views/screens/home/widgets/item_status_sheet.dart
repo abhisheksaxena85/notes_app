@@ -5,17 +5,25 @@ import 'package:notes_app/data/network/dto/response/item_status.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 
 /// Long-press status picker for task and reminder cards. MISSED is derived
-/// from the due time, so it is not offered as a manual choice.
+/// from the due time, so it is not offered as a manual choice. For a
+/// [repeating] reminder it offers [RepeatingChoice]s instead.
 Future<String?> showItemStatusSheet(
   BuildContext context, {
   required String currentStatus,
+  bool repeating = false,
 }) {
   final palette = context.daymark;
-  const options = [
+  const statusOptions = [
     (ItemStatus.pending, 'Pending', Icons.radio_button_unchecked_rounded, Color(0xFF166BBA)),
     (ItemStatus.completed, 'Completed', Icons.check_circle_rounded, Color(0xFF0A5B2F)),
     (ItemStatus.rejected, 'Rejected', Icons.cancel_outlined, Color(0xFFB95E58)),
   ];
+  const repeatingOptions = [
+    (RepeatingChoice.doneToday, 'Done for today', Icons.check_circle_rounded, Color(0xFF0A5B2F)),
+    (RepeatingChoice.missedToday, 'Missed today', Icons.cancel_outlined, Color(0xFFB95E58)),
+    (RepeatingChoice.stop, 'Stop repeating', Icons.stop_circle_outlined, Color(0xFF6B6B6B)),
+  ];
+  final options = repeating ? repeatingOptions : statusOptions;
 
   return showModalBottomSheet<String>(
     context: context,

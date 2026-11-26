@@ -482,24 +482,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 return reminderItemCard(
                                   context: context,
                                   reminder: reminder,
-                                  onStatusChange: (newStatus) {
+                                  onStatusChange: (choice) {
                                     if (reminder.reminderId != null) {
                                       ref
                                           .read(reminderController.notifier)
-                                          .updateReminderStatus(
-                                            reminder.reminderId!,
-                                            newStatus,
-                                          );
+                                          .applyChoice(reminder.reminderId!, choice);
                                     }
                                   },
-                                  onStatusSelected: (newStatus) {
+                                  onStatusSelected: (choice) {
                                     if (reminder.reminderId != null) {
                                       ref
                                           .read(reminderController.notifier)
-                                          .updateReminderStatus(
-                                            reminder.reminderId!,
-                                            newStatus,
-                                          );
+                                          .applyChoice(reminder.reminderId!, choice);
                                     }
                                   },
                                 );

@@ -234,6 +234,15 @@ class ReminderRepo {
     unawaited(syncService.requestSync());
   }
 
+  /// REM-05: "Done for today" / "Missed today" from the app, for the
+  /// occurrence the reminder is on now. [itemId] is the UI id.
+  Future<void> answerCurrentOccurrence(int userId, int itemId, String outcome) async {
+    final item = await database.findItem(SyncEntity.reminder, userId, itemId);
+    final row = item == null ? null : await database.getReminderRow(userId, item.localId);
+    if (row == null) throw StateError('The reminder $itemId was not found.');
+    await completeOccurrence(userId, row, row.remindAt, outcome);
+  }
+
   /// REM-05 catch-up: a repeating reminder whose occurrence passed without an
   /// answer (the app was closed) moves to [next], keeping its anchor, and
   /// records the missed occurrence. Queued like any edit.

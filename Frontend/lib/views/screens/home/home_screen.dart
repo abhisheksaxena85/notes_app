@@ -128,6 +128,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return list;
   }
 
+  /// A status from the card, or a REM-05 RepeatingChoice for repeats.
+  void _applyReminderChoice(ReminderItem reminder, String choice) {
+    final id = reminder.reminderId;
+    if (id != null) ref.read(reminderController.notifier).applyChoice(id, choice);
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = context.daymark;
@@ -461,14 +467,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               return reminderItemCard(
                 context: context,
                 reminder: reminder,
-                onStatusChange: (newStatus) {
-                  if (reminder.reminderId != null) {
-                    ref.read(reminderController.notifier).updateReminderStatus(
-                          reminder.reminderId!,
-                          newStatus,
-                        );
-                  }
-                },
+                onStatusChange: (newStatus) => _applyReminderChoice(reminder, newStatus),
                 onDelete: () {
                   if (reminder.reminderId != null) {
                     ref.read(reminderController.notifier).deleteReminder(
@@ -476,14 +475,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         );
                   }
                 },
-                onStatusSelected: (status) {
-                  if (reminder.reminderId != null) {
-                    ref.read(reminderController.notifier).updateReminderStatus(
-                          reminder.reminderId!,
-                          status,
-                        );
-                  }
-                },
+                onStatusSelected: (status) => _applyReminderChoice(reminder, status),
               );
             }),
             if (_selectedFilter == "All") SizedBox(height: 12.h),
