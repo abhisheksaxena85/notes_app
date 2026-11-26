@@ -6,6 +6,7 @@ import 'package:notes_app/data/network/dto/response/reminder/reminder_item.dart'
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:notes_app/utils/reminder_time.dart';
+import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/views/screens/home/widgets/item_status_sheet.dart';
 
 Widget reminderItemCard({
@@ -15,6 +16,7 @@ Widget reminderItemCard({
   VoidCallback? onTap,
   VoidCallback? onDelete,
   ValueChanged<String>? onStatusSelected,
+  NotificationStatus? alerts,
 }) {
   final palette = context.daymark;
   final String status = reminder.effectiveStatus();
@@ -262,6 +264,21 @@ Widget reminderItemCard({
                                       fontWeight: FontWeight.w700,
                                       color: const Color(0xFF4A2D94),
                                     ),
+                                  ),
+                                ),
+
+                              // REM-06: will this reminder alert?
+                              if (alerts != null && alerts.isSupported && reminder.isUpcoming())
+                                Tooltip(
+                                  message: alerts.alertsOn
+                                      ? 'Notification scheduled'
+                                      : 'Notifications are off',
+                                  child: Icon(
+                                    alerts.alertsOn
+                                        ? Icons.notifications_active
+                                        : Icons.notifications_off_outlined,
+                                    size: 13.sp,
+                                    color: alerts.alertsOn ? palette.accent : palette.muted,
                                   ),
                                 ),
 

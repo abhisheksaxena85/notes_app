@@ -8,6 +8,7 @@ import 'package:notes_app/data/network/dto/response/task/task_item.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/views/screens/home/widgets/note_item_card.dart';
+import 'package:notes_app/views/screens/home/widgets/reminder_form_modal.dart';
 import 'package:notes_app/views/screens/home/widgets/reminder_item_card.dart';
 import 'package:notes_app/views/screens/home/widgets/task_item_card.dart';
 import 'package:notes_app/views/screens/note_details/note_details_screen.dart';
@@ -482,6 +483,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                 return reminderItemCard(
                                   context: context,
                                   reminder: reminder,
+                                  onTap: reminder.reminderId == null
+                                      ? null
+                                      : () => showReminderFormModal(context, initial: reminder),
                                   onStatusChange: (choice) {
                                     if (reminder.reminderId != null) {
                                       ref

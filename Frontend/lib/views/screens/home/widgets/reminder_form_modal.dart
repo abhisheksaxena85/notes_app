@@ -3,41 +3,109 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
+import 'package:notes_app/data/network/dto/request/reminder/update_reminder_request_dto.dart';
+import 'package:notes_app/data/network/dto/response/reminder/reminder_item.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/reminder_time.dart';
+import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/views/widgets/notification_permission_prompt.dart';
 
-Future<bool?> showCreateReminderModal(BuildContext context) {
+/// REM-06: the reminder form, to create one or (with [initial]) edit it.
+/// Returns true when something was saved or deleted.
+Future<bool?> showReminderFormModal(
+  BuildContext context, {
+  ReminderItem? initial,
+}) {
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => const _CreateReminderModalView(),
+    builder: (ctx) => ReminderFormModal(initial: initial),
   );
 }
 
-class _CreateReminderModalView extends ConsumerStatefulWidget {
-  const _CreateReminderModalView();
+/// The earliest time a reminder can be set to: one minute from now.
+const minimumLead = Duration(minutes: 1);
 
-  @override
-  ConsumerState<_CreateReminderModalView> createState() =>
-      _CreateReminderModalViewState();
+/// Null if [date] at [time] is at least [minimumLead] after [now], otherwise
+/// the inline error shown under the time field.
+String? validateReminderTime({
+  required DateTime date,
+  required TimeOfDay time,
+  required DateTime now,
+}) {
+  final at = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  if (at.isBefore(now.add(minimumLead))) {
+    return 'Pick a time at least 1 minute from now.';
+  }
+  return null;
 }
 
-class _CreateReminderModalViewState
-    extends ConsumerState<_CreateReminderModalView> {
+class ReminderFormModal extends ConsumerStatefulWidget {
+  /// The reminder to edit; null to create one.
+  final ReminderItem? initial;
+
+  /// When a new reminder defaults to (now + 1 hour otherwise).
+  final DateTime? initialDateTime;
+
+  final DateTime Function() now;
+
+  const ReminderFormModal({
+    super.key,
+    this.initial,
+    this.initialDateTime,
+    this.now = DateTime.now,
+  });
+
+  @override
+  ConsumerState<ReminderFormModal> createState() => _ReminderFormModalState();
+}
+
+class _ReminderFormModalState extends ConsumerState<ReminderFormModal> {
   final _titleController = TextEditingController();
   String _selectedCategory = "General";
   String _selectedRepeat = "NONE";
-  DateTime _selectedDate = DateTime.now();
-  TimeOfDay _selectedTime = TimeOfDay.fromDateTime(
-    DateTime.now().add(const Duration(hours: 1)),
-  );
+  late DateTime _selectedDate;
+  late TimeOfDay _selectedTime;
   bool _isSaving = false;
+  String? _timeError;
 
   final List<String> _categories = ["General", "Work", "Personal", "Finance"];
   final List<String> _repeatOptions = ["NONE", "DAILY", "WEEKLY", "MONTHLY"];
+
+  bool get _isEdit => widget.initial != null;
+
+  /// The date and time the reminder had when the form opened (edit mode).
+  DateTime? _initialAt;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial;
+    final start = initial != null
+        ? parseWallClock(initial.remindAt)
+        : null;
+    final defaultAt = widget.initialDateTime ?? widget.now().add(const Duration(hours: 1));
+    final at = start == null
+        ? defaultAt
+        : DateTime(start.year, start.month, start.day, start.hour, start.minute);
+    _initialAt = start == null ? null : at;
+    _selectedDate = DateTime(at.year, at.month, at.day);
+    _selectedTime = TimeOfDay(hour: at.hour, minute: at.minute);
+    if (initial != null) {
+      _titleController.text = initial.title;
+      final category = initial.category;
+      if (category != null && category.trim().isNotEmpty) {
+        _selectedCategory = category;
+        if (!_categories.contains(category)) _categories.add(category);
+      }
+      if (_repeatOptions.contains(initial.repeatInterval)) {
+        _selectedRepeat = initial.repeatInterval;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -45,17 +113,30 @@ class _CreateReminderModalViewState
     super.dispose();
   }
 
+  DateTime get _selectedAt => DateTime(
+    _selectedDate.year,
+    _selectedDate.month,
+    _selectedDate.day,
+    _selectedTime.hour,
+    _selectedTime.minute,
+  );
+
+  bool get _timeChanged => !_isEdit || _selectedAt != _initialAt;
+
   Future<void> _pickDate() async {
-    final now = DateTime.now();
+    final now = widget.now();
+    final today = DateTime(now.year, now.month, now.day);
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 365 * 5)),
+      // An old reminder being edited may be in the past.
+      initialDate: _selectedDate.isBefore(today) ? today : _selectedDate,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 365 * 5)),
     );
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
+        _timeError = null;
       });
     }
   }
@@ -68,6 +149,7 @@ class _CreateReminderModalViewState
     if (picked != null) {
       setState(() {
         _selectedTime = picked;
+        _timeError = null;
       });
     }
   }
@@ -79,6 +161,15 @@ class _CreateReminderModalViewState
         const SnackBar(content: Text('Please enter a reminder title')),
       );
       return;
+    }
+    // A reminder can't be born overdue. Editing only the title of an old
+    // reminder is still allowed.
+    if (_timeChanged) {
+      final error = validateReminderTime(date: _selectedDate, time: _selectedTime, now: widget.now());
+      if (error != null) {
+        setState(() => _timeError = error);
+        return;
+      }
     }
 
     setState(() {
@@ -92,6 +183,12 @@ class _CreateReminderModalViewState
     final remindAtStr = "${dueDateStr}T$dueTimeStr:00";
 
     try {
+      final initial = widget.initial;
+      if (initial != null) {
+        await _saveEdit(initial, title, remindAtStr);
+        if (mounted) Navigator.pop(context, true);
+        return;
+      }
       await ref.read(reminderController.notifier).createReminder(
             title: title,
             remindAt: remindAtStr,
@@ -114,8 +211,57 @@ class _CreateReminderModalViewState
           _isSaving = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create reminder: $e')),
+          SnackBar(content: Text(userMessage(e))),
         );
+      }
+    }
+  }
+
+  /// Local first (works offline and before the first sync); the scheduler
+  /// then moves the notification (REM-03).
+  Future<void> _saveEdit(ReminderItem initial, String title, String remindAt) async {
+    final repeatChanged = _selectedRepeat != initial.repeatInterval;
+    // A new time or a new repeat re-anchors the series at the chosen time.
+    final moveTime = _timeChanged || repeatChanged;
+    await ref.read(reminderController.notifier).updateReminder(
+          UpdateReminderRequestDto(
+            reminderId: initial.reminderId!,
+            title: title == initial.title ? null : title,
+            remindAt: moveTime ? remindAt : null,
+            category: _selectedCategory == initial.category ? null : _selectedCategory,
+            repeatInterval: repeatChanged ? _selectedRepeat : null,
+            // Moved to the future: it is pending again.
+            status: _timeChanged && initial.status != 'PENDING' ? 'PENDING' : null,
+          ),
+        );
+  }
+
+  Future<void> _deleteReminder() async {
+    final initial = widget.initial!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete reminder?'),
+        content: Text("'${initial.title}' will be deleted."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref.read(reminderController.notifier).deleteReminder(initial.reminderId!);
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userMessage(e))));
       }
     }
   }
@@ -159,16 +305,27 @@ class _CreateReminderModalViewState
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "New Reminder",
+                    _isEdit ? "Edit Reminder" : "New Reminder",
                     style: GoogleFonts.inter(
                       fontSize: 20.sp,
                       fontWeight: FontWeight.w800,
                       color: palette.ink,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.close_rounded, color: palette.muted),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isEdit)
+                        IconButton(
+                          tooltip: 'Delete',
+                          onPressed: _isSaving ? null : _deleteReminder,
+                          icon: Icon(Icons.delete_outline_rounded, color: palette.danger),
+                        ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.close_rounded, color: palette.muted),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -241,7 +398,7 @@ class _CreateReminderModalViewState
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: palette.line),
+                        side: BorderSide(color: _timeError != null ? palette.danger : palette.line),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.r),
                         ),
@@ -251,6 +408,13 @@ class _CreateReminderModalViewState
                   ),
                 ],
               ),
+              if (_timeError != null) ...[
+                SizedBox(height: 6.h),
+                Text(
+                  _timeError!,
+                  style: GoogleFonts.inter(fontSize: 11.sp, color: palette.danger),
+                ),
+              ],
               SizedBox(height: 16.h),
 
               // Repeat Interval
@@ -341,7 +505,7 @@ class _CreateReminderModalViewState
                           ),
                         )
                       : Text(
-                          "Create Reminder",
+                          _isEdit ? "Save Changes" : "Create Reminder",
                           style: GoogleFonts.inter(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.w700,

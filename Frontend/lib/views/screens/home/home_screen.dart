@@ -11,7 +11,7 @@ import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/viewmodel/home/home_viewmodel.dart';
-import 'package:notes_app/views/screens/home/widgets/create_reminder_modal.dart';
+import 'package:notes_app/views/screens/home/widgets/reminder_form_modal.dart';
 import 'package:notes_app/views/screens/home/widgets/create_task_modal.dart';
 import 'package:notes_app/views/screens/home/widgets/note_item_card.dart';
 import 'package:notes_app/views/screens/home/widgets/notes_error_widget.dart';
@@ -187,7 +187,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
           onNewReminder: () async {
             setState(() => _isSpeedDialOpen = false);
-            final res = await showCreateReminderModal(context);
+            final res = await showReminderFormModal(context);
             if (res == true && context.mounted) {
               _refreshAll(context, homeNotifier);
             }
@@ -464,18 +464,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               SizedBox(height: 8.h),
             ],
             ...reminders.map((reminder) {
-              return reminderItemCard(
-                context: context,
-                reminder: reminder,
-                onStatusChange: (newStatus) => _applyReminderChoice(reminder, newStatus),
-                onDelete: () {
-                  if (reminder.reminderId != null) {
-                    ref.read(reminderController.notifier).deleteReminder(
-                          reminder.reminderId!,
-                        );
-                  }
-                },
-                onStatusSelected: (status) => _applyReminderChoice(reminder, status),
+              return ValueListenableBuilder<NotificationStatus>(
+                valueListenable: getIt<NotificationPermissionService>().status,
+                builder: (context, alerts, _) => reminderItemCard(
+                  context: context,
+                  reminder: reminder,
+                  alerts: alerts,
+                  // REM-06: tap to edit.
+                  onTap: reminder.reminderId == null
+                      ? null
+                      : () => showReminderFormModal(context, initial: reminder),
+                  onStatusChange: (newStatus) => _applyReminderChoice(reminder, newStatus),
+                  onDelete: () {
+                    if (reminder.reminderId != null) {
+                      ref.read(reminderController.notifier).deleteReminder(
+                            reminder.reminderId!,
+                          );
+                    }
+                  },
+                  onStatusSelected: (status) => _applyReminderChoice(reminder, status),
+                ),
               );
             }),
             if (_selectedFilter == "All") SizedBox(height: 12.h),
