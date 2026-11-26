@@ -69,7 +69,7 @@ Priority: **P0** = security hole or data loss, fix first · **P1** = broken beha
 | ✓ | ID | Title | Priority | Depends on |
 |---|---|---|---|---|
 | ☐ | [REM-00](REM-00-overview.md) | **Overview and design** (read first) | — | — |
-| ☐ | [REM-01](REM-01-notification-infrastructure.md) | Add the notification plugin, platform setup and `NotificationService` | P1 | — |
+| ☑ | [REM-01](REM-01-notification-infrastructure.md) | Add the notification plugin, platform setup and `NotificationService` | P1 | — |
 | ☐ | [REM-02](REM-02-permissions-ux.md) | Permission flow: notifications and exact alarms | P1 | REM-01 |
 | ☐ | [REM-03](REM-03-scheduler-reconcile.md) | `ReminderScheduler`: schedule, reschedule and cancel from the DB | P1 | REM-01, FE-04 |
 | ☐ | [REM-04](REM-04-notification-actions.md) | Done / Not done / Snooze actions, including when the app is killed | P1 | REM-03, FE-02 |

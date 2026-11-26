@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -5,6 +7,7 @@ import 'package:notes_app/data/local/shared_preference/preference.dart';
 import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/connectivity_service.dart';
+import 'package:notes_app/utils/services/notification_service.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
 import 'package:notes_app/views/screens/splash/splash_screen.dart';
 import 'package:notes_app/views/widgets/connectivity_snackbar_listener.dart';
@@ -27,6 +30,18 @@ Future<void> initialize() async {
   await configureDependencies();
 
   await Preference.init();
+
+  // REM-01: time zones, channels and the notification callbacks. Never
+  // blocks startup: without notifications the app still works.
+  try {
+    await getIt<NotificationService>().init(
+      onForegroundResponse: (response) =>
+          log('Notification response ${response.actionId} (app running)'),
+      onBackgroundResponse: notificationTapBackground,
+    );
+  } catch (error, stackTrace) {
+    log('Notifications are unavailable: $error', stackTrace: stackTrace);
+  }
 
   // The app's only connectivity checker. The sync service and the
   // connectivity snackbars subscribe to it.

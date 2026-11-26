@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +15,7 @@ import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/utils/services/local_reminder_service.dart';
 import 'package:notes_app/utils/services/note_data_transfer_service.dart';
+import 'package:notes_app/utils/services/notification_service.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/views/screens/auth/login/login_screen.dart';
@@ -443,6 +445,30 @@ class BuildProfileWidget extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  if (kDebugMode && getIt<NotificationService>().isSupported) ...[
+                    Divider(color: palette.line, height: 24.h),
+                    // Debug builds only: checks the plugin setup end to end.
+                    OutlinedButton.icon(
+                      onPressed: () => getIt<NotificationService>().showNow(
+                        id: 999999,
+                        title: 'Test notification',
+                        body: 'Reminders will look like this.',
+                      ),
+                      icon: Icon(Icons.notifications_active_outlined, size: 16.sp, color: palette.accent),
+                      label: Text(
+                        "Test notification",
+                        style: GoogleFonts.inter(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: palette.accent,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: palette.line),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                      ),
+                    ),
+                  ],
                   SizedBox(height: 20.h),
                 ],
               ),
