@@ -5,6 +5,7 @@ import 'package:notes_app/data/network/api/api_client.dart';
 import 'package:notes_app/data/network/dio_client/dio_client.dart';
 import 'package:notes_app/data/network/dto/request/note/create_note_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/note/update_note_request_dto.dart';
+import 'package:notes_app/data/network/dto/request/profile/profile_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/reminder/create_reminder_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/reminder/update_reminder_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/task/create_task_request_dto.dart';
@@ -197,4 +198,11 @@ class FakeServer extends ApiClient {
   @override
   Future<Response> deleteReminder(int reminderId) =>
       _remove('deleteReminder', reminders, reminderId);
+
+  @override
+  Future<Response> getUserDetails(ProfileRequestDto requestDto) => _handle(
+        'getUserDetails',
+        requestDto.id,
+        () => _ok({'id': requestDto.id, 'name': 'User ${requestDto.id}'}),
+      );
 }

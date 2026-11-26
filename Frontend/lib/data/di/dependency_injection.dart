@@ -9,6 +9,7 @@ import 'package:notes_app/data/repository/note/note_repo.dart';
 import 'package:notes_app/data/repository/profile/profile_repo.dart';
 import 'package:notes_app/data/repository/reminder/reminder_repo.dart';
 import 'package:notes_app/data/repository/task/task_repo.dart';
+import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 
 var getIt = GetIt.instance;
@@ -69,6 +70,16 @@ Future<void> configureDependencies() async {
       client: getIt<ApiClient>(),
       database: getIt<AppDatabase>(),
       syncService: getIt<OfflineSyncService>(),
+    ),
+  );
+
+  /// Who is signed in. The only reader and writer of the stored user id.
+  getIt.registerLazySingleton<SessionService>(
+    () => SessionService(
+      preference: getIt<Preference>(),
+      database: getIt<AppDatabase>(),
+      syncService: getIt<OfflineSyncService>(),
+      profileRepo: getIt<ProfileRepo>(),
     ),
   );
 }

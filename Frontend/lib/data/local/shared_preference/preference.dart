@@ -25,6 +25,10 @@ class Preference {
     await pref.setDouble(key, value);
   }
 
+  Future<void> remove(String key) async {
+    await pref.remove(key);
+  }
+
   /// Gettter
   bool? getBool(String key) {
     return pref.getBool(key);

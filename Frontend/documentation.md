@@ -374,10 +374,10 @@ The sync service features a re-entrant lock pattern:
   1. `WidgetsFlutterBinding.ensureInitialized()` guarantees engine communication.
   2. `configureDependencies()` initializes GetIt singletons.
   3. `Preference.init()` bootstraps shared preferences.
-  4. Reads cached `USER_ID`. If non-zero (logged in), initializes `OfflineSyncService.start(USER_ID)` and immediately dispatches a non-blocking background `ProfileRepo.refreshProfile(USER_ID)`.
+  4. `SessionService.restore()` reads the saved user id, starts `OfflineSyncService` for it and, when signed in, refreshes the profile in the background. `SessionService` (`lib/data/session/session_service.dart`) is the only reader and writer of the stored user id.
   5. Wraps the app in `ProviderScope` (Riverpod) and `ScreenUtilInit` (responsive design size `412 x 892`).
   6. Configures global gestures to dismiss keyboards on tap (`FocusScope.of(context).unfocus()`).
-  7. Directs to `DashboardScreen` if `USER_ID != 0`, otherwise `LoginScreen`.
+  7. Directs to `DashboardScreen` if `SessionService.isLoggedIn`, otherwise `LoginScreen`.
 
 ---
 
@@ -398,7 +398,7 @@ The sync service features a re-entrant lock pattern:
   - When user submits via `registerButton`:
     - ViewModel sets state to `AsyncLoading()`.
     - `RegisterRepo.register()` posts `RegisterRequestDto` to `/auth/create-user`.
-    - On success: displays `successSnackBar("User created successfully!")` and navigates back (`Navigator.pop(context)`).
+    - On success: signs the new user in with `SessionService.login(userId)`, displays `successSnackBar("User created successfully!")` and replaces the whole stack with `DashboardScreen` (`Navigator.pushAndRemoveUntil`).
     - On error: displays `failedSnackBar(response.message)` and transitions state to `AsyncData(state)` or `AsyncError`.
 
 ---
@@ -414,10 +414,10 @@ The sync service features a re-entrant lock pattern:
   - Submits `LoginRequestDto` to `/auth/login`.
   - On authentication success:
     - Extracts `userId` from `LoginResponseDto.data`.
-    - Persists `userId` in `SharedPreferences` via `Preference.setInt(PreferenceKeys.USER_ID, userId)`.
-    - Configures active user in `OfflineSyncService.setUserId(userId)`.
-    - Asynchronously kicks off `ProfileRepo.refreshProfile(userId)` in the background.
-    - Pushes [`DashboardScreen`](file:///Volumes/Crucial_X6/Documents/Projects/Full%20Stack%20Projects/Notes%20App/Frontend/lib/views/screens/dashboard/dashboard_screen.dart).
+    - Calls `SessionService.login(userId)`: saves the id, points `OfflineSyncService` at the user and refreshes the profile in the background.
+    - Every data controller watches `sessionUserIdProvider` (`viewmodel/controllers.dart`), so they all rebuild for the new user.
+    - Replaces the whole stack with [`DashboardScreen`](file:///Volumes/Crucial_X6/Documents/Projects/Full%20Stack%20Projects/Notes%20App/Frontend/lib/views/screens/dashboard/dashboard_screen.dart) (`Navigator.pushAndRemoveUntil`), so Back exits the app.
+  - Sign out (profile screen): warns first when there are unsynced changes, then `SessionService.logout()` stops syncing, deletes the user's cached rows, profile and queued changes from the device, and the data controllers are invalidated.
 
 ---
 
@@ -510,7 +510,7 @@ The sync service features a re-entrant lock pattern:
   - Widgets: [`build_profile_widget.dart`](file:///Volumes/Crucial_X6/Documents/Projects/Full%20Stack%20Projects/Notes%20App/Frontend/lib/views/screens/profile/widgets/build_profile_widget.dart), [`profile_avatar_widget.dart`](file:///Volumes/Crucial_X6/Documents/Projects/Full%20Stack%20Projects/Notes%20App/Frontend/lib/views/screens/profile/widgets/profile_avatar_widget.dart), [`profile_info_tile.dart`](file:///Volumes/Crucial_X6/Documents/Projects/Full%20Stack%20Projects/Notes%20App/Frontend/lib/views/screens/profile/widgets/profile_info_tile.dart), [`profile_loading_widget.dart`](file:///Volumes/Crucial_X6/Documents/Projects/Full%20Stack%20Projects/Notes%20App/Frontend/lib/views/screens/profile/widgets/profile_loading_widget.dart), [`profile_error_widget.dart`](file:///Volumes/Crucial_X6/Documents/Projects/Full%20Stack%20Projects/Notes%20App/Frontend/lib/views/screens/profile/widgets/profile_error_widget.dart).
 - **Implementation**:
   - Profile is cached locally in `CachedProfiles`.
-  - On app launch, `ProfileRepo.refreshProfile(USER_ID)` hydrates local SQLite profile data.
+  - On app launch and login, `SessionService` calls `ProfileRepo.refreshProfile(userId)` to hydrate the local SQLite profile data.
   - `ProfileViewmodel.build()` reads cached profile first, then streams updates from `watchProfile(userId)`.
   - `profileAvatarWidget` dynamically computes initials (e.g. "John Doe" -> "JD") and renders gender-specific icons (`Icons.male_rounded`, `Icons.female_rounded`, or `Icons.person_rounded`).
   - Displays user Email, Mobile number, and User ID in clean cards with pull-to-refresh support.

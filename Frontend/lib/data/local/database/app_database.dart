@@ -1047,6 +1047,45 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ---------------------------------------------------------------------------
+  // Session (FE-01)
+  // ---------------------------------------------------------------------------
+
+  /// Local changes of [userId] the server hasn't confirmed yet: queued creates
+  /// and queued update/status/delete changes, including ones that failed.
+  Future<int> countUnsyncedChanges(int userId) async {
+    var total = 0;
+    for (final table in [
+      'pending_notes',
+      'pending_tasks',
+      'pending_reminders',
+      'pending_mutations',
+    ]) {
+      final row = await customSelect(
+        'SELECT COUNT(*) AS c FROM $table WHERE user_id = ?',
+        variables: [Variable.withInt(userId)],
+      ).getSingle();
+      total += row.read<int>('c');
+    }
+    return total;
+  }
+
+  /// Removes everything stored for [userId]: cached items and profile, and
+  /// every queued change. Used on logout so the next user of the device can't
+  /// read them.
+  Future<void> deleteUserData(int userId) {
+    return transaction(() async {
+      await (delete(pendingMutations)..where((t) => t.userId.equals(userId))).go();
+      await (delete(pendingNotes)..where((t) => t.userId.equals(userId))).go();
+      await (delete(pendingTasks)..where((t) => t.userId.equals(userId))).go();
+      await (delete(pendingReminders)..where((t) => t.userId.equals(userId))).go();
+      await (delete(cachedNotes)..where((t) => t.userId.equals(userId))).go();
+      await (delete(cachedTasks)..where((t) => t.userId.equals(userId))).go();
+      await (delete(cachedReminders)..where((t) => t.userId.equals(userId))).go();
+      await (delete(cachedProfiles)..where((t) => t.userId.equals(userId))).go();
+    });
+  }
+
+  // ---------------------------------------------------------------------------
   // Profile Operations
   // ---------------------------------------------------------------------------
 

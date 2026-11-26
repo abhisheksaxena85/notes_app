@@ -4,13 +4,12 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
-import 'package:notes_app/data/local/shared_preference/preference.dart';
-import 'package:notes_app/data/local/shared_preference/preference_keys.dart';
 import 'package:notes_app/data/network/dto/request/note/create_note_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/note/update_note_request_dto.dart';
 import 'package:notes_app/data/repository/note/note_repo.dart';
 import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
+import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/viewmodel/note_details/note_details_state.dart';
 
 class NoteDetailsViewmodel extends AsyncNotifier<NoteDetailsState> {
@@ -22,11 +21,13 @@ class NoteDetailsViewmodel extends AsyncNotifier<NoteDetailsState> {
 
   @override
   FutureOr<NoteDetailsState> build() {
+    // A different user starts from an empty form.
+    ref.watch(sessionUserIdProvider);
     return const NoteDetailsState();
   }
 
   int getUserId() {
-    return getIt<Preference>().getInt(PreferenceKeys.USER_ID) ?? 0;
+    return ref.read(sessionUserIdProvider);
   }
 
   Future<void> loadNote(int? noteId) async {

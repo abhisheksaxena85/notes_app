@@ -67,6 +67,16 @@ class OfflineSyncService {
     unawaited(requestSync());
   }
 
+  /// Stops syncing for the current user (logout). A scheduled retry is
+  /// dropped and a pass that is still running finishes first. Connectivity
+  /// events are still received, but nothing syncs until [setUserId].
+  Future<void> stop() async {
+    _userId = null;
+    _syncAgain = false;
+    _resetBackoff();
+    await _running;
+  }
+
   /// Called when the app comes back to the foreground.
   void onAppResumed() => _automaticTrigger();
 

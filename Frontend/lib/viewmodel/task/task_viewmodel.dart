@@ -3,19 +3,18 @@ import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
-import 'package:notes_app/data/local/shared_preference/preference.dart';
-import 'package:notes_app/data/local/shared_preference/preference_keys.dart';
 import 'package:notes_app/data/network/dto/request/task/create_task_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/task/update_task_request_dto.dart';
 import 'package:notes_app/data/repository/task/task_repo.dart';
 import 'package:notes_app/viewmodel/task/task_state.dart';
+import 'package:notes_app/viewmodel/controllers.dart';
 
 class TaskViewmodel extends AsyncNotifier<TaskState> {
   final TaskRepo _taskRepo = getIt<TaskRepo>();
 
   @override
   Future<TaskState> build() async {
-    final userId = getUserId();
+    final userId = ref.watch(sessionUserIdProvider);
     final cached = await _taskRepo.getCachedTasks(userId);
 
     final subscription = _taskRepo.watchTasks(userId).listen((tasks) {
@@ -38,7 +37,7 @@ class TaskViewmodel extends AsyncNotifier<TaskState> {
   }
 
   int getUserId() {
-    return getIt<Preference>().getInt(PreferenceKeys.USER_ID) ?? 0;
+    return ref.read(sessionUserIdProvider);
   }
 
   Future<void> refreshTasks() async {

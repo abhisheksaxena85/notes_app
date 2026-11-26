@@ -3,11 +3,10 @@ import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
-import 'package:notes_app/data/local/shared_preference/preference.dart';
-import 'package:notes_app/data/local/shared_preference/preference_keys.dart';
 import 'package:notes_app/data/network/dto/response/profile/profile_response_dto.dart';
 import 'package:notes_app/data/repository/profile/profile_repo.dart';
 import 'package:notes_app/viewmodel/profile/profile_state.dart';
+import 'package:notes_app/viewmodel/controllers.dart';
 
 class ProfileViewmodel extends AsyncNotifier<ProfileState> {
   final ProfileRepo _profileRepo = getIt<ProfileRepo>();
@@ -16,7 +15,7 @@ class ProfileViewmodel extends AsyncNotifier<ProfileState> {
 
   @override
   Future<ProfileState> build() async {
-    final userId = getUserId();
+    final userId = ref.watch(sessionUserIdProvider);
     profileData =
         await _profileRepo.getCachedProfile(userId) ?? ProfileResponseDto();
 
@@ -44,7 +43,7 @@ class ProfileViewmodel extends AsyncNotifier<ProfileState> {
   }
 
   int getUserId() {
-    return getIt<Preference>().getInt(PreferenceKeys.USER_ID) ?? 0;
+    return ref.read(sessionUserIdProvider);
   }
 
   Future<void> getUserDetails({int? id}) async {

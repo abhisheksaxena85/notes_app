@@ -2,7 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:notes_app/main.dart';
+import 'package:notes_app/data/di/dependency_injection.dart';
+import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:notes_app/views/screens/auth/login/login_screen.dart';
@@ -110,7 +111,9 @@ class _SplashScreenState extends State<SplashScreen>
           transitionDuration: const Duration(milliseconds: 500),
           pageBuilder: (_, animation, secondaryAnimation) => FadeTransition(
             opacity: animation,
-            child: USER_ID != 0 ? const DashboardScreen() : const LoginScreen(),
+            child: getIt<SessionService>().isLoggedIn
+                ? const DashboardScreen()
+                : const LoginScreen(),
           ),
         ),
       );

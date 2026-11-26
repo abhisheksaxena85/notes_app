@@ -1,12 +1,8 @@
-import 'dart:async';
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:notes_app/data/local/shared_preference/preference.dart';
-import 'package:notes_app/data/local/shared_preference/preference_keys.dart';
-import 'package:notes_app/data/repository/profile/profile_repo.dart';
+import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/internet_connection_service.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
@@ -16,8 +12,6 @@ import 'package:notes_app/data/di/dependency_injection.dart';
 
 GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 bool isInternetConnected = false;
-// ignore: non_constant_identifier_names
-int USER_ID = 0;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,25 +25,11 @@ Future<void> initialize() async {
 
   await Preference.init();
 
-  USER_ID = getIt<Preference>().getInt(PreferenceKeys.USER_ID) ?? 0;
-  getIt<OfflineSyncService>().start(USER_ID);
+  getIt<SessionService>().restore();
   // Sync queued changes when the app returns to the foreground too, not only
   // when connectivity changes. The listener registers itself with the binding
   // and lives as long as the app.
   AppLifecycleListener(onResume: getIt<OfflineSyncService>().onAppResumed);
-  if (USER_ID != 0) {
-    unawaited(
-      getIt<ProfileRepo>().refreshProfile(USER_ID).catchError((
-        Object error,
-        StackTrace stackTrace,
-      ) {
-        log(
-          'Failed to refresh the startup profile: $error',
-          stackTrace: stackTrace,
-        );
-      }),
-    );
-  }
 }
 
 class MyApp extends ConsumerWidget {

@@ -3,19 +3,18 @@ import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
-import 'package:notes_app/data/local/shared_preference/preference.dart';
-import 'package:notes_app/data/local/shared_preference/preference_keys.dart';
 import 'package:notes_app/data/network/dto/request/reminder/create_reminder_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/reminder/update_reminder_request_dto.dart';
 import 'package:notes_app/data/repository/reminder/reminder_repo.dart';
 import 'package:notes_app/viewmodel/reminder/reminder_state.dart';
+import 'package:notes_app/viewmodel/controllers.dart';
 
 class ReminderViewmodel extends AsyncNotifier<ReminderState> {
   final ReminderRepo _reminderRepo = getIt<ReminderRepo>();
 
   @override
   Future<ReminderState> build() async {
-    final userId = getUserId();
+    final userId = ref.watch(sessionUserIdProvider);
     final cached = await _reminderRepo.getCachedReminders(userId);
 
     final subscription = _reminderRepo.watchReminders(userId).listen((reminders) {
@@ -38,7 +37,7 @@ class ReminderViewmodel extends AsyncNotifier<ReminderState> {
   }
 
   int getUserId() {
-    return getIt<Preference>().getInt(PreferenceKeys.USER_ID) ?? 0;
+    return ref.read(sessionUserIdProvider);
   }
 
   Future<void> refreshReminders() async {

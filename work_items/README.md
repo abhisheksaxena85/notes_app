@@ -58,7 +58,7 @@ Priority: **P0** = security hole or data loss, fix first · **P1** = broken beha
 ### Frontend
 | ✓ | ID | Title | Priority | Depends on |
 |---|---|---|---|---|
-| ☐ | [FE-01](FE-01-session-logout-account-switch.md) | Logging out and in as another user shows the previous user's data | P0 | — |
+| ☑ | [FE-01](FE-01-session-logout-account-switch.md) | Logging out and in as another user shows the previous user's data | P0 | — |
 | ☑ | [FE-02](FE-02-offline-mutation-queue.md) | Offline edits, status changes and deletes are lost or come back | P0 | FE-03 |
 | ☑ | [FE-03](FE-03-sync-races-and-idempotency.md) | Sync races create duplicates; one failing item blocks all syncing | P0 | — |
 | ☑ | [FE-04](FE-04-drift-upsert-and-stable-ids.md) | Drift upserts break the unique key; cache refresh changes local ids | P1 | — |

@@ -4,12 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
-import 'package:notes_app/data/local/shared_preference/preference.dart';
-import 'package:notes_app/data/local/shared_preference/preference_keys.dart';
 import 'package:notes_app/data/network/dto/response/profile/profile_response_dto.dart';
 import 'package:notes_app/data/repository/note/note_repo.dart';
 import 'package:notes_app/data/repository/profile/profile_repo.dart';
-import 'package:notes_app/main.dart';
+import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:notes_app/utils/res/api_error.dart';
@@ -90,7 +88,7 @@ class BuildProfileWidget extends ConsumerWidget {
               Divider(color: palette.line, height: 24.h),
               _buildDetailRow("Gender", profileData.gender?.isNotEmpty == true ? profileData.gender! : "Not set", palette),
               Divider(color: palette.line, height: 24.h),
-              _buildDetailRow("User ID", "${profileData.id ?? USER_ID}", palette),
+              _buildDetailRow("User ID", "${profileData.id ?? ref.read(sessionUserIdProvider)}", palette),
               SizedBox(height: 24.h),
               SizedBox(
                 width: double.infinity,
@@ -98,7 +96,7 @@ class BuildProfileWidget extends ConsumerWidget {
                 child: OutlinedButton(
                   onPressed: () {
                     Navigator.pop(ctx);
-                    _confirmDeleteAccount(context);
+                    _confirmDeleteAccount(context, ref);
                   },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: palette.danger.withValues(alpha: 0.5)),
@@ -248,7 +246,7 @@ class BuildProfileWidget extends ConsumerWidget {
 
                               setModalState(() => isSaving = true);
                               try {
-                                final userId = getIt<Preference>().getInt(PreferenceKeys.USER_ID) ?? USER_ID;
+                                final userId = ref.read(sessionUserIdProvider);
                                 await getIt<ProfileRepo>().updateProfile(
                                   userId: userId,
                                   name: name,
@@ -459,7 +457,7 @@ class BuildProfileWidget extends ConsumerWidget {
     final palette = context.daymark;
     final homeState = ref.read(homeController);
     final notes = homeState.value?.notesData?.data ?? [];
-    final userId = getIt<Preference>().getInt(PreferenceKeys.USER_ID) ?? USER_ID;
+    final userId = ref.read(sessionUserIdProvider);
     final exportItems = notes.map(NoteExportItem.fromNoteItem).toList();
 
     int activeTab = 0; // 0: Export, 1: Import
@@ -1136,7 +1134,7 @@ class BuildProfileWidget extends ConsumerWidget {
     );
   }
 
-  void _confirmDeleteAccount(BuildContext context) {
+  void _confirmDeleteAccount(BuildContext context, WidgetRef ref) {
     final palette = context.daymark;
     showDialog(
       context: context,
@@ -1159,11 +1157,13 @@ class BuildProfileWidget extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              final userId = getIt<Preference>().getInt(PreferenceKeys.USER_ID) ?? USER_ID;
+              final userId = ref.read(sessionUserIdProvider);
               try {
                 await getIt<ProfileRepo>().deleteUser(userId);
+                // The account is gone, so its unsynced changes can't be
+                // kept: sign out and wipe without asking.
                 if (context.mounted) {
-                  _logout(context);
+                  await _logout(context);
                 }
               } catch (e) {
                 if (context.mounted) {
@@ -1246,19 +1246,33 @@ class BuildProfileWidget extends ConsumerWidget {
     );
   }
 
-  void _confirmLogout(BuildContext context) {
+  Future<void> _confirmLogout(BuildContext context) async {
     final palette = context.daymark;
+    // Signing out wipes this user's data from the device, including changes
+    // that haven't reached the server yet: say so before they are lost.
+    final unsynced = await getIt<SessionService>().unsyncedChangeCount();
+    if (!context.mounted) return;
+    final String message;
+    if (unsynced == 0) {
+      message = "Are you sure you want to sign out of Daymark on this device?";
+    } else {
+      final changes = unsynced == 1 ? "1 change" : "$unsynced changes";
+      message =
+          "$changes on this device ${unsynced == 1 ? "hasn't" : "haven't"} been synced yet. "
+          "Signing out deletes ${unsynced == 1 ? "it" : "them"} for good.\n\n"
+          "To keep ${unsynced == 1 ? "it" : "them"}, cancel, go online and wait for the sync to finish.";
+    }
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: palette.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
         title: Text(
-          "Sign Out",
+          unsynced == 0 ? "Sign Out" : "Unsynced changes",
           style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: palette.ink),
         ),
         content: Text(
-          "Are you sure you want to sign out of Daymark on this device?",
+          message,
           style: GoogleFonts.inter(fontSize: 13.sp, color: palette.muted),
         ),
         actions: [
@@ -1271,18 +1285,25 @@ class BuildProfileWidget extends ConsumerWidget {
               Navigator.pop(ctx);
               _logout(context);
             },
-            child: Text("Sign Out", style: GoogleFonts.inter(color: palette.danger, fontWeight: FontWeight.w700)),
+            child: Text(
+              unsynced == 0 ? "Sign Out" : "Sign Out Anyway",
+              style: GoogleFonts.inter(color: palette.danger, fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _logout(BuildContext context) async {
-    final pref = getIt<Preference>();
-    await pref.setInt(PreferenceKeys.USER_ID, 0);
-    await pref.setBool(PreferenceKeys.IS_LOGGED_IN, false);
-    USER_ID = 0;
+  /// Ends the session, wipes the user's local data and resets every
+  /// controller, so the next user starts clean.
+  Future<void> _logout(BuildContext context) async {
+    // Taken before the await: this widget may be gone by the time it returns.
+    final container = ProviderScope.containerOf(context, listen: false);
+    await getIt<SessionService>().logout();
+    for (final controller in sessionScopedControllers) {
+      container.invalidate(controller);
+    }
     if (context.mounted) {
       Navigator.pushAndRemoveUntil(
         context,

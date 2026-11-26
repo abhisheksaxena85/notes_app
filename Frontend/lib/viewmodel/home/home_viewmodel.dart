@@ -3,11 +3,10 @@ import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
-import 'package:notes_app/data/local/shared_preference/preference.dart';
-import 'package:notes_app/data/local/shared_preference/preference_keys.dart';
 import 'package:notes_app/data/network/dto/response/home/get_all_notes_response_dto.dart';
 import 'package:notes_app/data/repository/home/home_repo.dart';
 import 'package:notes_app/viewmodel/home/home_state.dart';
+import 'package:notes_app/viewmodel/controllers.dart';
 
 class HomeViewmodel extends AsyncNotifier<HomeState> {
   final HomeRepo _homeRepo = getIt<HomeRepo>();
@@ -16,7 +15,7 @@ class HomeViewmodel extends AsyncNotifier<HomeState> {
 
   @override
   Future<HomeState> build() async {
-    final userId = getUserId();
+    final userId = ref.watch(sessionUserIdProvider);
     final cachedNotes = await _homeRepo.getCachedNotes(userId);
     notesData = cachedNotes;
 
@@ -47,7 +46,7 @@ class HomeViewmodel extends AsyncNotifier<HomeState> {
   }
 
   int getUserId() {
-    return getIt<Preference>().getInt(PreferenceKeys.USER_ID) ?? 0;
+    return ref.read(sessionUserIdProvider);
   }
 
   Future<void> getAllNotes({int? id}) async {

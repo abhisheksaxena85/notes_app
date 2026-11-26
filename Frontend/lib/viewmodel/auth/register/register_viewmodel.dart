@@ -1,14 +1,16 @@
-import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/data/network/dto/request/register/register_request_dto.dart';
 import 'package:notes_app/data/network/dto/response/register/register_response_dto.dart';
 import 'package:notes_app/data/repository/auth/register/register_repo.dart';
+import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/viewmodel/auth/register/register_state.dart';
+import 'package:notes_app/views/screens/dashboard/dashboard_screen.dart';
 
 class RegisterViewmodel extends AsyncNotifier<RegisterState> {
   /// MARK: Variables
@@ -147,11 +149,21 @@ class RegisterViewmodel extends AsyncNotifier<RegisterState> {
       );
       if (response.success == true) {
         registerData = response;
+        final userId = response.data?.userId ?? 0;
+        if (userId == 0) {
+          throw StateError('The server returned no user id.');
+        }
+        // The new account is signed in straight away.
+        await getIt<SessionService>().login(userId);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             successSnackBar(response.message ?? "User created successfully!"),
           );
-          Navigator.pop(context);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const DashboardScreen()),
+            (route) => false,
+          );
         }
       } else {
         if (context.mounted) {
