@@ -40,7 +40,11 @@ Future<void> configureDependencies() async {
 
   /// Repositories
   getIt.registerLazySingleton<HomeRepo>(
-    () => HomeRepo(client: getIt<ApiClient>(), database: getIt<AppDatabase>()),
+    () => HomeRepo(
+      client: getIt<ApiClient>(),
+      database: getIt<AppDatabase>(),
+      syncService: getIt<OfflineSyncService>(),
+    ),
   );
   getIt.registerLazySingleton<NoteRepo>(
     () => NoteRepo(

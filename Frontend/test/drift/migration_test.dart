@@ -7,6 +7,7 @@ import 'package:notes_app/data/local/database/app_database.dart';
 
 import 'generated/schema.dart';
 import 'generated/schema_v2.dart' as v2;
+import 'generated/schema_v3.dart' as v3;
 
 /// Upgrades from every exported schema snapshot (drift_schemas/app_database)
 /// to the current version and checks the result matches a fresh install.
@@ -23,7 +24,7 @@ void main() {
   });
 
   group('every older schema upgrades to the current one', () {
-    const current = 3;
+    const current = 4;
     for (final from in GeneratedHelper.versions.where((v) => v < current)) {
       test('from v$from', () async {
         final schema = await verifier.schemaAt(from);
@@ -72,7 +73,7 @@ void main() {
     await old.close();
 
     final db = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(db, 3);
+    await verifier.migrateAndValidate(db, 4);
 
     final pendingNote = (await db.getPendingNotes(42)).single;
     expect(pendingNote.clientId, isNotNull);
@@ -93,6 +94,46 @@ void main() {
     expect(tasks.singleWhere((t) => t.id == taskId).clientId, pendingTask.clientId);
     expect(tasks.singleWhere((t) => t.serverId == 7).clientId, isNull,
         reason: 'synced rows had no queued create, so they get no client id');
+    await db.close();
+  });
+
+  test('v3 → v4 keeps queued creates where they are and adds the outbox', () async {
+    final schema = await verifier.schemaAt(3);
+    final old = v3.DatabaseAtV3(schema.newConnection());
+    final noteId = await old.into(old.cachedNotes).insert(
+          v3.CachedNotesCompanion.insert(
+            userId: 42,
+            title: 'Queued',
+            content: 'body',
+            isPending: const Value(1),
+            clientId: const Value('client-1'),
+          ),
+        );
+    await old.into(old.pendingNotes).insert(
+          v3.PendingNotesCompanion.insert(
+            userId: 42,
+            localNoteId: noteId,
+            payload: '{"userId":42,"title":"Queued","clientId":"client-1"}',
+            clientId: const Value('client-1'),
+            attempts: const Value(2),
+            lastError: const Value('Network error'),
+          ),
+        );
+    await old.into(old.cachedTasks).insert(
+          v3.CachedTasksCompanion.insert(userId: 42, title: 'Synced', serverId: const Value(9)),
+        );
+    await old.close();
+
+    final db = AppDatabase.forTesting(schema.newConnection());
+    await verifier.migrateAndValidate(db, 4);
+
+    final queued = (await db.getPendingNotes(42)).single;
+    expect(queued.localNoteId, noteId);
+    expect(queued.clientId, 'client-1');
+    expect(queued.attempts, 2);
+    expect(await db.getPendingMutations(42), isEmpty);
+    expect((await db.getNotesForUser(42)).single.isDeleted, isFalse);
+    expect((await db.getTasksForUser(42)).single.serverId, 9);
     await db.close();
   });
 }

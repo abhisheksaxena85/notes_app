@@ -143,6 +143,21 @@ class $CachedNotesTable extends CachedNotes
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -157,6 +172,7 @@ class $CachedNotesTable extends CachedNotes
     pinned,
     isPending,
     clientId,
+    isDeleted,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -245,6 +261,12 @@ class $CachedNotesTable extends CachedNotes
         clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
       );
     }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
     return context;
   }
 
@@ -306,6 +328,10 @@ class $CachedNotesTable extends CachedNotes
         DriftSqlType.string,
         data['${effectivePrefix}client_id'],
       ),
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
     );
   }
 
@@ -328,6 +354,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
   final bool pinned;
   final bool isPending;
   final String? clientId;
+  final bool isDeleted;
   const CachedNote({
     required this.id,
     required this.userId,
@@ -341,6 +368,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
     required this.pinned,
     required this.isPending,
     this.clientId,
+    required this.isDeleted,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -369,6 +397,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
     if (!nullToAbsent || clientId != null) {
       map['client_id'] = Variable<String>(clientId);
     }
+    map['is_deleted'] = Variable<bool>(isDeleted);
     return map;
   }
 
@@ -396,6 +425,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
       clientId: clientId == null && nullToAbsent
           ? const Value.absent()
           : Value(clientId),
+      isDeleted: Value(isDeleted),
     );
   }
 
@@ -417,6 +447,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
       pinned: serializer.fromJson<bool>(json['pinned']),
       isPending: serializer.fromJson<bool>(json['isPending']),
       clientId: serializer.fromJson<String?>(json['clientId']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
     );
   }
   @override
@@ -435,6 +466,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
       'pinned': serializer.toJson<bool>(pinned),
       'isPending': serializer.toJson<bool>(isPending),
       'clientId': serializer.toJson<String?>(clientId),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
     };
   }
 
@@ -451,6 +483,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
     bool? pinned,
     bool? isPending,
     Value<String?> clientId = const Value.absent(),
+    bool? isDeleted,
   }) => CachedNote(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -464,6 +497,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
     pinned: pinned ?? this.pinned,
     isPending: isPending ?? this.isPending,
     clientId: clientId.present ? clientId.value : this.clientId,
+    isDeleted: isDeleted ?? this.isDeleted,
   );
   CachedNote copyWithCompanion(CachedNotesCompanion data) {
     return CachedNote(
@@ -479,6 +513,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
       pinned: data.pinned.present ? data.pinned.value : this.pinned,
       isPending: data.isPending.present ? data.isPending.value : this.isPending,
       clientId: data.clientId.present ? data.clientId.value : this.clientId,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
     );
   }
 
@@ -496,7 +531,8 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
           ..write('tags: $tags, ')
           ..write('pinned: $pinned, ')
           ..write('isPending: $isPending, ')
-          ..write('clientId: $clientId')
+          ..write('clientId: $clientId, ')
+          ..write('isDeleted: $isDeleted')
           ..write(')'))
         .toString();
   }
@@ -515,6 +551,7 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
     pinned,
     isPending,
     clientId,
+    isDeleted,
   );
   @override
   bool operator ==(Object other) =>
@@ -531,7 +568,8 @@ class CachedNote extends DataClass implements Insertable<CachedNote> {
           other.tags == this.tags &&
           other.pinned == this.pinned &&
           other.isPending == this.isPending &&
-          other.clientId == this.clientId);
+          other.clientId == this.clientId &&
+          other.isDeleted == this.isDeleted);
 }
 
 class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
@@ -547,6 +585,7 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
   final Value<bool> pinned;
   final Value<bool> isPending;
   final Value<String?> clientId;
+  final Value<bool> isDeleted;
   const CachedNotesCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -560,6 +599,7 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
     this.pinned = const Value.absent(),
     this.isPending = const Value.absent(),
     this.clientId = const Value.absent(),
+    this.isDeleted = const Value.absent(),
   });
   CachedNotesCompanion.insert({
     this.id = const Value.absent(),
@@ -574,6 +614,7 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
     this.pinned = const Value.absent(),
     this.isPending = const Value.absent(),
     this.clientId = const Value.absent(),
+    this.isDeleted = const Value.absent(),
   }) : userId = Value(userId),
        title = Value(title),
        content = Value(content);
@@ -590,6 +631,7 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
     Expression<bool>? pinned,
     Expression<bool>? isPending,
     Expression<String>? clientId,
+    Expression<bool>? isDeleted,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -604,6 +646,7 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
       if (pinned != null) 'pinned': pinned,
       if (isPending != null) 'is_pending': isPending,
       if (clientId != null) 'client_id': clientId,
+      if (isDeleted != null) 'is_deleted': isDeleted,
     });
   }
 
@@ -620,6 +663,7 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
     Value<bool>? pinned,
     Value<bool>? isPending,
     Value<String?>? clientId,
+    Value<bool>? isDeleted,
   }) {
     return CachedNotesCompanion(
       id: id ?? this.id,
@@ -634,6 +678,7 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
       pinned: pinned ?? this.pinned,
       isPending: isPending ?? this.isPending,
       clientId: clientId ?? this.clientId,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 
@@ -676,6 +721,9 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
     if (clientId.present) {
       map['client_id'] = Variable<String>(clientId.value);
     }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
     return map;
   }
 
@@ -693,7 +741,8 @@ class CachedNotesCompanion extends UpdateCompanion<CachedNote> {
           ..write('tags: $tags, ')
           ..write('pinned: $pinned, ')
           ..write('isPending: $isPending, ')
-          ..write('clientId: $clientId')
+          ..write('clientId: $clientId, ')
+          ..write('isDeleted: $isDeleted')
           ..write(')'))
         .toString();
   }
@@ -1825,6 +1874,21 @@ class $CachedTasksTable extends CachedTasks
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1842,6 +1906,7 @@ class $CachedTasksTable extends CachedTasks
     updatedAt,
     isPending,
     clientId,
+    isDeleted,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1952,6 +2017,12 @@ class $CachedTasksTable extends CachedTasks
         clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
       );
     }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
     return context;
   }
 
@@ -2025,6 +2096,10 @@ class $CachedTasksTable extends CachedTasks
         DriftSqlType.string,
         data['${effectivePrefix}client_id'],
       ),
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
     );
   }
 
@@ -2050,6 +2125,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
   final String? updatedAt;
   final bool isPending;
   final String? clientId;
+  final bool isDeleted;
   const CachedTask({
     required this.id,
     required this.userId,
@@ -2066,6 +2142,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
     this.updatedAt,
     required this.isPending,
     this.clientId,
+    required this.isDeleted,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2101,6 +2178,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
     if (!nullToAbsent || clientId != null) {
       map['client_id'] = Variable<String>(clientId);
     }
+    map['is_deleted'] = Variable<bool>(isDeleted);
     return map;
   }
 
@@ -2137,6 +2215,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
       clientId: clientId == null && nullToAbsent
           ? const Value.absent()
           : Value(clientId),
+      isDeleted: Value(isDeleted),
     );
   }
 
@@ -2161,6 +2240,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
       updatedAt: serializer.fromJson<String?>(json['updatedAt']),
       isPending: serializer.fromJson<bool>(json['isPending']),
       clientId: serializer.fromJson<String?>(json['clientId']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
     );
   }
   @override
@@ -2182,6 +2262,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
       'updatedAt': serializer.toJson<String?>(updatedAt),
       'isPending': serializer.toJson<bool>(isPending),
       'clientId': serializer.toJson<String?>(clientId),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
     };
   }
 
@@ -2201,6 +2282,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
     Value<String?> updatedAt = const Value.absent(),
     bool? isPending,
     Value<String?> clientId = const Value.absent(),
+    bool? isDeleted,
   }) => CachedTask(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -2217,6 +2299,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     isPending: isPending ?? this.isPending,
     clientId: clientId.present ? clientId.value : this.clientId,
+    isDeleted: isDeleted ?? this.isDeleted,
   );
   CachedTask copyWithCompanion(CachedTasksCompanion data) {
     return CachedTask(
@@ -2239,6 +2322,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isPending: data.isPending.present ? data.isPending.value : this.isPending,
       clientId: data.clientId.present ? data.clientId.value : this.clientId,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
     );
   }
 
@@ -2259,7 +2343,8 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isPending: $isPending, ')
-          ..write('clientId: $clientId')
+          ..write('clientId: $clientId, ')
+          ..write('isDeleted: $isDeleted')
           ..write(')'))
         .toString();
   }
@@ -2281,6 +2366,7 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
     updatedAt,
     isPending,
     clientId,
+    isDeleted,
   );
   @override
   bool operator ==(Object other) =>
@@ -2300,7 +2386,8 @@ class CachedTask extends DataClass implements Insertable<CachedTask> {
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.isPending == this.isPending &&
-          other.clientId == this.clientId);
+          other.clientId == this.clientId &&
+          other.isDeleted == this.isDeleted);
 }
 
 class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
@@ -2319,6 +2406,7 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
   final Value<String?> updatedAt;
   final Value<bool> isPending;
   final Value<String?> clientId;
+  final Value<bool> isDeleted;
   const CachedTasksCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -2335,6 +2423,7 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
     this.updatedAt = const Value.absent(),
     this.isPending = const Value.absent(),
     this.clientId = const Value.absent(),
+    this.isDeleted = const Value.absent(),
   });
   CachedTasksCompanion.insert({
     this.id = const Value.absent(),
@@ -2352,6 +2441,7 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
     this.updatedAt = const Value.absent(),
     this.isPending = const Value.absent(),
     this.clientId = const Value.absent(),
+    this.isDeleted = const Value.absent(),
   }) : userId = Value(userId),
        title = Value(title);
   static Insertable<CachedTask> custom({
@@ -2370,6 +2460,7 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
     Expression<String>? updatedAt,
     Expression<bool>? isPending,
     Expression<String>? clientId,
+    Expression<bool>? isDeleted,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2387,6 +2478,7 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isPending != null) 'is_pending': isPending,
       if (clientId != null) 'client_id': clientId,
+      if (isDeleted != null) 'is_deleted': isDeleted,
     });
   }
 
@@ -2406,6 +2498,7 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
     Value<String?>? updatedAt,
     Value<bool>? isPending,
     Value<String?>? clientId,
+    Value<bool>? isDeleted,
   }) {
     return CachedTasksCompanion(
       id: id ?? this.id,
@@ -2423,6 +2516,7 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
       updatedAt: updatedAt ?? this.updatedAt,
       isPending: isPending ?? this.isPending,
       clientId: clientId ?? this.clientId,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 
@@ -2474,6 +2568,9 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
     if (clientId.present) {
       map['client_id'] = Variable<String>(clientId.value);
     }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
     return map;
   }
 
@@ -2494,7 +2591,8 @@ class CachedTasksCompanion extends UpdateCompanion<CachedTask> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isPending: $isPending, ')
-          ..write('clientId: $clientId')
+          ..write('clientId: $clientId, ')
+          ..write('isDeleted: $isDeleted')
           ..write(')'))
         .toString();
   }
@@ -3216,6 +3314,21 @@ class $CachedRemindersTable extends CachedReminders
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3232,6 +3345,7 @@ class $CachedRemindersTable extends CachedReminders
     updatedAt,
     isPending,
     clientId,
+    isDeleted,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3335,6 +3449,12 @@ class $CachedRemindersTable extends CachedReminders
         clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
       );
     }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
     return context;
   }
 
@@ -3404,6 +3524,10 @@ class $CachedRemindersTable extends CachedReminders
         DriftSqlType.string,
         data['${effectivePrefix}client_id'],
       ),
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
     );
   }
 
@@ -3428,6 +3552,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
   final String? updatedAt;
   final bool isPending;
   final String? clientId;
+  final bool isDeleted;
   const CachedReminder({
     required this.id,
     required this.userId,
@@ -3443,6 +3568,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
     this.updatedAt,
     required this.isPending,
     this.clientId,
+    required this.isDeleted,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3475,6 +3601,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
     if (!nullToAbsent || clientId != null) {
       map['client_id'] = Variable<String>(clientId);
     }
+    map['is_deleted'] = Variable<bool>(isDeleted);
     return map;
   }
 
@@ -3508,6 +3635,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
       clientId: clientId == null && nullToAbsent
           ? const Value.absent()
           : Value(clientId),
+      isDeleted: Value(isDeleted),
     );
   }
 
@@ -3531,6 +3659,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
       updatedAt: serializer.fromJson<String?>(json['updatedAt']),
       isPending: serializer.fromJson<bool>(json['isPending']),
       clientId: serializer.fromJson<String?>(json['clientId']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
     );
   }
   @override
@@ -3551,6 +3680,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
       'updatedAt': serializer.toJson<String?>(updatedAt),
       'isPending': serializer.toJson<bool>(isPending),
       'clientId': serializer.toJson<String?>(clientId),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
     };
   }
 
@@ -3569,6 +3699,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
     Value<String?> updatedAt = const Value.absent(),
     bool? isPending,
     Value<String?> clientId = const Value.absent(),
+    bool? isDeleted,
   }) => CachedReminder(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -3584,6 +3715,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     isPending: isPending ?? this.isPending,
     clientId: clientId.present ? clientId.value : this.clientId,
+    isDeleted: isDeleted ?? this.isDeleted,
   );
   CachedReminder copyWithCompanion(CachedRemindersCompanion data) {
     return CachedReminder(
@@ -3603,6 +3735,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isPending: data.isPending.present ? data.isPending.value : this.isPending,
       clientId: data.clientId.present ? data.clientId.value : this.clientId,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
     );
   }
 
@@ -3622,7 +3755,8 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isPending: $isPending, ')
-          ..write('clientId: $clientId')
+          ..write('clientId: $clientId, ')
+          ..write('isDeleted: $isDeleted')
           ..write(')'))
         .toString();
   }
@@ -3643,6 +3777,7 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
     updatedAt,
     isPending,
     clientId,
+    isDeleted,
   );
   @override
   bool operator ==(Object other) =>
@@ -3661,7 +3796,8 @@ class CachedReminder extends DataClass implements Insertable<CachedReminder> {
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.isPending == this.isPending &&
-          other.clientId == this.clientId);
+          other.clientId == this.clientId &&
+          other.isDeleted == this.isDeleted);
 }
 
 class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
@@ -3679,6 +3815,7 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
   final Value<String?> updatedAt;
   final Value<bool> isPending;
   final Value<String?> clientId;
+  final Value<bool> isDeleted;
   const CachedRemindersCompanion({
     this.id = const Value.absent(),
     this.userId = const Value.absent(),
@@ -3694,6 +3831,7 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     this.updatedAt = const Value.absent(),
     this.isPending = const Value.absent(),
     this.clientId = const Value.absent(),
+    this.isDeleted = const Value.absent(),
   });
   CachedRemindersCompanion.insert({
     this.id = const Value.absent(),
@@ -3710,6 +3848,7 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     this.updatedAt = const Value.absent(),
     this.isPending = const Value.absent(),
     this.clientId = const Value.absent(),
+    this.isDeleted = const Value.absent(),
   }) : userId = Value(userId),
        title = Value(title),
        remindAt = Value(remindAt);
@@ -3728,6 +3867,7 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     Expression<String>? updatedAt,
     Expression<bool>? isPending,
     Expression<String>? clientId,
+    Expression<bool>? isDeleted,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3744,6 +3884,7 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isPending != null) 'is_pending': isPending,
       if (clientId != null) 'client_id': clientId,
+      if (isDeleted != null) 'is_deleted': isDeleted,
     });
   }
 
@@ -3762,6 +3903,7 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     Value<String?>? updatedAt,
     Value<bool>? isPending,
     Value<String?>? clientId,
+    Value<bool>? isDeleted,
   }) {
     return CachedRemindersCompanion(
       id: id ?? this.id,
@@ -3778,6 +3920,7 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
       updatedAt: updatedAt ?? this.updatedAt,
       isPending: isPending ?? this.isPending,
       clientId: clientId ?? this.clientId,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 
@@ -3826,6 +3969,9 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
     if (clientId.present) {
       map['client_id'] = Variable<String>(clientId.value);
     }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
     return map;
   }
 
@@ -3845,7 +3991,8 @@ class CachedRemindersCompanion extends UpdateCompanion<CachedReminder> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isPending: $isPending, ')
-          ..write('clientId: $clientId')
+          ..write('clientId: $clientId, ')
+          ..write('isDeleted: $isDeleted')
           ..write(')'))
         .toString();
   }
@@ -4405,6 +4552,688 @@ class PendingRemindersCompanion extends UpdateCompanion<PendingReminder> {
   }
 }
 
+class $PendingMutationsTable extends PendingMutations
+    with TableInfo<$PendingMutationsTable, PendingMutation> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PendingMutationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<int> userId = GeneratedColumn<int>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityMeta = const VerificationMeta('entity');
+  @override
+  late final GeneratedColumn<String> entity = GeneratedColumn<String>(
+    'entity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _opMeta = const VerificationMeta('op');
+  @override
+  late final GeneratedColumn<String> op = GeneratedColumn<String>(
+    'op',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localIdMeta = const VerificationMeta(
+    'localId',
+  );
+  @override
+  late final GeneratedColumn<int> localId = GeneratedColumn<int>(
+    'local_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _serverIdMeta = const VerificationMeta(
+    'serverId',
+  );
+  @override
+  late final GeneratedColumn<int> serverId = GeneratedColumn<int>(
+    'server_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _clientIdMeta = const VerificationMeta(
+    'clientId',
+  );
+  @override
+  late final GeneratedColumn<String> clientId = GeneratedColumn<String>(
+    'client_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+    'payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _attemptsMeta = const VerificationMeta(
+    'attempts',
+  );
+  @override
+  late final GeneratedColumn<int> attempts = GeneratedColumn<int>(
+    'attempts',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastErrorMeta = const VerificationMeta(
+    'lastError',
+  );
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+    'last_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _failedMeta = const VerificationMeta('failed');
+  @override
+  late final GeneratedColumn<bool> failed = GeneratedColumn<bool>(
+    'failed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("failed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _queuedAtMeta = const VerificationMeta(
+    'queuedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> queuedAt = GeneratedColumn<DateTime>(
+    'queued_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    entity,
+    op,
+    localId,
+    serverId,
+    clientId,
+    payload,
+    attempts,
+    lastError,
+    failed,
+    queuedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pending_mutations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PendingMutation> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('entity')) {
+      context.handle(
+        _entityMeta,
+        entity.isAcceptableOrUnknown(data['entity']!, _entityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityMeta);
+    }
+    if (data.containsKey('op')) {
+      context.handle(_opMeta, op.isAcceptableOrUnknown(data['op']!, _opMeta));
+    } else if (isInserting) {
+      context.missing(_opMeta);
+    }
+    if (data.containsKey('local_id')) {
+      context.handle(
+        _localIdMeta,
+        localId.isAcceptableOrUnknown(data['local_id']!, _localIdMeta),
+      );
+    }
+    if (data.containsKey('server_id')) {
+      context.handle(
+        _serverIdMeta,
+        serverId.isAcceptableOrUnknown(data['server_id']!, _serverIdMeta),
+      );
+    }
+    if (data.containsKey('client_id')) {
+      context.handle(
+        _clientIdMeta,
+        clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
+      );
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    }
+    if (data.containsKey('attempts')) {
+      context.handle(
+        _attemptsMeta,
+        attempts.isAcceptableOrUnknown(data['attempts']!, _attemptsMeta),
+      );
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(
+        _lastErrorMeta,
+        lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
+      );
+    }
+    if (data.containsKey('failed')) {
+      context.handle(
+        _failedMeta,
+        failed.isAcceptableOrUnknown(data['failed']!, _failedMeta),
+      );
+    }
+    if (data.containsKey('queued_at')) {
+      context.handle(
+        _queuedAtMeta,
+        queuedAt.isAcceptableOrUnknown(data['queued_at']!, _queuedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PendingMutation map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PendingMutation(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}user_id'],
+      )!,
+      entity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity'],
+      )!,
+      op: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}op'],
+      )!,
+      localId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}local_id'],
+      ),
+      serverId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_id'],
+      ),
+      clientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}client_id'],
+      ),
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload'],
+      )!,
+      attempts: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempts'],
+      )!,
+      lastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error'],
+      ),
+      failed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}failed'],
+      )!,
+      queuedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}queued_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PendingMutationsTable createAlias(String alias) {
+    return $PendingMutationsTable(attachedDatabase, alias);
+  }
+}
+
+class PendingMutation extends DataClass implements Insertable<PendingMutation> {
+  final int id;
+  final int userId;
+  final String entity;
+  final String op;
+  final int? localId;
+  final int? serverId;
+  final String? clientId;
+  final String payload;
+  final int attempts;
+  final String? lastError;
+  final bool failed;
+  final DateTime queuedAt;
+  const PendingMutation({
+    required this.id,
+    required this.userId,
+    required this.entity,
+    required this.op,
+    this.localId,
+    this.serverId,
+    this.clientId,
+    required this.payload,
+    required this.attempts,
+    this.lastError,
+    required this.failed,
+    required this.queuedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['user_id'] = Variable<int>(userId);
+    map['entity'] = Variable<String>(entity);
+    map['op'] = Variable<String>(op);
+    if (!nullToAbsent || localId != null) {
+      map['local_id'] = Variable<int>(localId);
+    }
+    if (!nullToAbsent || serverId != null) {
+      map['server_id'] = Variable<int>(serverId);
+    }
+    if (!nullToAbsent || clientId != null) {
+      map['client_id'] = Variable<String>(clientId);
+    }
+    map['payload'] = Variable<String>(payload);
+    map['attempts'] = Variable<int>(attempts);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    map['failed'] = Variable<bool>(failed);
+    map['queued_at'] = Variable<DateTime>(queuedAt);
+    return map;
+  }
+
+  PendingMutationsCompanion toCompanion(bool nullToAbsent) {
+    return PendingMutationsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      entity: Value(entity),
+      op: Value(op),
+      localId: localId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localId),
+      serverId: serverId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverId),
+      clientId: clientId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientId),
+      payload: Value(payload),
+      attempts: Value(attempts),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      failed: Value(failed),
+      queuedAt: Value(queuedAt),
+    );
+  }
+
+  factory PendingMutation.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PendingMutation(
+      id: serializer.fromJson<int>(json['id']),
+      userId: serializer.fromJson<int>(json['userId']),
+      entity: serializer.fromJson<String>(json['entity']),
+      op: serializer.fromJson<String>(json['op']),
+      localId: serializer.fromJson<int?>(json['localId']),
+      serverId: serializer.fromJson<int?>(json['serverId']),
+      clientId: serializer.fromJson<String?>(json['clientId']),
+      payload: serializer.fromJson<String>(json['payload']),
+      attempts: serializer.fromJson<int>(json['attempts']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      failed: serializer.fromJson<bool>(json['failed']),
+      queuedAt: serializer.fromJson<DateTime>(json['queuedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'userId': serializer.toJson<int>(userId),
+      'entity': serializer.toJson<String>(entity),
+      'op': serializer.toJson<String>(op),
+      'localId': serializer.toJson<int?>(localId),
+      'serverId': serializer.toJson<int?>(serverId),
+      'clientId': serializer.toJson<String?>(clientId),
+      'payload': serializer.toJson<String>(payload),
+      'attempts': serializer.toJson<int>(attempts),
+      'lastError': serializer.toJson<String?>(lastError),
+      'failed': serializer.toJson<bool>(failed),
+      'queuedAt': serializer.toJson<DateTime>(queuedAt),
+    };
+  }
+
+  PendingMutation copyWith({
+    int? id,
+    int? userId,
+    String? entity,
+    String? op,
+    Value<int?> localId = const Value.absent(),
+    Value<int?> serverId = const Value.absent(),
+    Value<String?> clientId = const Value.absent(),
+    String? payload,
+    int? attempts,
+    Value<String?> lastError = const Value.absent(),
+    bool? failed,
+    DateTime? queuedAt,
+  }) => PendingMutation(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    entity: entity ?? this.entity,
+    op: op ?? this.op,
+    localId: localId.present ? localId.value : this.localId,
+    serverId: serverId.present ? serverId.value : this.serverId,
+    clientId: clientId.present ? clientId.value : this.clientId,
+    payload: payload ?? this.payload,
+    attempts: attempts ?? this.attempts,
+    lastError: lastError.present ? lastError.value : this.lastError,
+    failed: failed ?? this.failed,
+    queuedAt: queuedAt ?? this.queuedAt,
+  );
+  PendingMutation copyWithCompanion(PendingMutationsCompanion data) {
+    return PendingMutation(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      entity: data.entity.present ? data.entity.value : this.entity,
+      op: data.op.present ? data.op.value : this.op,
+      localId: data.localId.present ? data.localId.value : this.localId,
+      serverId: data.serverId.present ? data.serverId.value : this.serverId,
+      clientId: data.clientId.present ? data.clientId.value : this.clientId,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      attempts: data.attempts.present ? data.attempts.value : this.attempts,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      failed: data.failed.present ? data.failed.value : this.failed,
+      queuedAt: data.queuedAt.present ? data.queuedAt.value : this.queuedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingMutation(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('entity: $entity, ')
+          ..write('op: $op, ')
+          ..write('localId: $localId, ')
+          ..write('serverId: $serverId, ')
+          ..write('clientId: $clientId, ')
+          ..write('payload: $payload, ')
+          ..write('attempts: $attempts, ')
+          ..write('lastError: $lastError, ')
+          ..write('failed: $failed, ')
+          ..write('queuedAt: $queuedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    entity,
+    op,
+    localId,
+    serverId,
+    clientId,
+    payload,
+    attempts,
+    lastError,
+    failed,
+    queuedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PendingMutation &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.entity == this.entity &&
+          other.op == this.op &&
+          other.localId == this.localId &&
+          other.serverId == this.serverId &&
+          other.clientId == this.clientId &&
+          other.payload == this.payload &&
+          other.attempts == this.attempts &&
+          other.lastError == this.lastError &&
+          other.failed == this.failed &&
+          other.queuedAt == this.queuedAt);
+}
+
+class PendingMutationsCompanion extends UpdateCompanion<PendingMutation> {
+  final Value<int> id;
+  final Value<int> userId;
+  final Value<String> entity;
+  final Value<String> op;
+  final Value<int?> localId;
+  final Value<int?> serverId;
+  final Value<String?> clientId;
+  final Value<String> payload;
+  final Value<int> attempts;
+  final Value<String?> lastError;
+  final Value<bool> failed;
+  final Value<DateTime> queuedAt;
+  const PendingMutationsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.entity = const Value.absent(),
+    this.op = const Value.absent(),
+    this.localId = const Value.absent(),
+    this.serverId = const Value.absent(),
+    this.clientId = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.attempts = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.failed = const Value.absent(),
+    this.queuedAt = const Value.absent(),
+  });
+  PendingMutationsCompanion.insert({
+    this.id = const Value.absent(),
+    required int userId,
+    required String entity,
+    required String op,
+    this.localId = const Value.absent(),
+    this.serverId = const Value.absent(),
+    this.clientId = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.attempts = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.failed = const Value.absent(),
+    this.queuedAt = const Value.absent(),
+  }) : userId = Value(userId),
+       entity = Value(entity),
+       op = Value(op);
+  static Insertable<PendingMutation> custom({
+    Expression<int>? id,
+    Expression<int>? userId,
+    Expression<String>? entity,
+    Expression<String>? op,
+    Expression<int>? localId,
+    Expression<int>? serverId,
+    Expression<String>? clientId,
+    Expression<String>? payload,
+    Expression<int>? attempts,
+    Expression<String>? lastError,
+    Expression<bool>? failed,
+    Expression<DateTime>? queuedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (entity != null) 'entity': entity,
+      if (op != null) 'op': op,
+      if (localId != null) 'local_id': localId,
+      if (serverId != null) 'server_id': serverId,
+      if (clientId != null) 'client_id': clientId,
+      if (payload != null) 'payload': payload,
+      if (attempts != null) 'attempts': attempts,
+      if (lastError != null) 'last_error': lastError,
+      if (failed != null) 'failed': failed,
+      if (queuedAt != null) 'queued_at': queuedAt,
+    });
+  }
+
+  PendingMutationsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? userId,
+    Value<String>? entity,
+    Value<String>? op,
+    Value<int?>? localId,
+    Value<int?>? serverId,
+    Value<String?>? clientId,
+    Value<String>? payload,
+    Value<int>? attempts,
+    Value<String?>? lastError,
+    Value<bool>? failed,
+    Value<DateTime>? queuedAt,
+  }) {
+    return PendingMutationsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      entity: entity ?? this.entity,
+      op: op ?? this.op,
+      localId: localId ?? this.localId,
+      serverId: serverId ?? this.serverId,
+      clientId: clientId ?? this.clientId,
+      payload: payload ?? this.payload,
+      attempts: attempts ?? this.attempts,
+      lastError: lastError ?? this.lastError,
+      failed: failed ?? this.failed,
+      queuedAt: queuedAt ?? this.queuedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<int>(userId.value);
+    }
+    if (entity.present) {
+      map['entity'] = Variable<String>(entity.value);
+    }
+    if (op.present) {
+      map['op'] = Variable<String>(op.value);
+    }
+    if (localId.present) {
+      map['local_id'] = Variable<int>(localId.value);
+    }
+    if (serverId.present) {
+      map['server_id'] = Variable<int>(serverId.value);
+    }
+    if (clientId.present) {
+      map['client_id'] = Variable<String>(clientId.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (attempts.present) {
+      map['attempts'] = Variable<int>(attempts.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (failed.present) {
+      map['failed'] = Variable<bool>(failed.value);
+    }
+    if (queuedAt.present) {
+      map['queued_at'] = Variable<DateTime>(queuedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingMutationsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('entity: $entity, ')
+          ..write('op: $op, ')
+          ..write('localId: $localId, ')
+          ..write('serverId: $serverId, ')
+          ..write('clientId: $clientId, ')
+          ..write('payload: $payload, ')
+          ..write('attempts: $attempts, ')
+          ..write('lastError: $lastError, ')
+          ..write('failed: $failed, ')
+          ..write('queuedAt: $queuedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4419,6 +5248,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PendingRemindersTable pendingReminders = $PendingRemindersTable(
     this,
   );
+  late final $PendingMutationsTable pendingMutations = $PendingMutationsTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4431,6 +5263,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     pendingTasks,
     cachedReminders,
     pendingReminders,
+    pendingMutations,
   ];
 }
 
@@ -4448,6 +5281,7 @@ typedef $$CachedNotesTableCreateCompanionBuilder =
       Value<bool> pinned,
       Value<bool> isPending,
       Value<String?> clientId,
+      Value<bool> isDeleted,
     });
 typedef $$CachedNotesTableUpdateCompanionBuilder =
     CachedNotesCompanion Function({
@@ -4463,6 +5297,7 @@ typedef $$CachedNotesTableUpdateCompanionBuilder =
       Value<bool> pinned,
       Value<bool> isPending,
       Value<String?> clientId,
+      Value<bool> isDeleted,
     });
 
 class $$CachedNotesTableFilterComposer
@@ -4531,6 +5366,11 @@ class $$CachedNotesTableFilterComposer
 
   ColumnFilters<String> get clientId => $composableBuilder(
     column: $table.clientId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4603,6 +5443,11 @@ class $$CachedNotesTableOrderingComposer
     column: $table.clientId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CachedNotesTableAnnotationComposer
@@ -4649,6 +5494,9 @@ class $$CachedNotesTableAnnotationComposer
 
   GeneratedColumn<String> get clientId =>
       $composableBuilder(column: $table.clientId, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
 }
 
 class $$CachedNotesTableTableManager
@@ -4694,6 +5542,7 @@ class $$CachedNotesTableTableManager
                 Value<bool> pinned = const Value.absent(),
                 Value<bool> isPending = const Value.absent(),
                 Value<String?> clientId = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
               }) => CachedNotesCompanion(
                 id: id,
                 userId: userId,
@@ -4707,6 +5556,7 @@ class $$CachedNotesTableTableManager
                 pinned: pinned,
                 isPending: isPending,
                 clientId: clientId,
+                isDeleted: isDeleted,
               ),
           createCompanionCallback:
               ({
@@ -4722,6 +5572,7 @@ class $$CachedNotesTableTableManager
                 Value<bool> pinned = const Value.absent(),
                 Value<bool> isPending = const Value.absent(),
                 Value<String?> clientId = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
               }) => CachedNotesCompanion.insert(
                 id: id,
                 userId: userId,
@@ -4735,6 +5586,7 @@ class $$CachedNotesTableTableManager
                 pinned: pinned,
                 isPending: isPending,
                 clientId: clientId,
+                isDeleted: isDeleted,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -5292,6 +6144,7 @@ typedef $$CachedTasksTableCreateCompanionBuilder =
       Value<String?> updatedAt,
       Value<bool> isPending,
       Value<String?> clientId,
+      Value<bool> isDeleted,
     });
 typedef $$CachedTasksTableUpdateCompanionBuilder =
     CachedTasksCompanion Function({
@@ -5310,6 +6163,7 @@ typedef $$CachedTasksTableUpdateCompanionBuilder =
       Value<String?> updatedAt,
       Value<bool> isPending,
       Value<String?> clientId,
+      Value<bool> isDeleted,
     });
 
 class $$CachedTasksTableFilterComposer
@@ -5393,6 +6247,11 @@ class $$CachedTasksTableFilterComposer
 
   ColumnFilters<String> get clientId => $composableBuilder(
     column: $table.clientId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -5480,6 +6339,11 @@ class $$CachedTasksTableOrderingComposer
     column: $table.clientId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CachedTasksTableAnnotationComposer
@@ -5539,6 +6403,9 @@ class $$CachedTasksTableAnnotationComposer
 
   GeneratedColumn<String> get clientId =>
       $composableBuilder(column: $table.clientId, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
 }
 
 class $$CachedTasksTableTableManager
@@ -5587,6 +6454,7 @@ class $$CachedTasksTableTableManager
                 Value<String?> updatedAt = const Value.absent(),
                 Value<bool> isPending = const Value.absent(),
                 Value<String?> clientId = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
               }) => CachedTasksCompanion(
                 id: id,
                 userId: userId,
@@ -5603,6 +6471,7 @@ class $$CachedTasksTableTableManager
                 updatedAt: updatedAt,
                 isPending: isPending,
                 clientId: clientId,
+                isDeleted: isDeleted,
               ),
           createCompanionCallback:
               ({
@@ -5621,6 +6490,7 @@ class $$CachedTasksTableTableManager
                 Value<String?> updatedAt = const Value.absent(),
                 Value<bool> isPending = const Value.absent(),
                 Value<String?> clientId = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
               }) => CachedTasksCompanion.insert(
                 id: id,
                 userId: userId,
@@ -5637,6 +6507,7 @@ class $$CachedTasksTableTableManager
                 updatedAt: updatedAt,
                 isPending: isPending,
                 clientId: clientId,
+                isDeleted: isDeleted,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -5969,6 +6840,7 @@ typedef $$CachedRemindersTableCreateCompanionBuilder =
       Value<String?> updatedAt,
       Value<bool> isPending,
       Value<String?> clientId,
+      Value<bool> isDeleted,
     });
 typedef $$CachedRemindersTableUpdateCompanionBuilder =
     CachedRemindersCompanion Function({
@@ -5986,6 +6858,7 @@ typedef $$CachedRemindersTableUpdateCompanionBuilder =
       Value<String?> updatedAt,
       Value<bool> isPending,
       Value<String?> clientId,
+      Value<bool> isDeleted,
     });
 
 class $$CachedRemindersTableFilterComposer
@@ -6064,6 +6937,11 @@ class $$CachedRemindersTableFilterComposer
 
   ColumnFilters<String> get clientId => $composableBuilder(
     column: $table.clientId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -6146,6 +7024,11 @@ class $$CachedRemindersTableOrderingComposer
     column: $table.clientId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CachedRemindersTableAnnotationComposer
@@ -6200,6 +7083,9 @@ class $$CachedRemindersTableAnnotationComposer
 
   GeneratedColumn<String> get clientId =>
       $composableBuilder(column: $table.clientId, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
 }
 
 class $$CachedRemindersTableTableManager
@@ -6253,6 +7139,7 @@ class $$CachedRemindersTableTableManager
                 Value<String?> updatedAt = const Value.absent(),
                 Value<bool> isPending = const Value.absent(),
                 Value<String?> clientId = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
               }) => CachedRemindersCompanion(
                 id: id,
                 userId: userId,
@@ -6268,6 +7155,7 @@ class $$CachedRemindersTableTableManager
                 updatedAt: updatedAt,
                 isPending: isPending,
                 clientId: clientId,
+                isDeleted: isDeleted,
               ),
           createCompanionCallback:
               ({
@@ -6285,6 +7173,7 @@ class $$CachedRemindersTableTableManager
                 Value<String?> updatedAt = const Value.absent(),
                 Value<bool> isPending = const Value.absent(),
                 Value<String?> clientId = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
               }) => CachedRemindersCompanion.insert(
                 id: id,
                 userId: userId,
@@ -6300,6 +7189,7 @@ class $$CachedRemindersTableTableManager
                 updatedAt: updatedAt,
                 isPending: isPending,
                 clientId: clientId,
+                isDeleted: isDeleted,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -6622,6 +7512,348 @@ typedef $$PendingRemindersTableProcessedTableManager =
       PendingReminder,
       PrefetchHooks Function()
     >;
+typedef $$PendingMutationsTableCreateCompanionBuilder =
+    PendingMutationsCompanion Function({
+      Value<int> id,
+      required int userId,
+      required String entity,
+      required String op,
+      Value<int?> localId,
+      Value<int?> serverId,
+      Value<String?> clientId,
+      Value<String> payload,
+      Value<int> attempts,
+      Value<String?> lastError,
+      Value<bool> failed,
+      Value<DateTime> queuedAt,
+    });
+typedef $$PendingMutationsTableUpdateCompanionBuilder =
+    PendingMutationsCompanion Function({
+      Value<int> id,
+      Value<int> userId,
+      Value<String> entity,
+      Value<String> op,
+      Value<int?> localId,
+      Value<int?> serverId,
+      Value<String?> clientId,
+      Value<String> payload,
+      Value<int> attempts,
+      Value<String?> lastError,
+      Value<bool> failed,
+      Value<DateTime> queuedAt,
+    });
+
+class $$PendingMutationsTableFilterComposer
+    extends Composer<_$AppDatabase, $PendingMutationsTable> {
+  $$PendingMutationsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entity => $composableBuilder(
+    column: $table.entity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get op => $composableBuilder(
+    column: $table.op,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get localId => $composableBuilder(
+    column: $table.localId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverId => $composableBuilder(
+    column: $table.serverId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attempts => $composableBuilder(
+    column: $table.attempts,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get failed => $composableBuilder(
+    column: $table.failed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get queuedAt => $composableBuilder(
+    column: $table.queuedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PendingMutationsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PendingMutationsTable> {
+  $$PendingMutationsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entity => $composableBuilder(
+    column: $table.entity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get op => $composableBuilder(
+    column: $table.op,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get localId => $composableBuilder(
+    column: $table.localId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverId => $composableBuilder(
+    column: $table.serverId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get clientId => $composableBuilder(
+    column: $table.clientId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attempts => $composableBuilder(
+    column: $table.attempts,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get failed => $composableBuilder(
+    column: $table.failed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get queuedAt => $composableBuilder(
+    column: $table.queuedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PendingMutationsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PendingMutationsTable> {
+  $$PendingMutationsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get entity =>
+      $composableBuilder(column: $table.entity, builder: (column) => column);
+
+  GeneratedColumn<String> get op =>
+      $composableBuilder(column: $table.op, builder: (column) => column);
+
+  GeneratedColumn<int> get localId =>
+      $composableBuilder(column: $table.localId, builder: (column) => column);
+
+  GeneratedColumn<int> get serverId =>
+      $composableBuilder(column: $table.serverId, builder: (column) => column);
+
+  GeneratedColumn<String> get clientId =>
+      $composableBuilder(column: $table.clientId, builder: (column) => column);
+
+  GeneratedColumn<String> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<int> get attempts =>
+      $composableBuilder(column: $table.attempts, builder: (column) => column);
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<bool> get failed =>
+      $composableBuilder(column: $table.failed, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get queuedAt =>
+      $composableBuilder(column: $table.queuedAt, builder: (column) => column);
+}
+
+class $$PendingMutationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PendingMutationsTable,
+          PendingMutation,
+          $$PendingMutationsTableFilterComposer,
+          $$PendingMutationsTableOrderingComposer,
+          $$PendingMutationsTableAnnotationComposer,
+          $$PendingMutationsTableCreateCompanionBuilder,
+          $$PendingMutationsTableUpdateCompanionBuilder,
+          (
+            PendingMutation,
+            BaseReferences<
+              _$AppDatabase,
+              $PendingMutationsTable,
+              PendingMutation
+            >,
+          ),
+          PendingMutation,
+          PrefetchHooks Function()
+        > {
+  $$PendingMutationsTableTableManager(
+    _$AppDatabase db,
+    $PendingMutationsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PendingMutationsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PendingMutationsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PendingMutationsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> userId = const Value.absent(),
+                Value<String> entity = const Value.absent(),
+                Value<String> op = const Value.absent(),
+                Value<int?> localId = const Value.absent(),
+                Value<int?> serverId = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
+                Value<String> payload = const Value.absent(),
+                Value<int> attempts = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<bool> failed = const Value.absent(),
+                Value<DateTime> queuedAt = const Value.absent(),
+              }) => PendingMutationsCompanion(
+                id: id,
+                userId: userId,
+                entity: entity,
+                op: op,
+                localId: localId,
+                serverId: serverId,
+                clientId: clientId,
+                payload: payload,
+                attempts: attempts,
+                lastError: lastError,
+                failed: failed,
+                queuedAt: queuedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int userId,
+                required String entity,
+                required String op,
+                Value<int?> localId = const Value.absent(),
+                Value<int?> serverId = const Value.absent(),
+                Value<String?> clientId = const Value.absent(),
+                Value<String> payload = const Value.absent(),
+                Value<int> attempts = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<bool> failed = const Value.absent(),
+                Value<DateTime> queuedAt = const Value.absent(),
+              }) => PendingMutationsCompanion.insert(
+                id: id,
+                userId: userId,
+                entity: entity,
+                op: op,
+                localId: localId,
+                serverId: serverId,
+                clientId: clientId,
+                payload: payload,
+                attempts: attempts,
+                lastError: lastError,
+                failed: failed,
+                queuedAt: queuedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PendingMutationsTable, PendingMutation>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $PendingMutationsTable,
+                    PendingMutation
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PendingMutationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PendingMutationsTable,
+      PendingMutation,
+      $$PendingMutationsTableFilterComposer,
+      $$PendingMutationsTableOrderingComposer,
+      $$PendingMutationsTableAnnotationComposer,
+      $$PendingMutationsTableCreateCompanionBuilder,
+      $$PendingMutationsTableUpdateCompanionBuilder,
+      (
+        PendingMutation,
+        BaseReferences<_$AppDatabase, $PendingMutationsTable, PendingMutation>,
+      ),
+      PendingMutation,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6640,4 +7872,6 @@ class $AppDatabaseManager {
       $$CachedRemindersTableTableManager(_db, _db.cachedReminders);
   $$PendingRemindersTableTableManager get pendingReminders =>
       $$PendingRemindersTableTableManager(_db, _db.pendingReminders);
+  $$PendingMutationsTableTableManager get pendingMutations =>
+      $$PendingMutationsTableTableManager(_db, _db.pendingMutations);
 }

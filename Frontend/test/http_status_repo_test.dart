@@ -8,7 +8,6 @@ import 'package:notes_app/data/network/dio_client/dio_client.dart';
 import 'package:notes_app/data/repository/note/note_repo.dart';
 import 'package:notes_app/data/repository/profile/profile_repo.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
-import 'package:notes_app/utils/res/api_error.dart';
 
 /// Simulates the backend answering with a real 4xx status (BE-03): Dio throws.
 class NotFoundApiClient extends ApiClient {
@@ -49,12 +48,10 @@ void main() {
     await database.close();
   });
 
-  test('deleteNote on 404 drops the stale cached note and surfaces "Note not found"', () async {
-    final repo = NoteRepo(
-      client: client,
-      database: database,
-      syncService: OfflineSyncService(client: client, database: database),
-    );
+  test('a queued note delete answered with 404 is dropped and the note stays gone',
+      () async {
+    final sync = OfflineSyncService(client: client, database: database);
+    final repo = NoteRepo(client: client, database: database, syncService: sync);
     await database.saveServerNote(
       CachedNotesCompanion.insert(
         userId: 7,
@@ -64,16 +61,16 @@ void main() {
       ),
     );
 
-    Object? caught;
-    try {
-      await repo.deleteNote(55);
-    } catch (e) {
-      caught = e;
-    }
+    await repo.deleteNote(7, 55);
+    expect(await database.getNoteByServerId(7, 55), isNull, reason: 'hidden at once');
 
-    expect(caught, isA<DioException>());
-    expect(userMessage(caught!), 'Note not found');
-    expect(await database.getNoteByServerId(7, 55), isNull);
+    sync.setUserId(7);
+    await sync.requestSync();
+
+    expect(await database.getPendingMutations(7), isEmpty);
+    expect(await sync.watchFailures(7).first, isEmpty, reason: '404 is not a failure');
+    expect(await database.select(database.cachedNotes).get(), isEmpty);
+    await sync.dispose();
   });
 
   test('deleteUser on 404 is treated as already deleted and clears local data', () async {

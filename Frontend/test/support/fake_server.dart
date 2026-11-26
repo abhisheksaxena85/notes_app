@@ -4,8 +4,11 @@ import 'package:dio/dio.dart';
 import 'package:notes_app/data/network/api/api_client.dart';
 import 'package:notes_app/data/network/dio_client/dio_client.dart';
 import 'package:notes_app/data/network/dto/request/note/create_note_request_dto.dart';
+import 'package:notes_app/data/network/dto/request/note/update_note_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/reminder/create_reminder_request_dto.dart';
+import 'package:notes_app/data/network/dto/request/reminder/update_reminder_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/task/create_task_request_dto.dart';
+import 'package:notes_app/data/network/dto/request/task/update_task_request_dto.dart';
 
 /// An in-memory stand-in for the backend, for sync tests.
 ///
@@ -66,7 +69,8 @@ class FakeServer extends ApiClient {
         data: {'success': true, 'message': 'ok', 'data': data},
       );
 
-  /// Runs [apply] unless [onRequest] makes the call fail first.
+  /// Runs [apply] (which may throw, e.g. a 404) unless [onRequest] makes the
+  /// call fail first.
   Future<Response> _handle(String call, Object? request, Response Function() apply) async {
     calls.add(call);
     final verdict = onRequest?.call(call, request);
@@ -125,4 +129,72 @@ class FakeServer extends ApiClient {
   @override
   Future<Response> getAllReminders(int userId) => _handle('getAllReminders', userId,
       () => _ok([for (final r in reminders.values) if (r['userId'] == userId) r]));
+
+  /// Applies [changes] to an existing row, or answers 404 like the backend.
+  Future<Response> _change(
+    String call,
+    Map<int, Map<String, dynamic>> table,
+    int id,
+    Map<String, dynamic> changes,
+  ) =>
+      _handle(call, {'id': id, ...changes}, () {
+        final row = table[id];
+        if (row == null) throw status(404, 'Not found');
+        row.addAll({for (final e in changes.entries) if (e.value != null) e.key: e.value});
+        return _ok(row);
+      });
+
+  Future<Response> _remove(String call, Map<int, Map<String, dynamic>> table, int id) =>
+      _handle(call, {'id': id}, () {
+        if (table.remove(id) == null) throw status(404, 'Not found');
+        return _ok(true);
+      });
+
+  @override
+  Future<Response> updateNote(UpdateNoteRequestDto requestDto) {
+    final body = requestDto.toJson()..remove('noteId');
+    return _change('updateNote', notes, requestDto.noteId!, body);
+  }
+
+  @override
+  Future<Response> togglePin(int noteId) => throw StateError('togglePin is not replay-safe');
+
+  @override
+  Future<Response> deleteNote(int id) => _remove('deleteNote', notes, id);
+
+  @override
+  Future<Response> updateTask(UpdateTaskRequestDto requestDto) {
+    // The backend DTO's primitive isCompleted makes a body without it a 400.
+    if (requestDto.isCompleted == null) {
+      calls.add('updateTask');
+      throw status(400, 'Malformed or missing request body');
+    }
+    final body = requestDto.toJson()..remove('taskId');
+    return _change('updateTask', tasks, requestDto.taskId, body);
+  }
+
+  @override
+  Future<Response> toggleTaskStatus(int taskId, {String? status}) => _change(
+        'toggleTaskStatus',
+        tasks,
+        taskId,
+        {'status': status, 'isCompleted': status == 'COMPLETED'},
+      );
+
+  @override
+  Future<Response> deleteTask(int taskId) => _remove('deleteTask', tasks, taskId);
+
+  @override
+  Future<Response> updateReminder(UpdateReminderRequestDto requestDto) {
+    final body = requestDto.toJson()..remove('reminderId');
+    return _change('updateReminder', reminders, requestDto.reminderId, body);
+  }
+
+  @override
+  Future<Response> updateReminderStatus(int reminderId, {String? status}) =>
+      _change('updateReminderStatus', reminders, reminderId, {'status': status});
+
+  @override
+  Future<Response> deleteReminder(int reminderId) =>
+      _remove('deleteReminder', reminders, reminderId);
 }

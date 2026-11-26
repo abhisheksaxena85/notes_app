@@ -121,8 +121,10 @@ class NoteDetailsViewmodel extends AsyncNotifier<NoteDetailsState> {
     try {
       if (current.isEditMode && current.noteId != null) {
         // Update Note Flow
+        // Saved locally first (also for notes that were never uploaded, and
+        // offline); the sync service sends it to the server.
         log("Updating note ${current.noteId}...");
-        final response = await _noteRepo.updateNote(
+        await _noteRepo.updateNote(
           getUserId(),
           UpdateNoteRequestDto(
             noteId: current.noteId,
@@ -133,20 +135,11 @@ class NoteDetailsViewmodel extends AsyncNotifier<NoteDetailsState> {
             tags: tags,
           ),
         );
-
-        if (response.success == true) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              successSnackBar(response.message ?? "Note updated successfully!"),
-            );
-            Navigator.pop(context, true);
-          }
-        } else {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              failedSnackBar(response.message ?? "Failed to update note"),
-            );
-          }
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            successSnackBar("Note updated. Syncing in the background."),
+          );
+          Navigator.pop(context, true);
         }
       } else {
         // Create Note Flow
@@ -190,20 +183,12 @@ class NoteDetailsViewmodel extends AsyncNotifier<NoteDetailsState> {
     state = AsyncData(current!.copyWith(isSaving: true));
     try {
       log("Deleting note $noteId...");
-      final response = await _noteRepo.deleteNote(noteId);
-      if (response.success == true) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            successSnackBar(response.message ?? "Note deleted successfully!"),
-          );
-          Navigator.pop(context, true);
-        }
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            failedSnackBar(response.message ?? "Failed to delete note"),
-          );
-        }
+      await _noteRepo.deleteNote(getUserId(), noteId);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          successSnackBar("Note deleted."),
+        );
+        Navigator.pop(context, true);
       }
     } catch (e) {
       log("Error while deleting note: $e");

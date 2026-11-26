@@ -32,6 +32,9 @@ class OfflineSyncService {
   bool _syncAgain = false;
   bool _disposed = false;
 
+  /// Sync passes and refreshes run one at a time (see [runExclusive]).
+  Future<void> _lockTail = Future.value();
+
   Timer? _retryTimer;
   DateTime? _retryAt;
   Duration? _scheduledDelay;
@@ -78,9 +81,18 @@ class OfflineSyncService {
     final userId = _userId;
     if (_disposed || userId == null || userId == 0) return Future.value();
 
-    final run = _runSyncLoop();
+    final run = runExclusive(_runSyncLoop);
     _running = run;
     return run;
+  }
+
+  /// Runs [action] while no sync pass is running, and keeps passes from
+  /// starting until it is done. Refreshes use this so a server list fetched
+  /// before a queued change was replayed can't overwrite that change.
+  Future<T> runExclusive<T>(Future<T> Function() action) {
+    final result = _lockTail.then((_) => action());
+    _lockTail = result.then<void>((_) {}, onError: (Object _) {});
+    return result;
   }
 
   /// Items the server refused for good.
@@ -90,15 +102,15 @@ class OfflineSyncService {
   /// Puts failed items back in the queue and syncs.
   Future<void> retryFailed(List<SyncFailure> failures) async {
     for (final failure in failures) {
-      await database.resetSyncFailure(failure.entity, failure.queueId);
+      await database.resetSyncFailure(failure);
     }
     await requestSync();
   }
 
-  /// Drops a failed item: the change is never sent and the local copy of a
-  /// never-synced item is removed.
+  /// Drops a failed change: it is never sent. A never-synced item is removed;
+  /// for other items the next refresh restores the server's version.
   Future<void> discardFailed(SyncFailure failure) =>
-      database.discardQueuedCreate(failure.entity, failure.queueId);
+      database.discardSyncFailure(failure);
 
   /// The delay of the pending automatic retry, if one is scheduled.
   @visibleForTesting
@@ -113,17 +125,20 @@ class OfflineSyncService {
         final userId = _userId;
         if (userId == null || userId == 0) break;
         pausedByTransientError = false;
-        for (final (name, upload) in [
-          ('notes', _processor.uploadNotes),
-          ('tasks', _processor.uploadTasks),
-          ('reminders', _processor.uploadReminders),
-        ]) {
-          try {
-            if (await upload(userId)) pausedByTransientError = true;
-          } catch (error, stackTrace) {
-            // A local failure (database) in one queue must not stop the others.
-            pausedByTransientError = true;
-            log('Failed to sync queued $name: $error', stackTrace: stackTrace);
+        // Per entity: creates first, so changes queued against a new item
+        // can be sent to its server id in the same pass.
+        for (final entity in SyncEntity.values) {
+          for (final (stage, upload) in [
+            ('creates', _processor.uploadCreates),
+            ('changes', _processor.replayMutations),
+          ]) {
+            try {
+              if (await upload(entity, userId)) pausedByTransientError = true;
+            } catch (error, stackTrace) {
+              // A local failure (database) in one queue must not stop the others.
+              pausedByTransientError = true;
+              log('Failed to sync ${entity.name} $stage: $error', stackTrace: stackTrace);
+            }
           }
         }
         // After a transient error, requests made during the pass wait for the

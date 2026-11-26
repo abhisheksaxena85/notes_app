@@ -2,12 +2,18 @@ import 'package:notes_app/data/local/database/app_database.dart';
 import 'package:notes_app/data/local/database/note_database_mapper.dart';
 import 'package:notes_app/data/network/api/api_client.dart';
 import 'package:notes_app/data/network/dto/response/home/get_all_notes_response_dto.dart';
+import 'package:notes_app/data/sync/offline_sync_service.dart';
 
 class HomeRepo {
   final ApiClient client;
   final AppDatabase database;
+  final OfflineSyncService syncService;
 
-  HomeRepo({required this.client, required this.database});
+  HomeRepo({
+    required this.client,
+    required this.database,
+    required this.syncService,
+  });
 
   Future<GetAllNotesResponseDto> getCachedNotes(int userId) async {
     final notes = await database.getNotesForUser(userId);
@@ -23,7 +29,13 @@ class HomeRepo {
         .map((notes) => notes.map(NoteDatabaseMapper.toNoteItem).toList());
   }
 
-  Future<GetAllNotesResponseDto> getAllNotes(int id) async {
+  /// Refreshes the cache from the server. Runs while no sync pass is
+  /// running, so the merge can't undo a change that was just replayed.
+  Future<GetAllNotesResponseDto> getAllNotes(int id) {
+    return syncService.runExclusive(() => _fetchAndMerge(id));
+  }
+
+  Future<GetAllNotesResponseDto> _fetchAndMerge(int id) async {
     try {
       final response = await client.getAllNotes(id);
       if (response.statusCode != 200) {

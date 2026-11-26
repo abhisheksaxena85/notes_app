@@ -2,16 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:notes_app/data/local/database/app_database.dart';
 import 'package:notes_app/data/local/database/note_database_mapper.dart';
+import 'package:notes_app/data/local/database/sync_queue_models.dart';
 import 'package:notes_app/data/network/api/api_client.dart';
 import 'package:notes_app/data/network/dto/request/note/create_note_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/note/update_note_request_dto.dart';
-import 'package:notes_app/data/network/dto/response/note/delete_note_response_dto.dart';
 import 'package:notes_app/data/network/dto/response/note/note_details_response_dto.dart';
-import 'package:notes_app/data/network/dto/response/note/update_note_response_dto.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/note_data_transfer_service.dart';
 import 'package:uuid/uuid.dart';
@@ -103,52 +101,78 @@ class NoteRepo {
     );
   }
 
-  Future<UpdateNoteResponseDto> updateNote(
-    int userId,
-    UpdateNoteRequestDto requestDto,
-  ) async {
-    final response = await client.updateNote(requestDto);
-    if (response.statusCode != 200) {
-      throw HttpException((response.statusCode ?? 500).toString());
-    }
-
-    final result = UpdateNoteResponseDto.fromJson(response.data);
-    final note = result.data;
-    if (result.success == true && note != null && requestDto.noteId != null) {
-      await database.saveServerNote(
-        NoteDatabaseMapper.fromDetails(
-          userId,
-          NoteDetailsData(
-            noteId: note.noteId ?? requestDto.noteId,
-            title: note.title ?? requestDto.title,
-            content: note.content ?? requestDto.content,
-            category: note.category ?? requestDto.category,
-            createdAt: note.createdAt,
-            updatedAt: note.updateAt,
-            pinned: note.pinned ?? requestDto.pinned,
-            tags: note.tags ?? requestDto.tags,
-          ),
-        ),
-      );
-    }
-    return result;
+  /// Saves an edit locally and queues it for the server (FE-02). Works for
+  /// synced notes and for notes that were never uploaded (negative id), and
+  /// offline. Throws [StateError] if the note doesn't exist.
+  Future<void> updateNote(int userId, UpdateNoteRequestDto requestDto) async {
+    final noteId = requestDto.noteId;
+    if (noteId == null) throw ArgumentError('A note update needs a note id.');
+    await _recordNoteUpdate(
+      userId,
+      noteId,
+      title: requestDto.title ?? '',
+      content: requestDto.content ?? '',
+      category: requestDto.category,
+      pinned: requestDto.pinned ?? false,
+      tags: requestDto.tags,
+    );
+    unawaited(syncService.requestSync());
   }
 
+  /// Pins or unpins a note locally and queues it. Sent as a full update with
+  /// an explicit `pinned` value: the server's toggle endpoint is not safe to
+  /// replay.
   Future<void> togglePin(int userId, int noteId) async {
-    final response = await client.togglePin(noteId);
-    if (response.statusCode != 200) {
-      throw HttpException((response.statusCode ?? 500).toString());
-    }
-    final existing = await database.getNote(userId, noteId);
-    if (existing != null) {
-      final updated = existing.copyWith(
-        pinned: !existing.pinned,
-        updatedAt: Value(DateTime.now().toIso8601String()),
-      );
-      await database.saveServerNote(
-        NoteDatabaseMapper.fromDetails(userId, NoteDatabaseMapper.toDetails(updated)),
-      );
-    }
+    final note = await database.getNote(userId, noteId);
+    if (note == null) throw StateError('The note $noteId was not found.');
+    await _recordNoteUpdate(
+      userId,
+      noteId,
+      title: note.title,
+      content: note.content,
+      category: note.category,
+      pinned: !note.pinned,
+      tags: note.tags,
+    );
+    unawaited(syncService.requestSync());
+  }
+
+  /// Every note field is sent, so replaying the update is idempotent.
+  Future<void> _recordNoteUpdate(
+    int userId,
+    int noteId, {
+    required String title,
+    required String content,
+    String? category,
+    required bool pinned,
+    String? tags,
+  }) {
+    return database.recordItemChange(
+      entity: SyncEntity.note,
+      userId: userId,
+      itemId: noteId,
+      op: 'update',
+      changes: {
+        'title': title,
+        'content': content,
+        'category': category,
+        'pinned': pinned,
+        'tags': ?tags,
+      },
+      applyToRow: (localId) async {
+        await (database.update(database.cachedNotes)..where((n) => n.id.equals(localId)))
+            .write(
+          CachedNotesCompanion(
+            title: Value(title),
+            content: Value(content),
+            category: Value(category),
+            pinned: Value(pinned),
+            tags: tags == null ? const Value.absent() : Value(tags),
+            updatedAt: Value(DateTime.now().toIso8601String()),
+          ),
+        );
+      },
+    );
   }
 
   Future<NoteDetailsResponseDto> getNoteDetails(int userId, int id) async {
@@ -178,29 +202,17 @@ class NoteRepo {
     return result;
   }
 
-  Future<DeleteNoteResponseDto> deleteNote(int id) async {
-    final Response response;
-    try {
-      response = await client.deleteNote(id);
-    } on DioException catch (e) {
-      // 404: the server no longer has the note, so drop the stale local copy
-      // too, then let the caller show "Note not found".
-      if (e.response?.statusCode == 404) {
-        await _deleteCachedNote(id);
-      }
-      rethrow;
-    }
-    if (response.statusCode != 200) {
-      throw HttpException((response.statusCode ?? 500).toString());
-    }
-    await _deleteCachedNote(id);
-    return DeleteNoteResponseDto.fromJson(response.data);
-  }
-
-  Future<void> _deleteCachedNote(int serverId) async {
-    await (database.delete(database.cachedNotes)
-          ..where((n) => n.serverId.equals(serverId)))
-        .go();
+  /// Deletes a note locally and queues the delete (FE-02). A note that was
+  /// never uploaded is removed with its queued create; a synced note is hidden
+  /// until the server confirms. Throws [StateError] if it doesn't exist.
+  Future<void> deleteNote(int userId, int id) async {
+    final deleted = await database.recordItemDelete(
+      entity: SyncEntity.note,
+      userId: userId,
+      itemId: id,
+    );
+    if (!deleted) throw StateError('The note $id was not found.');
+    unawaited(syncService.requestSync());
   }
 
   Future<Map<String, dynamic>> exportNotes(int userId) async {
@@ -251,34 +263,15 @@ class NoteRepo {
             if (isIdentical) {
               duplicateCount++;
             } else {
-              await database.saveServerNote(
-                CachedNotesCompanion(
-                  id: Value(existing.id),
-                  userId: Value(userId),
-                  serverId: Value(item.noteId),
-                  title: Value(normalizedTitle),
-                  content: Value(content),
-                  category: Value(item.category ?? existing.category),
-                  pinned: Value(item.pinned),
-                  tags: Value(item.tags ?? existing.tags),
-                  updatedAt: Value(DateTime.now().toIso8601String()),
-                ),
+              await _recordNoteUpdate(
+                userId,
+                item.noteId!,
+                title: normalizedTitle,
+                content: content,
+                category: item.category ?? existing.category,
+                pinned: item.pinned,
+                tags: item.tags ?? existing.tags,
               );
-
-              try {
-                await client.updateNote(
-                  UpdateNoteRequestDto(
-                    noteId: item.noteId,
-                    title: normalizedTitle,
-                    content: content,
-                    category: item.category ?? existing.category,
-                    pinned: item.pinned,
-                    tags: item.tags ?? existing.tags,
-                  ),
-                );
-              } catch (_) {
-                // Keep local cache updated if offline or network error
-              }
               updatedCount++;
             }
             continue;
@@ -299,18 +292,14 @@ class NoteRepo {
               (duplicate.tags ?? '') != (item.tags ?? '');
 
           if (metaDiffers) {
-            await database.updateCachedNote(
-              CachedNotesCompanion(
-                id: Value(duplicate.id),
-                userId: Value(userId),
-                serverId: Value(duplicate.serverId),
-                title: Value(duplicate.title),
-                content: Value(duplicate.content),
-                category: Value(item.category ?? duplicate.category),
-                pinned: Value(item.pinned),
-                tags: Value(item.tags ?? duplicate.tags),
-                updatedAt: Value(DateTime.now().toIso8601String()),
-              ),
+            await _recordNoteUpdate(
+              userId,
+              duplicate.serverId ?? -duplicate.id,
+              title: duplicate.title,
+              content: duplicate.content,
+              category: item.category ?? duplicate.category,
+              pinned: item.pinned,
+              tags: item.tags ?? duplicate.tags,
             );
             updatedCount++;
           } else {
@@ -341,9 +330,10 @@ class NoteRepo {
     // 4. Upload the new notes through the sync service. Anything it could not
     // send stays safely queued in the local database.
     bool syncedToServer = false;
-    if (importedCount > 0) {
+    if (importedCount > 0 || updatedCount > 0) {
       await syncService.requestSync();
-      syncedToServer = (await database.getPendingNotes(userId)).isEmpty;
+      syncedToServer = (await database.getPendingNotes(userId)).isEmpty &&
+          (await database.getPendingMutations(userId, SyncEntity.note)).isEmpty;
     }
 
     return ImportResult(

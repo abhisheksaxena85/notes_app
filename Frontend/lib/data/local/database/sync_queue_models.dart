@@ -7,6 +7,10 @@ enum SyncEntity { note, task, reminder }
 class SyncFailure {
   final SyncEntity entity;
 
+  /// `create` (a row in a Pending* table) or `update` / `status` / `delete`
+  /// (a row in PendingMutations).
+  final String operation;
+
   /// Row id in the queue table the failure came from.
   final int queueId;
 
@@ -19,6 +23,7 @@ class SyncFailure {
 
   const SyncFailure({
     required this.entity,
+    this.operation = 'create',
     required this.queueId,
     required this.localId,
     required this.title,

@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:drift/drift.dart';
 import 'package:notes_app/data/local/database/app_database.dart';
+import 'package:notes_app/data/local/database/sync_queue_models.dart';
 import 'package:notes_app/data/local/database/task_database_mapper.dart';
 import 'package:notes_app/data/network/api/api_client.dart';
 import 'package:notes_app/data/network/dto/request/task/create_task_request_dto.dart';
@@ -32,7 +34,13 @@ class TaskRepo {
         .map((tasks) => tasks.map(TaskDatabaseMapper.toTaskItem).toList());
   }
 
-  Future<List<TaskItem>> fetchAndCacheTasks(int userId) async {
+  /// Refreshes the cache from the server. Runs while no sync pass is
+  /// running, so the merge can't undo a change that was just replayed.
+  Future<List<TaskItem>> fetchAndCacheTasks(int userId) {
+    return syncService.runExclusive(() => _fetchAndMerge(userId));
+  }
+
+  Future<List<TaskItem>> _fetchAndMerge(int userId) async {
     try {
       final response = await client.getAllTasks(userId);
       if (response.statusCode != 200) {
@@ -93,65 +101,87 @@ class TaskRepo {
     return setTaskStatus(userId, taskId, isCompleted ? 'COMPLETED' : 'PENDING');
   }
 
-  /// Sets PENDING / COMPLETED / REJECTED / MISSED. For a task that has not
-  /// synced yet (negative id) the queued create payload is patched too, so the
-  /// server receives the latest status instead of the one it was queued with.
+  /// Sets PENDING / COMPLETED / REJECTED / MISSED locally and queues it
+  /// (FE-02). For a task that was never uploaded the queued create carries the
+  /// new status instead. Works offline.
   Future<void> setTaskStatus(int userId, int taskId, String status) async {
     final isCompleted = status == 'COMPLETED';
-    await database.transaction(() async {
-      await database.updateTaskStatus(
-        taskId: taskId,
-        status: status,
-        isCompleted: isCompleted,
-      );
-      if (taskId < 0) {
-        final pending = await database.getPendingTaskForLocalId(-taskId);
-        if (pending != null) {
-          final decoded = jsonDecode(pending.payload);
-          if (decoded is Map) {
-            final payload = Map<String, dynamic>.from(decoded)
-              ..['status'] = status
-              ..['isCompleted'] = isCompleted;
-            await database.updatePendingTaskPayload(pending.id, jsonEncode(payload));
-          }
-        }
-      }
-    });
-
-    if (taskId > 0) {
-      try {
-        await client.toggleTaskStatus(taskId, status: status);
-      } catch (_) {
-        // Ignored for offline tolerance
-      }
-    }
+    await database.recordItemChange(
+      entity: SyncEntity.task,
+      userId: userId,
+      itemId: taskId,
+      op: 'status',
+      changes: {'status': status, 'isCompleted': isCompleted},
+      applyToRow: (localId) => _writeRow(
+        localId,
+        CachedTasksCompanion(
+          status: Value(status),
+          isCompleted: Value(isCompleted),
+        ),
+      ),
+    );
+    unawaited(syncService.requestSync());
   }
 
+  /// Saves an edit locally and queues it (FE-02); works for unsynced tasks
+  /// and offline. Throws [StateError] if the task doesn't exist.
   Future<void> updateTask(int userId, UpdateTaskRequestDto requestDto) async {
-    if (requestDto.taskId > 0) {
-      final response = await client.updateTask(requestDto);
-      if (response.statusCode == 200 && response.data is Map) {
-        final body = response.data as Map;
-        if (body['data'] is Map) {
-          final updated = TaskItem.fromJson(Map<String, dynamic>.from(body['data']));
-          await database.saveServerTask(
-            TaskDatabaseMapper.fromTaskItem(userId, updated),
-          );
-        }
-      }
-    }
+    final row = await _row(userId, requestDto.taskId);
+    if (row == null) throw StateError('The task ${requestDto.taskId} was not found.');
+    final status = requestDto.status ?? row.status;
+    // The server's update requires isCompleted, so it is always sent.
+    final isCompleted = requestDto.isCompleted ?? status == 'COMPLETED';
+    final changes = {...requestDto.toJson(), 'isCompleted': isCompleted}..remove('taskId');
+    await database.recordItemChange(
+      entity: SyncEntity.task,
+      userId: userId,
+      itemId: requestDto.taskId,
+      op: 'update',
+      changes: changes,
+      applyToRow: (localId) => _writeRow(
+        localId,
+        CachedTasksCompanion(
+          title: _set(requestDto.title),
+          description: _set(requestDto.description),
+          dueDate: _set(requestDto.dueDate),
+          dueTime: _set(requestDto.dueTime),
+          category: _set(requestDto.category),
+          priority: _set(requestDto.priority),
+          status: Value(status),
+          isCompleted: Value(isCompleted),
+        ),
+      ),
+    );
+    unawaited(syncService.requestSync());
   }
 
+  /// Deletes locally and queues the delete (FE-02). A task that was never
+  /// uploaded is dropped with its queued create; a synced one stays hidden
+  /// until the server confirms, so a refresh can't bring it back.
   Future<void> deleteTask(int userId, int taskId) async {
-    await database.deleteCachedTask(taskId);
-    if (taskId > 0) {
-      try {
-        await client.deleteTask(taskId);
-      } catch (_) {
-        // Ignored for offline tolerance
-      }
-    }
+    final deleted = await database.recordItemDelete(
+      entity: SyncEntity.task,
+      userId: userId,
+      itemId: taskId,
+    );
+    if (deleted) unawaited(syncService.requestSync());
   }
+
+  Future<CachedTask?> _row(int userId, int taskId) {
+    return (database.select(database.cachedTasks)
+          ..where((t) =>
+              t.userId.equals(userId) &
+              t.isDeleted.equals(false) &
+              (taskId < 0 ? t.id.equals(-taskId) : t.serverId.equals(taskId))))
+        .getSingleOrNull();
+  }
+
+  Future<void> _writeRow(int localId, CachedTasksCompanion changes) async {
+    await (database.update(database.cachedTasks)..where((t) => t.id.equals(localId)))
+        .write(changes.copyWith(updatedAt: Value(DateTime.now().toIso8601String())));
+  }
+
+  static Value<T> _set<T>(T? value) => value == null ? const Value.absent() : Value(value);
 
   Future<List<TaskItem>> getTasksByDate(int userId, String date) async {
     final cached = await database.getTasksByDate(userId, date);

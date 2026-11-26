@@ -22,6 +22,9 @@ class CachedNotes extends Table {
   BoolColumn get isPending => boolean().withDefault(const Constant(false))();
   // FE-03: idempotency key sent with the create (see the backend client_id).
   TextColumn get clientId => text().nullable()();
+  // FE-02: deleted here, delete not yet confirmed by the server. Hidden from
+  // every read; the row is removed once the server confirms.
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
 
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
@@ -77,6 +80,9 @@ class CachedTasks extends Table {
   BoolColumn get isPending => boolean().withDefault(const Constant(false))();
   // FE-03: idempotency key sent with the create (see the backend client_id).
   TextColumn get clientId => text().nullable()();
+  // FE-02: deleted here, delete not yet confirmed by the server. Hidden from
+  // every read; the row is removed once the server confirms.
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
 
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
@@ -119,6 +125,9 @@ class CachedReminders extends Table {
   BoolColumn get isPending => boolean().withDefault(const Constant(false))();
   // FE-03: idempotency key sent with the create (see the backend client_id).
   TextColumn get clientId => text().nullable()();
+  // FE-02: deleted here, delete not yet confirmed by the server. Hidden from
+  // every read; the row is removed once the server confirms.
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
 
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
@@ -145,6 +154,36 @@ class PendingReminders extends Table {
   ];
 }
 
+/// FE-02 outbox for changes to items that exist on the server, or whose
+/// create may already have reached it: `update`, `status` and `delete`.
+///
+/// Decision: creates stay in PendingNotes / PendingTasks / PendingReminders.
+/// They already hold the create payload, client id and failure state (v3), so
+/// the v3 -> v4 upgrade moves no data. An edit to an item whose create was
+/// never sent patches that create's payload instead of adding a row here.
+///
+/// Replay (SyncQueueProcessor) runs each entity's creates first, then this
+/// table in id order. [localId] is the cached row; [serverId] is filled in
+/// from that row once its create has completed, so a change queued before the
+/// item had a server id is sent to the right one.
+///
+/// `isPending` on a cached row means "has local changes not yet on the
+/// server" (a queued create or mutation); refreshes never overwrite such rows.
+class PendingMutations extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get userId => integer()();
+  TextColumn get entity => text()(); // note | task | reminder
+  TextColumn get op => text()(); // update | status | delete
+  IntColumn get localId => integer().nullable()();
+  IntColumn get serverId => integer().nullable()();
+  TextColumn get clientId => text().nullable()();
+  TextColumn get payload => text().withDefault(const Constant('{}'))();
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
+  TextColumn get lastError => text().nullable()();
+  BoolColumn get failed => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get queuedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 @DriftDatabase(tables: [
   CachedNotes,
   PendingNotes,
@@ -153,6 +192,7 @@ class PendingReminders extends Table {
   PendingTasks,
   CachedReminders,
   PendingReminders,
+  PendingMutations,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(driftDatabase(name: 'notes_app'));
@@ -160,7 +200,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   /// Each step uses the tables exactly as they were at that version (from the
   /// snapshots in `drift_schemas/`, generated into app_database.steps.dart), so
@@ -201,6 +241,14 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(table, failed);
         }
         await _backfillClientIds();
+      },
+      from3To4: (m, schema) async {
+        // FE-02: outbox for update/status/delete, and delete tombstones.
+        // Queued creates stay where they are (see PendingMutations).
+        await m.createTable(schema.pendingMutations);
+        await m.addColumn(schema.cachedNotes, schema.cachedNotes.isDeleted);
+        await m.addColumn(schema.cachedTasks, schema.cachedTasks.isDeleted);
+        await m.addColumn(schema.cachedReminders, schema.cachedReminders.isDeleted);
       },
     ),
   );
@@ -292,13 +340,41 @@ class AppDatabase extends _$AppDatabase {
   }
 
   /// Puts a failed item back in line for the next sync.
-  Future<void> resetSyncFailure(SyncEntity entity, int queueId) async {
-    final (queue, _, _) = _queueSql[entity]!;
+  Future<void> resetSyncFailure(SyncFailure failure) async {
+    final (queue, _, _) = _queueSql[failure.entity]!;
+    final isCreate = failure.operation == 'create';
     await customUpdate(
-      'UPDATE $queue SET attempts = 0, last_error = NULL, failed = 0 WHERE id = ?',
-      variables: [Variable.withInt(queueId)],
-      updates: {_queueTable(entity)},
+      'UPDATE ${isCreate ? queue : 'pending_mutations'} '
+      'SET attempts = 0, last_error = NULL, failed = 0 WHERE id = ?',
+      variables: [Variable.withInt(failure.queueId)],
+      updates: {isCreate ? _queueTable(failure.entity) : pendingMutations},
     );
+  }
+
+  /// Drops a change the server refused.
+  ///
+  /// A refused create also removes the local-only row it would have created.
+  /// A refused update/status/delete leaves the row as it is locally (a
+  /// deleted row is shown again) and stops protecting it, so the next refresh
+  /// brings back the server's version.
+  Future<void> discardSyncFailure(SyncFailure failure) async {
+    if (failure.operation == 'create') {
+      return discardQueuedCreate(failure.entity, failure.queueId);
+    }
+    await transaction(() async {
+      await (delete(pendingMutations)..where((m) => m.id.equals(failure.queueId))).go();
+      final localId = failure.localId;
+      if (localId == null) return;
+      if (failure.operation == 'delete') {
+        final (_, _, cache) = _queueSql[failure.entity]!;
+        await customUpdate(
+          'UPDATE $cache SET is_deleted = 0 WHERE id = ?',
+          variables: [Variable.withInt(localId)],
+          updates: {_cacheTable(failure.entity)},
+        );
+      }
+      await _settleRow(failure.entity, localId);
+    });
   }
 
   /// Drops a queued create the server refused, and the local-only row it
@@ -322,26 +398,38 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  /// Queued items the server refused for good, oldest first.
+  /// Queued changes the server refused for good, oldest first.
   Stream<List<SyncFailure>> watchSyncFailures(int userId) {
     final parts = <String>[];
+    final variables = <Variable<Object>>[];
     for (final entity in SyncEntity.values) {
       final (queue, localColumn, cache) = _queueSql[entity]!;
       parts.add(
-        "SELECT '${entity.name}' AS entity, p.id AS queue_id, c.id AS local_id, "
-        "COALESCE(c.title, '') AS title, p.last_error AS last_error, "
+        "SELECT '${entity.name}' AS entity, 'create' AS operation, p.id AS queue_id, "
+        "c.id AS local_id, COALESCE(c.title, '') AS title, p.last_error AS last_error, "
         'p.attempts AS attempts, p.queued_at AS queued_at '
         'FROM $queue p LEFT JOIN $cache c ON c.id = p.$localColumn '
         'WHERE p.user_id = ? AND p.failed = 1',
       );
+      parts.add(
+        "SELECT m.entity AS entity, m.op AS operation, m.id AS queue_id, "
+        "m.local_id AS local_id, COALESCE(c.title, '') AS title, m.last_error AS last_error, "
+        'm.attempts AS attempts, m.queued_at AS queued_at '
+        'FROM pending_mutations m LEFT JOIN $cache c ON c.id = m.local_id '
+        "WHERE m.user_id = ? AND m.failed = 1 AND m.entity = '${entity.name}'",
+      );
+      variables
+        ..add(Variable.withInt(userId))
+        ..add(Variable.withInt(userId));
     }
     return customSelect(
       '${parts.join(' UNION ALL ')} ORDER BY queued_at, queue_id',
-      variables: [for (final _ in SyncEntity.values) Variable.withInt(userId)],
+      variables: variables,
       readsFrom: {
         pendingNotes,
         pendingTasks,
         pendingReminders,
+        pendingMutations,
         cachedNotes,
         cachedTasks,
         cachedReminders,
@@ -351,6 +439,7 @@ class AppDatabase extends _$AppDatabase {
         for (final row in rows)
           SyncFailure(
             entity: SyncEntity.values.byName(row.read<String>('entity')),
+            operation: row.read<String>('operation'),
             queueId: row.read<int>('queue_id'),
             localId: row.readNullable<int>('local_id'),
             title: row.read<String>('title'),
@@ -367,7 +456,7 @@ class AppDatabase extends _$AppDatabase {
 
   Stream<List<CachedNote>> watchNotesForUser(int userId) {
     return (select(cachedNotes)
-          ..where((note) => note.userId.equals(userId))
+          ..where((note) => note.userId.equals(userId) & note.isDeleted.equals(false))
           ..orderBy([
             (note) =>
                 OrderingTerm(expression: note.pinned, mode: OrderingMode.desc),
@@ -385,7 +474,7 @@ class AppDatabase extends _$AppDatabase {
 
   Future<List<CachedNote>> getNotesForUser(int userId) {
     return (select(cachedNotes)
-          ..where((note) => note.userId.equals(userId))
+          ..where((note) => note.userId.equals(userId) & note.isDeleted.equals(false))
           ..orderBy([
             (note) =>
                 OrderingTerm(expression: note.pinned, mode: OrderingMode.desc),
@@ -406,6 +495,7 @@ class AppDatabase extends _$AppDatabase {
       ..where(
         (note) =>
             note.userId.equals(userId) &
+            note.isDeleted.equals(false) &
             (noteId < 0
                 ? note.id.equals(-noteId)
                 : note.serverId.equals(noteId)),
@@ -467,6 +557,7 @@ class AppDatabase extends _$AppDatabase {
     return (select(cachedNotes)
           ..where((note) =>
               note.userId.equals(userId) &
+              note.isDeleted.equals(false) &
               note.title.equals(title) &
               note.content.equals(content))
           ..limit(1))
@@ -476,13 +567,11 @@ class AppDatabase extends _$AppDatabase {
   Future<CachedNote?> getNoteByServerId(int userId, int serverId) {
     return (select(cachedNotes)
           ..where((note) =>
-              note.userId.equals(userId) & note.serverId.equals(serverId))
+              note.userId.equals(userId) &
+              note.isDeleted.equals(false) &
+              note.serverId.equals(serverId))
           ..limit(1))
         .getSingleOrNull();
-  }
-
-  Future<void> updateCachedNote(CachedNotesCompanion note) async {
-    await (update(cachedNotes)..where((n) => n.id.equals(note.id.value))).write(note);
   }
 
   Future<List<PendingNote>> getPendingNotes(int userId) {
@@ -496,36 +585,349 @@ class AppDatabase extends _$AppDatabase {
     required int queueId,
     required int localNoteId,
     required int serverId,
-  }) async {
-    await transaction(() async {
-      // If a refresh already cached the server copy (the create succeeded but
-      // its response was lost), drop that copy so the local row keeps its id.
-      final local = await (select(cachedNotes)
-            ..where((note) => note.id.equals(localNoteId)))
-          .getSingleOrNull();
-      if (local != null) {
-        await (delete(cachedNotes)..where((note) =>
-              note.userId.equals(local.userId) &
-              note.serverId.equals(serverId) &
-              note.id.equals(localNoteId).not()))
-            .go();
-      }
-      await (update(
-        cachedNotes,
-      )..where((note) => note.id.equals(localNoteId))).write(
-        CachedNotesCompanion(
-          serverId: Value(serverId),
-          isPending: const Value(false),
-        ),
-      );
-      await (delete(
-        pendingNotes,
-      )..where((entry) => entry.id.equals(queueId))).go();
-    });
-  }
+    int? userId,
+    String? sentPayload,
+  }) => _completeCreate(
+    SyncEntity.note,
+    queueId: queueId,
+    localId: localNoteId,
+    serverId: serverId,
+    userId: userId,
+    sentPayload: sentPayload,
+  );
 
   Future<void> saveServerNote(CachedNotesCompanion note) =>
       _upsertByServerId(_notesRows, note);
+
+  // ---------------------------------------------------------------------------
+  // Local-first changes and the mutation outbox (FE-02)
+  // ---------------------------------------------------------------------------
+
+  /// The cached row for an item id as the UI sees it (negative = local id,
+  /// positive = server id), or null if it doesn't exist or is deleted.
+  Future<({int localId, int? serverId, String? clientId})?> findItem(
+    SyncEntity entity,
+    int userId,
+    int itemId,
+  ) async {
+    final (_, _, cache) = _queueSql[entity]!;
+    final row = await customSelect(
+      'SELECT id, server_id, client_id FROM $cache WHERE user_id = ? AND is_deleted = 0 AND '
+      '${itemId < 0 ? 'id = ?' : 'server_id = ?'}',
+      variables: [Variable.withInt(userId), Variable.withInt(itemId.abs())],
+      readsFrom: {_cacheTable(entity)},
+    ).getSingleOrNull();
+    if (row == null) return null;
+    return (
+      localId: row.read<int>('id'),
+      serverId: row.readNullable<int>('server_id'),
+      clientId: row.readNullable<String>('client_id'),
+    );
+  }
+
+  Future<({int queueId, int attempts, String payload})?> _queuedCreate(
+    SyncEntity entity,
+    int localId,
+  ) async {
+    final (queue, localColumn, _) = _queueSql[entity]!;
+    final row = await customSelect(
+      'SELECT id, attempts, payload FROM $queue WHERE $localColumn = ?',
+      variables: [Variable.withInt(localId)],
+      readsFrom: {_queueTable(entity)},
+    ).getSingleOrNull();
+    if (row == null) return null;
+    return (
+      queueId: row.read<int>('id'),
+      attempts: row.read<int>('attempts'),
+      payload: row.read<String>('payload'),
+    );
+  }
+
+  Future<void> _insertMutation(
+    SyncEntity entity, {
+    required int userId,
+    required String op,
+    int? localId,
+    int? serverId,
+    String? clientId,
+    Map<String, dynamic> payload = const {},
+  }) async {
+    await into(pendingMutations).insert(
+      PendingMutationsCompanion.insert(
+        userId: userId,
+        entity: entity.name,
+        op: op,
+        localId: Value(localId),
+        serverId: Value(serverId),
+        clientId: Value(clientId),
+        payload: Value(jsonEncode(payload)),
+      ),
+    );
+    if (localId != null) {
+      final (_, _, cache) = _queueSql[entity]!;
+      await customUpdate(
+        'UPDATE $cache SET is_pending = 1 WHERE id = ?',
+        variables: [Variable.withInt(localId)],
+        updates: {_cacheTable(entity)},
+      );
+    }
+  }
+
+  /// Clears `isPending` once nothing about the row is left to upload.
+  Future<void> _settleRow(SyncEntity entity, int localId) async {
+    final (queue, localColumn, cache) = _queueSql[entity]!;
+    await customUpdate(
+      'UPDATE $cache SET is_pending = 0 WHERE id = ? '
+      'AND NOT EXISTS (SELECT 1 FROM pending_mutations WHERE entity = ? AND local_id = ?) '
+      'AND NOT EXISTS (SELECT 1 FROM $queue WHERE $localColumn = ?)',
+      variables: [
+        Variable.withInt(localId),
+        Variable.withString(entity.name),
+        Variable.withInt(localId),
+        Variable.withInt(localId),
+      ],
+      updates: {_cacheTable(entity)},
+    );
+  }
+
+  /// Records a local change to an item in one transaction: [applyToRow]
+  /// updates the cached row, then the change is queued for the server.
+  ///
+  /// For an item whose create is still queued, [changes] are merged into the
+  /// create payload so the server receives the final values. If that create
+  /// was already attempted (its response may have been lost, so the item may
+  /// exist on the server with the old values), the change is also queued as a
+  /// mutation that replays after the create. Otherwise it is queued as [op].
+  ///
+  /// Throws [StateError] if the item doesn't exist (or is deleted).
+  Future<void> recordItemChange({
+    required SyncEntity entity,
+    required int userId,
+    required int itemId,
+    required String op,
+    required Map<String, dynamic> changes,
+    required Future<void> Function(int localId) applyToRow,
+  }) {
+    return transaction(() async {
+      final item = await findItem(entity, userId, itemId);
+      if (item == null) {
+        throw StateError('The ${entity.name} $itemId was not found.');
+      }
+      await applyToRow(item.localId);
+
+      final create = await _queuedCreate(entity, item.localId);
+      if (create != null) {
+        final (queue, _, _) = _queueSql[entity]!;
+        final decoded = jsonDecode(create.payload);
+        final payload = {
+          if (decoded is Map) ...Map<String, dynamic>.from(decoded),
+          ...changes,
+        };
+        // The edit may fix why the server refused it, so it is retried.
+        await customUpdate(
+          'UPDATE $queue SET payload = ?, failed = 0 WHERE id = ?',
+          variables: [Variable.withString(jsonEncode(payload)), Variable.withInt(create.queueId)],
+          updates: {_queueTable(entity)},
+        );
+        if (create.attempts == 0) return;
+      }
+      await _insertMutation(
+        entity,
+        userId: userId,
+        op: op,
+        localId: item.localId,
+        serverId: item.serverId,
+        clientId: item.clientId,
+        payload: changes,
+      );
+    });
+  }
+
+  /// Deletes an item locally and queues the delete for the server.
+  ///
+  /// A never-sent item is simply removed with its queued create. Otherwise
+  /// the row becomes a tombstone (hidden, and protected from refreshes),
+  /// earlier queued changes to it are dropped, and a `delete` is queued.
+  /// Returns false if the item doesn't exist.
+  Future<bool> recordItemDelete({
+    required SyncEntity entity,
+    required int userId,
+    required int itemId,
+  }) {
+    return transaction(() async {
+      final item = await findItem(entity, userId, itemId);
+      if (item == null) return false;
+      final (queue, _, cache) = _queueSql[entity]!;
+
+      final create = await _queuedCreate(entity, item.localId);
+      if (create != null && create.attempts == 0) {
+        await customUpdate(
+          'DELETE FROM $queue WHERE id = ?',
+          variables: [Variable.withInt(create.queueId)],
+          updates: {_queueTable(entity)},
+          updateKind: UpdateKind.delete,
+        );
+        await customUpdate(
+          'DELETE FROM $cache WHERE id = ?',
+          variables: [Variable.withInt(item.localId)],
+          updates: {_cacheTable(entity)},
+          updateKind: UpdateKind.delete,
+        );
+        return true;
+      }
+
+      await (delete(pendingMutations)
+            ..where((m) =>
+                m.entity.equals(entity.name) & m.localId.equals(item.localId)))
+          .go();
+      await customUpdate(
+        'UPDATE $cache SET is_deleted = 1 WHERE id = ?',
+        variables: [Variable.withInt(item.localId)],
+        updates: {_cacheTable(entity)},
+      );
+      await _insertMutation(
+        entity,
+        userId: userId,
+        op: 'delete',
+        localId: item.localId,
+        serverId: item.serverId,
+        clientId: item.clientId,
+      );
+      return true;
+    });
+  }
+
+  /// A queued create reached the server as [serverId].
+  ///
+  /// - If a refresh already cached the server copy (the create succeeded but
+  ///   its response was lost), that copy is dropped so the local row keeps
+  ///   its id.
+  /// - If the item was deleted here while the create was in flight, a delete
+  ///   is queued so it doesn't survive on the server.
+  /// - If it was edited while the create was in flight (the queued payload no
+  ///   longer matches [sentPayload]), the final values are queued as an
+  ///   update.
+  Future<void> _completeCreate(
+    SyncEntity entity, {
+    required int queueId,
+    required int localId,
+    required int serverId,
+    int? userId,
+    String? sentPayload,
+  }) {
+    return transaction(() async {
+      final (queue, _, cache) = _queueSql[entity]!;
+      final queued = await customSelect(
+        'SELECT user_id, payload FROM $queue WHERE id = ?',
+        variables: [Variable.withInt(queueId)],
+      ).getSingleOrNull();
+      final local = await customSelect(
+        'SELECT user_id FROM $cache WHERE id = ?',
+        variables: [Variable.withInt(localId)],
+      ).getSingleOrNull();
+      final owner = local?.read<int>('user_id') ?? queued?.read<int>('user_id') ?? userId;
+
+      await customUpdate(
+        'DELETE FROM $queue WHERE id = ?',
+        variables: [Variable.withInt(queueId)],
+        updates: {_queueTable(entity)},
+        updateKind: UpdateKind.delete,
+      );
+
+      if (local == null) {
+        if (owner != null) {
+          await _insertMutation(entity, userId: owner, op: 'delete', serverId: serverId);
+        }
+        return;
+      }
+
+      await customUpdate(
+        'DELETE FROM $cache WHERE user_id = ? AND server_id = ? AND id <> ?',
+        variables: [Variable.withInt(owner!), Variable.withInt(serverId), Variable.withInt(localId)],
+        updates: {_cacheTable(entity)},
+        updateKind: UpdateKind.delete,
+      );
+      await customUpdate(
+        'UPDATE $cache SET server_id = ? WHERE id = ?',
+        variables: [Variable.withInt(serverId), Variable.withInt(localId)],
+        updates: {_cacheTable(entity)},
+      );
+
+      final current = queued?.read<String>('payload');
+      if (sentPayload != null && current != null && current != sentPayload) {
+        final decoded = jsonDecode(current);
+        final values = decoded is Map ? Map<String, dynamic>.from(decoded) : <String, dynamic>{};
+        values
+          ..remove('userId')
+          ..remove('clientId');
+        await _insertMutation(
+          entity,
+          userId: owner,
+          op: 'update',
+          localId: localId,
+          serverId: serverId,
+          payload: values,
+        );
+      }
+      await _settleRow(entity, localId);
+    });
+  }
+
+  Future<List<PendingMutation>> getPendingMutations(int userId, [SyncEntity? entity]) {
+    return (select(pendingMutations)
+          ..where((m) =>
+              m.userId.equals(userId) &
+              (entity == null ? const Constant(true) : m.entity.equals(entity.name)))
+          ..orderBy([(m) => OrderingTerm.asc(m.id)]))
+        .get();
+  }
+
+  /// The server id of a cached row, once its create has completed.
+  Future<int?> serverIdForRow(SyncEntity entity, int localId) async {
+    final (_, _, cache) = _queueSql[entity]!;
+    final row = await customSelect(
+      'SELECT server_id FROM $cache WHERE id = ?',
+      variables: [Variable.withInt(localId)],
+    ).getSingleOrNull();
+    return row?.readNullable<int>('server_id');
+  }
+
+  Future<bool> hasQueuedCreate(SyncEntity entity, int localId) async =>
+      await _queuedCreate(entity, localId) != null;
+
+  /// The server applied [mutation] (or no longer has the item): drop it, and
+  /// remove the row of a confirmed delete.
+  Future<void> finishMutation(PendingMutation mutation) {
+    return transaction(() async {
+      await (delete(pendingMutations)..where((m) => m.id.equals(mutation.id))).go();
+      final localId = mutation.localId;
+      if (localId == null) return;
+      final entity = SyncEntity.values.byName(mutation.entity);
+      if (mutation.op == 'delete') {
+        final (_, _, cache) = _queueSql[entity]!;
+        await customUpdate(
+          'DELETE FROM $cache WHERE id = ?',
+          variables: [Variable.withInt(localId)],
+          updates: {_cacheTable(entity)},
+          updateKind: UpdateKind.delete,
+        );
+      } else {
+        await _settleRow(entity, localId);
+      }
+    });
+  }
+
+  Future<void> recordMutationAttempt(
+    int mutationId, {
+    required String error,
+    required bool failed,
+  }) async {
+    await customUpdate(
+      'UPDATE pending_mutations SET attempts = attempts + 1, last_error = ?, failed = ? WHERE id = ?',
+      variables: [Variable.withString(error), Variable.withBool(failed), Variable.withInt(mutationId)],
+      updates: {pendingMutations},
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // Server rows: upsert and merge (FE-04)
@@ -670,7 +1072,7 @@ class AppDatabase extends _$AppDatabase {
 
   Stream<List<CachedTask>> watchTasksForUser(int userId) {
     return (select(cachedTasks)
-          ..where((task) => task.userId.equals(userId))
+          ..where((task) => task.userId.equals(userId) & task.isDeleted.equals(false))
           ..orderBy([
             (task) => OrderingTerm(expression: task.isCompleted, mode: OrderingMode.asc),
             (task) => OrderingTerm(expression: task.dueDate, mode: OrderingMode.asc),
@@ -682,7 +1084,7 @@ class AppDatabase extends _$AppDatabase {
 
   Future<List<CachedTask>> getTasksForUser(int userId) {
     return (select(cachedTasks)
-          ..where((task) => task.userId.equals(userId))
+          ..where((task) => task.userId.equals(userId) & task.isDeleted.equals(false))
           ..orderBy([
             (task) => OrderingTerm(expression: task.isCompleted, mode: OrderingMode.asc),
             (task) => OrderingTerm(expression: task.dueDate, mode: OrderingMode.asc),
@@ -696,6 +1098,7 @@ class AppDatabase extends _$AppDatabase {
     return (select(cachedTasks)
           ..where((task) =>
               task.userId.equals(userId) &
+              task.isDeleted.equals(false) &
               (task.dueDate.equals(date) |
                   (task.dueDate.isNull() & task.createdAt.like('$date%'))))
           ..orderBy([
@@ -760,28 +1163,16 @@ class AppDatabase extends _$AppDatabase {
     required int queueId,
     required int localTaskId,
     required int serverId,
-  }) async {
-    await transaction(() async {
-      // See completePendingNote.
-      final local = await (select(cachedTasks)
-            ..where((task) => task.id.equals(localTaskId)))
-          .getSingleOrNull();
-      if (local != null) {
-        await (delete(cachedTasks)..where((task) =>
-              task.userId.equals(local.userId) &
-              task.serverId.equals(serverId) &
-              task.id.equals(localTaskId).not()))
-            .go();
-      }
-      await (update(cachedTasks)..where((task) => task.id.equals(localTaskId))).write(
-        CachedTasksCompanion(
-          serverId: Value(serverId),
-          isPending: const Value(false),
-        ),
-      );
-      await (delete(pendingTasks)..where((entry) => entry.id.equals(queueId))).go();
-    });
-  }
+    int? userId,
+    String? sentPayload,
+  }) => _completeCreate(
+    SyncEntity.task,
+    queueId: queueId,
+    localId: localTaskId,
+    serverId: serverId,
+    userId: userId,
+    sentPayload: sentPayload,
+  );
 
   /// Merges a fresh server list into the cache; see [_mergeServerRows].
   Future<void> replaceServerTasks(
@@ -792,58 +1183,13 @@ class AppDatabase extends _$AppDatabase {
   Future<void> saveServerTask(CachedTasksCompanion task) =>
       _upsertByServerId(_tasksRows, task);
 
-  Future<PendingTask?> getPendingTaskForLocalId(int localTaskId) {
-    return (select(pendingTasks)
-          ..where((entry) => entry.localTaskId.equals(localTaskId)))
-        .getSingleOrNull();
-  }
-
-  Future<void> updatePendingTaskPayload(int queueId, String payload) async {
-    await (update(pendingTasks)..where((entry) => entry.id.equals(queueId)))
-        .write(PendingTasksCompanion(payload: Value(payload)));
-  }
-
-  Future<void> updateTaskStatus({
-    required int taskId,
-    required String status,
-    required bool isCompleted,
-  }) async {
-    final now = DateTime.now().toIso8601String();
-    await (update(cachedTasks)
-          ..where((task) =>
-              (taskId < 0 ? task.id.equals(-taskId) : task.serverId.equals(taskId))))
-        .write(
-      CachedTasksCompanion(
-        status: Value(status),
-        isCompleted: Value(isCompleted),
-        updatedAt: Value(now),
-      ),
-    );
-  }
-
-  Future<void> deleteCachedTask(int taskId) async {
-    await transaction(() async {
-      await (delete(cachedTasks)
-            ..where((task) =>
-                (taskId < 0 ? task.id.equals(-taskId) : task.serverId.equals(taskId))))
-          .go();
-      // A negative id is a never-synced local row: drop its queued upload too,
-      // otherwise the next sync would recreate it on the server.
-      if (taskId < 0) {
-        await (delete(pendingTasks)
-              ..where((entry) => entry.localTaskId.equals(-taskId)))
-            .go();
-      }
-    });
-  }
-
   // ---------------------------------------------------------------------------
   // Reminder Operations
   // ---------------------------------------------------------------------------
 
   Stream<List<CachedReminder>> watchRemindersForUser(int userId) {
     return (select(cachedReminders)
-          ..where((rem) => rem.userId.equals(userId))
+          ..where((rem) => rem.userId.equals(userId) & rem.isDeleted.equals(false))
           ..orderBy([
             (rem) => OrderingTerm(expression: rem.remindAt, mode: OrderingMode.asc),
             (rem) => OrderingTerm(expression: rem.createdAt, mode: OrderingMode.desc),
@@ -853,7 +1199,7 @@ class AppDatabase extends _$AppDatabase {
 
   Future<List<CachedReminder>> getRemindersForUser(int userId) {
     return (select(cachedReminders)
-          ..where((rem) => rem.userId.equals(userId))
+          ..where((rem) => rem.userId.equals(userId) & rem.isDeleted.equals(false))
           ..orderBy([
             (rem) => OrderingTerm(expression: rem.remindAt, mode: OrderingMode.asc),
             (rem) => OrderingTerm(expression: rem.createdAt, mode: OrderingMode.desc),
@@ -865,6 +1211,7 @@ class AppDatabase extends _$AppDatabase {
     return (select(cachedReminders)
           ..where((rem) =>
               rem.userId.equals(userId) &
+              rem.isDeleted.equals(false) &
               (rem.dueDate.equals(date) |
                   (rem.dueDate.isNull() & rem.remindAt.like('$date%'))))
           ..orderBy([
@@ -926,28 +1273,16 @@ class AppDatabase extends _$AppDatabase {
     required int queueId,
     required int localReminderId,
     required int serverId,
-  }) async {
-    await transaction(() async {
-      // See completePendingNote.
-      final local = await (select(cachedReminders)
-            ..where((rem) => rem.id.equals(localReminderId)))
-          .getSingleOrNull();
-      if (local != null) {
-        await (delete(cachedReminders)..where((rem) =>
-              rem.userId.equals(local.userId) &
-              rem.serverId.equals(serverId) &
-              rem.id.equals(localReminderId).not()))
-            .go();
-      }
-      await (update(cachedReminders)..where((rem) => rem.id.equals(localReminderId))).write(
-        CachedRemindersCompanion(
-          serverId: Value(serverId),
-          isPending: const Value(false),
-        ),
-      );
-      await (delete(pendingReminders)..where((entry) => entry.id.equals(queueId))).go();
-    });
-  }
+    int? userId,
+    String? sentPayload,
+  }) => _completeCreate(
+    SyncEntity.reminder,
+    queueId: queueId,
+    localId: localReminderId,
+    serverId: serverId,
+    userId: userId,
+    sentPayload: sentPayload,
+  );
 
   /// Merges a fresh server list into the cache; see [_mergeServerRows].
   Future<void> replaceServerReminders(
@@ -958,47 +1293,6 @@ class AppDatabase extends _$AppDatabase {
   Future<void> saveServerReminder(CachedRemindersCompanion reminder) =>
       _upsertByServerId(_remindersRows, reminder);
 
-  Future<PendingReminder?> getPendingReminderForLocalId(int localReminderId) {
-    return (select(pendingReminders)
-          ..where((entry) => entry.localReminderId.equals(localReminderId)))
-        .getSingleOrNull();
-  }
-
-  Future<void> updatePendingReminderPayload(int queueId, String payload) async {
-    await (update(pendingReminders)..where((entry) => entry.id.equals(queueId)))
-        .write(PendingRemindersCompanion(payload: Value(payload)));
-  }
-
-  Future<void> updateReminderStatus({
-    required int reminderId,
-    required String status,
-  }) async {
-    final now = DateTime.now().toIso8601String();
-    await (update(cachedReminders)
-          ..where((rem) =>
-              (reminderId < 0 ? rem.id.equals(-reminderId) : rem.serverId.equals(reminderId))))
-        .write(
-      CachedRemindersCompanion(
-        status: Value(status),
-        updatedAt: Value(now),
-      ),
-    );
-  }
-
-  Future<void> deleteCachedReminder(int reminderId) async {
-    await transaction(() async {
-      await (delete(cachedReminders)
-            ..where((rem) =>
-                (reminderId < 0 ? rem.id.equals(-reminderId) : rem.serverId.equals(reminderId))))
-          .go();
-      // See deleteCachedTask: never-synced rows must leave the upload queue too.
-      if (reminderId < 0) {
-        await (delete(pendingReminders)
-              ..where((entry) => entry.localReminderId.equals(-reminderId)))
-            .go();
-      }
-    });
-  }
 }
 
 /// Column accessors for the three cached tables that mirror server rows

@@ -120,4 +120,27 @@ void main() {
 
     expect(viewmodel.actions, ['retry First', 'retryAll']);
   });
+
+  testWidgets('a refused edit says the server version comes back', (tester) async {
+    await pumpBanner(tester);
+    failures.add([
+      const SyncFailure(
+        entity: SyncEntity.task,
+        operation: 'update',
+        queueId: 7,
+        localId: 3,
+        title: 'Plan trip',
+        lastError: 'Refused',
+        attempts: 1,
+      ),
+    ]);
+    await tester.pump();
+    await tester.tap(find.text('Review'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Task edit'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Discard'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining("server's version"), findsOneWidget);
+  });
 }

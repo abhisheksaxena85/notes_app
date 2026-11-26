@@ -177,8 +177,11 @@ Future<bool> _confirmDiscard(BuildContext context, SyncFailure failure) async {
         ),
       ),
       content: Text(
-        '"${failure.title}" was never saved to the server. Discarding removes '
-        'it from this device too.',
+        failure.operation == 'create'
+            ? '"${failure.title}" was never saved to the server. Discarding '
+                'removes it from this device too.'
+            : 'Your change to "${failure.title}" will be dropped and the '
+                "server's version shown again after the next refresh.",
         style: GoogleFonts.inter(fontSize: 13.sp, color: palette.muted, height: 1.4),
       ),
       actions: [
@@ -213,11 +216,20 @@ class _SyncFailureTile extends StatelessWidget {
     required this.onDiscard,
   });
 
-  String get _kind => switch (failure.entity) {
-    SyncEntity.note => 'Note',
-    SyncEntity.task => 'Task',
-    SyncEntity.reminder => 'Reminder',
-  };
+  String get _kind {
+    final kind = switch (failure.entity) {
+      SyncEntity.note => 'Note',
+      SyncEntity.task => 'Task',
+      SyncEntity.reminder => 'Reminder',
+    };
+    final change = switch (failure.operation) {
+      'create' => 'new',
+      'status' => 'status change',
+      'delete' => 'delete',
+      _ => 'edit',
+    };
+    return '$kind $change';
+  }
 
   @override
   Widget build(BuildContext context) {
