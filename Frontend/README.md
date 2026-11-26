@@ -60,6 +60,10 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
 flutter run --dart-define=API_BASE_URL=http://<YOUR_IP>:8080
 ```
 
+### Generated code policy
+
+Generated Dart files (`*.g.dart` from Drift and `json_serializable`) **are committed** to the repository, so a fresh clone builds without running codegen first. Whenever you change a Drift table or an annotated DTO, re-run `dart run build_runner build --delete-conflicting-outputs` and commit the regenerated `*.g.dart` files in the same commit as the source change.
+
 ---
 
 ## 🧪 Testing & Verification
