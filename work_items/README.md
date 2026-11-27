@@ -86,7 +86,7 @@ Priority: **P0** = security hole or data loss, fix first · **P1** = broken beha
 | ☑ | W-02 | Interactive actions in a background isolate: tick a task, reminder Done | P2 | W-01, REM-04 |
 | ☑ | W-03 | Quick add task: `QuickAddTaskSheet`, Android pop-up activity, iOS App Intent + inbox | P2 | W-01 |
 | ☑ | W-04 | Android "Daymark Tasks" widget (Jetpack Glance) | P2 | W-02, W-03 |
-| ☐ | W-05 | Android "Next reminder" widget (Glance) with scheduled roll-over | P2 | W-02 |
+| ☑ | W-05 | Android "Next reminder" widget (Glance) with scheduled roll-over | P2 | W-02 |
 | ☐ | W-06 | iOS WidgetKit extension `DaymarkWidgets` (both widgets, App Group, intents) | P2 | W-02, W-03 |
 | ☐ | W-07 | Docs and the device QA checklist ([WIDGETS-QA](WIDGETS-QA.md)) | P2 | W-04…W-06 |
 
