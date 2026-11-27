@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -427,6 +428,8 @@ class NotificationService {
         priority: isReminder ? Priority.high : Priority.defaultPriority,
         category: isReminder ? AndroidNotificationCategory.reminder : null,
         icon: 'ic_stat_daymark',
+        // design/README.md §6: the small icon is tinted with the accent.
+        color: DaymarkAccent.current.light,
         when: when?.millisecondsSinceEpoch,
         showWhen: true,
         actions: withActions

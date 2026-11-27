@@ -40,6 +40,7 @@ dev_dependencies:
 
   flutter_lints: ^6.0.0
   drift_dev: ^2.35.3
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -47,3 +48,28 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+
+# App icon (design/README.md §5). Regenerate with:
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/app_icon/app_icon.png"
+  android: true
+  adaptive_icon_background: "#2A2B2F"
+  adaptive_icon_foreground: "assets/app_icon/app_icon_foreground.png"
+  adaptive_icon_monochrome: "assets/app_icon/app_icon_monochrome.png"
+  # The PNGs are full 108 dp layers with the glyph already in the safe zone.
+  adaptive_icon_foreground_inset: 0
+  ios: true
+  remove_alpha_ios: true
+  macos:
+    generate: true
+    image_path: "assets/app_icon/app_icon.png"
+  web:
+    generate: true
+    image_path: "assets/app_icon/app_icon.png"
+    background_color: "#F3F3F1"
+    theme_color: "#2A2B2F"
+  windows:
+    generate: true
+    image_path: "assets/app_icon/app_icon.png"
+    icon_size: 48

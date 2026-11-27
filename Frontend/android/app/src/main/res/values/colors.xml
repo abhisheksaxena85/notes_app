@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#2A2B2F</color>
+    <!-- Native launch background: the theme background (design/README.md §1). -->
+    <color name="launch_background">#F3F3F1</color>
+</resources>
