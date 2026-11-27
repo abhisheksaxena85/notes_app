@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/data/network/dto/response/item_status.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/themes/daymark_text.dart';
+import 'package:notes_app/views/widgets/sheet_scaffold.dart';
 
 /// Long-press status picker for task and reminder cards. MISSED is derived
 /// from the due time, so it is not offered as a manual choice. For a
@@ -26,36 +26,36 @@ Future<String?> showItemStatusSheet(
   ];
   final options = repeating ? repeatingOptions : statusOptions;
 
-  return showModalBottomSheet<String>(
-    context: context,
-    backgroundColor: palette.surface,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-    ),
-    builder: (sheetContext) => SafeArea(
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 12.h),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final (value, label, icon, color) in options)
-              ListTile(
-                leading: AppIcons.icon(icon, color: color),
-                title: Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                    color: palette.ink,
-                  ),
+  return showDaymarkSheet<String>(
+    context,
+    builder: (sheetContext) => SheetScaffold(
+      title: repeating ? 'This occurrence' : 'Status',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final (value, label, icon, color) in options)
+            InkWell(
+              onTap: () => Navigator.of(sheetContext).pop(value),
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                height: 52,
+                child: Row(
+                  children: [
+                    AppIcons.icon(icon, size: 20, color: color),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: DaymarkText.custom(14.5, FontWeight.w500).copyWith(color: palette.ink),
+                      ),
+                    ),
+                    if (value == currentStatus)
+                      AppIcons.icon(AppIcons.check, size: 18, color: palette.accent),
+                  ],
                 ),
-                trailing: value == currentStatus
-                    ? AppIcons.icon(AppIcons.check, color: palette.accent)
-                    : null,
-                onTap: () => Navigator.of(sheetContext).pop(value),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     ),
   );

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/data/network/dto/request/reminder/update_reminder_request_dto.dart';
 import 'package:notes_app/data/network/dto/response/reminder/reminder_item.dart';
@@ -11,7 +9,14 @@ import 'package:notes_app/utils/reminder_time.dart';
 import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
+import 'package:notes_app/utils/date/display_format.dart';
+import 'package:notes_app/utils/themes/daymark_text.dart';
+import 'package:notes_app/views/widgets/daymark_chip.dart';
+import 'package:notes_app/views/widgets/labeled_field.dart';
 import 'package:notes_app/views/widgets/notification_permission_prompt.dart';
+import 'package:notes_app/views/widgets/primary_button.dart';
+import 'package:notes_app/views/widgets/segmented_control.dart';
+import 'package:notes_app/views/widgets/sheet_scaffold.dart';
 
 /// REM-06: the reminder form, to create one or (with [initial]) edit it.
 /// Returns true when something was saved or deleted.
@@ -19,10 +24,8 @@ Future<bool?> showReminderFormModal(
   BuildContext context, {
   ReminderItem? initial,
 }) {
-  return showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+  return showDaymarkSheet<bool>(
+    context,
     builder: (ctx) => ReminderFormModal(initial: initial),
   );
 }
@@ -270,255 +273,113 @@ class _ReminderFormModalState extends ConsumerState<ReminderFormModal> {
   @override
   Widget build(BuildContext context) {
     final palette = context.daymark;
-    final isDark = palette.brightness == Brightness.dark;
+    final time = DisplayFormat.time(_selectedTime.hour, _selectedTime.minute);
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+    return SheetScaffold(
+      title: _isEdit ? "Edit reminder" : "New reminder",
+      actions: [
+        if (_isEdit)
+          IconButton(
+            tooltip: 'Delete',
+            onPressed: _isSaving ? null : _deleteReminder,
+            icon: AppIcons.icon(AppIcons.delete, size: 20, color: palette.danger),
+            constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+          ),
+      ],
+      footer: PrimaryButton(
+        label: _isEdit ? "Save changes" : "Create reminder",
+        loading: _isSaving,
+        onPressed: _saveReminder,
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: palette.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-          border: Border.all(color: palette.line),
-        ),
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          LabeledField(
+            label: "Title",
+            child: TextField(
+              controller: _titleController,
+              textCapitalization: TextCapitalization.sentences,
+              style: DaymarkText.custom(15, FontWeight.w400).copyWith(color: palette.ink),
+              decoration: const InputDecoration(hintText: "Remind me to…"),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top Drag Handle
-              Center(
-                child: Container(
-                  width: 38.w,
-                  height: 4.h,
-                  decoration: BoxDecoration(
-                    color: palette.muted.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2.r),
+              Expanded(
+                child: LabeledField(
+                  label: "Date",
+                  child: PickerField(
+                    icon: AppIcons.calendar,
+                    value: DisplayFormat.fieldDate(_selectedDate),
+                    onTap: _pickDate,
                   ),
                 ),
               ),
-              SizedBox(height: 16.h),
-
-              // Title
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _isEdit ? "Edit Reminder" : "New Reminder",
-                    style: GoogleFonts.inter(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w800,
-                      color: palette.ink,
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_isEdit)
-                        IconButton(
-                          tooltip: 'Delete',
-                          onPressed: _isSaving ? null : _deleteReminder,
-                          icon: AppIcons.icon(AppIcons.delete, color: palette.danger),
-                        ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: AppIcons.icon(AppIcons.close, color: palette.muted),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              SizedBox(height: 14.h),
-
-              // Reminder Title Input
-              TextField(
-                controller: _titleController,
-                style: GoogleFonts.inter(fontSize: 15.sp, color: palette.ink),
-                decoration: InputDecoration(
-                  hintText: "Remind me to...",
-                  hintStyle: GoogleFonts.inter(fontSize: 14.sp, color: palette.muted),
-                  filled: true,
-                  fillColor: palette.background,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14.r),
-                    borderSide: BorderSide(color: palette.line),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14.r),
-                    borderSide: BorderSide(color: palette.line),
+              const SizedBox(width: 10),
+              Expanded(
+                child: LabeledField(
+                  label: "Time",
+                  child: PickerField(
+                    icon: AppIcons.clock,
+                    value: time,
+                    onTap: _pickTime,
                   ),
                 ),
               ),
-              SizedBox(height: 16.h),
-
-              // Remind Date & Time Pickers
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickDate,
-                      icon: AppIcons.icon(
-                        AppIcons.calendar,
-                        size: 16.sp,
-                        color: palette.accent,
-                      ),
-                      label: Text(
-                        "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}",
-                        style: GoogleFonts.inter(
-                          fontSize: 12.sp,
-                          color: palette.ink,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: palette.line),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        padding: EdgeInsets.symmetric(vertical: 12.h),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickTime,
-                      icon: AppIcons.icon(
-                        AppIcons.clock,
-                        size: 16.sp,
-                        color: palette.accent,
-                      ),
-                      label: Text(
-                        "${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}",
-                        style: GoogleFonts.inter(
-                          fontSize: 12.sp,
-                          color: palette.ink,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: _timeError != null ? palette.danger : palette.line),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        padding: EdgeInsets.symmetric(vertical: 12.h),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (_timeError != null) ...[
-                SizedBox(height: 6.h),
-                Text(
-                  _timeError!,
-                  style: GoogleFonts.inter(fontSize: 11.sp, color: palette.danger),
-                ),
-              ],
-              SizedBox(height: 16.h),
-
-              // Repeat Interval
-              Text(
-                "Repeat",
-                style: GoogleFonts.inter(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w700,
-                  color: palette.muted,
-                ),
-              ),
-              SizedBox(height: 6.h),
-              Wrap(
-                spacing: 8.w,
-                children: _repeatOptions.map((repeat) {
-                  final isSelected = _selectedRepeat == repeat;
-                  return ChoiceChip(
-                    label: Text(repeat),
-                    selected: isSelected,
-                    onSelected: (val) {
-                      if (val) setState(() => _selectedRepeat = repeat);
-                    },
-                    selectedColor: isDark ? palette.accent : palette.ink,
-                    labelStyle: GoogleFonts.inter(
-                      fontSize: 11.sp,
-                      color: isSelected
-                          ? (isDark ? palette.background : palette.surface)
-                          : palette.muted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  );
-                }).toList(),
-              ),
-              SizedBox(height: 14.h),
-
-              // Category Chips
-              Text(
-                "Category",
-                style: GoogleFonts.inter(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w700,
-                  color: palette.muted,
-                ),
-              ),
-              SizedBox(height: 6.h),
-              Wrap(
-                spacing: 8.w,
-                children: _categories.map((cat) {
-                  final isSelected = _selectedCategory == cat;
-                  return ChoiceChip(
-                    label: Text(cat),
-                    selected: isSelected,
-                    onSelected: (val) {
-                      if (val) setState(() => _selectedCategory = cat);
-                    },
-                    selectedColor: isDark ? palette.accent : palette.ink,
-                    labelStyle: GoogleFonts.inter(
-                      fontSize: 11.sp,
-                      color: isSelected
-                          ? (isDark ? palette.background : palette.surface)
-                          : palette.muted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  );
-                }).toList(),
-              ),
-              SizedBox(height: 20.h),
-
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                height: 48.h,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveReminder,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDark ? palette.accent : palette.ink,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14.r),
-                    ),
-                  ),
-                  child: _isSaving
-                      ? SizedBox(
-                          width: 20.r,
-                          height: 20.r,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: isDark ? palette.background : palette.surface,
-                          ),
-                        )
-                      : Text(
-                          _isEdit ? "Save Changes" : "Create Reminder",
-                          style: GoogleFonts.inter(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? palette.background : palette.surface,
-                          ),
-                        ),
-                ),
-              ),
-              SizedBox(height: 10.h),
             ],
           ),
-        ),
+          if (_timeError != null) ...[
+            const SizedBox(height: 6),
+            Text(_timeError!, style: DaymarkText.meta.copyWith(color: palette.danger)),
+          ],
+          const SizedBox(height: 14),
+          LabeledField(
+            label: "Repeat",
+            child: SegmentedControl<String>(
+              height: 40,
+              segments: {
+                for (final repeat in _repeatOptions)
+                  repeat: repeat[0] + repeat.substring(1).toLowerCase(),
+              },
+              value: _selectedRepeat,
+              onChanged: (repeat) => setState(() => _selectedRepeat = repeat),
+            ),
+          ),
+          const SizedBox(height: 14),
+          LabeledField(
+            label: "Category",
+            child: CategoryChipRow(
+              categories: _categories,
+              selected: _selectedCategory,
+              onSelected: (cat) => setState(() => _selectedCategory = cat),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Info row: what the notification will offer.
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: palette.accentSoft,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppIcons.icon(AppIcons.reminder, size: 18, color: palette.accent),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    "You'll get a notification at $time. Mark it Done, Not done or Snooze right from it.",
+                    style: DaymarkText.custom(13, FontWeight.w400, height: 1.45)
+                        .copyWith(color: palette.inkSecondary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

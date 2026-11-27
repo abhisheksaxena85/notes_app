@@ -30,6 +30,7 @@ class SheetScaffold extends StatelessWidget {
     required this.child,
     this.title,
     this.footer,
+    this.actions = const [],
     this.onClose,
     this.showClose = true,
     this.padding = const EdgeInsets.fromLTRB(20, 0, 20, 0),
@@ -39,6 +40,9 @@ class SheetScaffold extends StatelessWidget {
   final Widget child;
   final Widget? footer;
 
+  /// Extra header buttons shown before the close button (e.g. delete).
+  final List<Widget> actions;
+
   /// Defaults to popping the sheet.
   final VoidCallback? onClose;
   final bool showClose;
@@ -46,6 +50,12 @@ class SheetScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) => _build(context, constraints.hasBoundedHeight),
+    );
+  }
+
+  Widget _build(BuildContext context, bool bounded) {
     final palette = context.daymark;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final bottomSafe = MediaQuery.paddingOf(context).bottom;
@@ -79,18 +89,25 @@ class SheetScaffold extends StatelessWidget {
                             style: DaymarkText.sheetTitle.copyWith(color: palette.ink),
                           ),
                   ),
+                  ...actions,
                   if (showClose) SheetCloseButton(onPressed: onClose),
                 ],
               ),
             )
           else
             const SizedBox(height: 12),
-          Flexible(
-            child: SingleChildScrollView(
+          if (bounded)
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(padding.left, 12, padding.right, 16),
+                child: child,
+              ),
+            )
+          else
+            Padding(
               padding: EdgeInsets.fromLTRB(padding.left, 12, padding.right, 16),
               child: child,
             ),
-          ),
           if (footer != null)
             Padding(
               padding: EdgeInsets.fromLTRB(padding.left, 4, padding.right, 16 + (bottomInset > 0 ? 0 : bottomSafe)),

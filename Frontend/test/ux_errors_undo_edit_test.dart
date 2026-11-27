@@ -206,16 +206,16 @@ void main() {
         overrides: [taskController.overrideWith(() => tasks)],
       ));
 
-      expect(find.text('Edit Task'), findsOneWidget);
+      expect(find.text('Edit task'), findsOneWidget);
       expect(find.text('Write report'), findsOneWidget);
       expect(find.text('Quarterly'), findsOneWidget);
-      expect(find.text('2026-12-01'), findsOneWidget);
-      expect(find.text('09:30'), findsOneWidget);
+      expect(find.text('Tue, 1 Dec 2026'), findsOneWidget);
+      expect(find.text('9:30 AM'), findsOneWidget);
 
       await tester.enterText(find.widgetWithText(TextField, 'Write report'), 'Write the report');
-      await tester.tap(find.text('LOW'));
+      await tester.tap(find.text('Low'));
       await tester.pump();
-      await tester.tap(find.text('Save Changes'));
+      await tester.tap(find.text('Save changes'));
       await tester.pumpAndSettle();
 
       expect(tasks.updates, hasLength(1));
@@ -233,9 +233,9 @@ void main() {
         const Scaffold(body: SingleChildScrollView(child: TaskFormModal())),
         overrides: [taskController.overrideWith(() => tasks)],
       ));
-      expect(find.text('New Task'), findsOneWidget);
+      expect(find.text('New task'), findsOneWidget);
       await tester.enterText(find.byType(TextField).first, 'Buy milk');
-      await tester.tap(find.text('Create Task'));
+      await tester.tap(find.text('Create task'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Something went wrong on our side'), findsOneWidget);

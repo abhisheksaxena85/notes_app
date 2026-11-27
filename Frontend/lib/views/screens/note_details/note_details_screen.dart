@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
@@ -15,6 +13,8 @@ import 'package:notes_app/views/screens/note_details/widgets/build_note_form_wid
 import 'package:notes_app/views/screens/note_details/widgets/note_details_app_bar.dart';
 import 'package:notes_app/views/screens/note_details/widgets/note_details_error_widget.dart';
 import 'package:notes_app/views/screens/note_details/widgets/note_details_loading_widget.dart';
+import 'package:notes_app/utils/themes/daymark_text.dart';
+import 'package:notes_app/views/widgets/sheet_scaffold.dart';
 
 class NoteDetailsScreen extends ConsumerStatefulWidget {
   final int? noteId;
@@ -34,62 +34,69 @@ class _NoteDetailsScreenState extends ConsumerState<NoteDetailsScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: palette.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.r),
-          side: BorderSide(color: palette.line),
-        ),
-        title: Text(
-          "Delete note?",
-          style: GoogleFonts.inter(
-            fontSize: 18.sp,
-            fontWeight: FontWeight.w700,
-            color: palette.ink,
-          ),
-        ),
-        content: Text(
+        title: const Text("Delete note?"),
+        content: const Text(
           "Are you sure you want to delete this note? This action cannot be undone.",
-          style: GoogleFonts.inter(
-            fontSize: 13.sp,
-            color: palette.muted,
-            height: 1.4,
-          ),
         ),
-        actionsPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(
               "Cancel",
-              style: GoogleFonts.inter(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-                color: palette.muted,
-              ),
+              style: DaymarkText.custom(14, FontWeight.w600).copyWith(color: palette.muted),
             ),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: palette.danger,
-              foregroundColor: palette.onAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              elevation: 0,
-            ),
+          TextButton(
             onPressed: () {
               Navigator.pop(dialogContext);
               notifier.deleteNote(context);
             },
             child: Text(
               "Delete",
-              style: GoogleFonts.inter(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w600,
-              ),
+              style: DaymarkText.custom(14, FontWeight.w600).copyWith(color: palette.danger),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// "More" in the top bar: export or delete the note.
+  void _showMoreSheet(
+    BuildContext context,
+    NoteDetailsState noteState,
+    NoteDetailsViewmodel notifier,
+  ) {
+    final palette = context.daymark;
+    showDaymarkSheet<void>(
+      context,
+      builder: (sheetContext) => SheetScaffold(
+        title: "Note",
+        child: Column(
+          children: [
+            _sheetRow(
+              palette: palette,
+              icon: AppIcons.export,
+              title: "Export note",
+              subtitle: "Copy as CSV, plain text or JSON",
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _showExportNoteModal(context, noteState, notifier);
+              },
+            ),
+            _sheetRow(
+              palette: palette,
+              icon: AppIcons.delete,
+              title: "Delete note",
+              danger: true,
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _showDeleteConfirmationDialog(context, notifier);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -115,153 +122,102 @@ class _NoteDetailsScreenState extends ConsumerState<NoteDetailsScreen> {
       updatedAt: noteState.updatedAt,
     );
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: palette.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+    void export(BuildContext modalCtx, NoteExportFormat format, String label) {
+      final text = NoteDataTransferService.exportSingleNote(item, format);
+      Clipboard.setData(ClipboardData(text: text));
+      Navigator.pop(modalCtx);
+      ScaffoldMessenger.of(context).showSnackBar(
+        successSnackBar("Note copied as $label to clipboard!"),
+      );
+    }
+
+    showDaymarkSheet<void>(
+      context,
+      builder: (modalCtx) => SheetScaffold(
+        title: "Export note",
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Choose a format to copy this note to your clipboard.",
+              style: DaymarkText.preview.copyWith(color: palette.muted),
+            ),
+            const SizedBox(height: 8),
+            _sheetRow(
+              palette: palette,
+              materialIcon: Icons.table_chart_outlined,
+              title: "CSV (Spreadsheet)",
+              subtitle: "Comma-separated row with title, content, tags",
+              onTap: () => export(modalCtx, NoteExportFormat.csv, "CSV"),
+            ),
+            _sheetRow(
+              palette: palette,
+              materialIcon: Icons.text_snippet_outlined,
+              title: "Plain Text (.txt)",
+              subtitle: "Human-readable formatted text document",
+              onTap: () => export(modalCtx, NoteExportFormat.txt, "Plain Text"),
+            ),
+            _sheetRow(
+              palette: palette,
+              materialIcon: Icons.code_rounded,
+              title: "JSON Object",
+              subtitle: "Structured JSON payload with all attributes",
+              onTap: () => export(modalCtx, NoteExportFormat.json, "JSON"),
+            ),
+          ],
+        ),
       ),
-      builder: (modalCtx) {
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 38.w,
-                  height: 4.h,
-                  margin: EdgeInsets.only(bottom: 14.h),
-                  decoration: BoxDecoration(
-                    color: palette.line,
-                    borderRadius: BorderRadius.circular(2.r),
-                  ),
-                ),
-              ),
-              Text(
-                "Export Note",
-                style: GoogleFonts.inter(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w700,
-                  color: palette.ink,
-                ),
-              ),
-              SizedBox(height: 4.h),
-              Text(
-                "Choose a format to copy this note to your clipboard.",
-                style: GoogleFonts.inter(fontSize: 12.sp, color: palette.muted),
-              ),
-              SizedBox(height: 16.h),
-              _buildExportOptionTile(
-                title: "CSV (Spreadsheet)",
-                subtitle: "Comma-separated row with title, content, tags",
-                icon: Icons.table_chart_outlined,
-                palette: palette,
-                onTap: () {
-                  final csv = NoteDataTransferService.exportSingleNote(
-                    item,
-                    NoteExportFormat.csv,
-                  );
-                  Clipboard.setData(ClipboardData(text: csv));
-                  Navigator.pop(modalCtx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    successSnackBar("Note copied as CSV to clipboard!"),
-                  );
-                },
-              ),
-              Divider(color: palette.line, height: 16.h),
-              _buildExportOptionTile(
-                title: "Plain Text (.txt)",
-                subtitle: "Human-readable formatted text document",
-                icon: Icons.text_snippet_outlined,
-                palette: palette,
-                onTap: () {
-                  final txt = NoteDataTransferService.exportSingleNote(
-                    item,
-                    NoteExportFormat.txt,
-                  );
-                  Clipboard.setData(ClipboardData(text: txt));
-                  Navigator.pop(modalCtx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    successSnackBar("Note copied as Plain Text to clipboard!"),
-                  );
-                },
-              ),
-              Divider(color: palette.line, height: 16.h),
-              _buildExportOptionTile(
-                title: "JSON Object",
-                subtitle: "Structured JSON payload with all attributes",
-                icon: Icons.code_rounded,
-                palette: palette,
-                onTap: () {
-                  final json = NoteDataTransferService.exportSingleNote(
-                    item,
-                    NoteExportFormat.json,
-                  );
-                  Clipboard.setData(ClipboardData(text: json));
-                  Navigator.pop(modalCtx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    successSnackBar("Note copied as JSON to clipboard!"),
-                  );
-                },
-              ),
-              SizedBox(height: 12.h),
-            ],
-          ),
-        );
-      },
     );
   }
 
-  Widget _buildExportOptionTile({
-    required String title,
-    required String subtitle,
-    required IconData icon,
+  Widget _sheetRow({
     required DaymarkPalette palette,
+    required String title,
     required VoidCallback onTap,
+    String? icon,
+    IconData? materialIcon,
+    String? subtitle,
+    bool danger = false,
   }) {
+    final color = danger ? palette.danger : palette.inkSecondary;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12.r),
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 8.w),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
             Container(
-              width: 36.r,
-              height: 36.r,
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: palette.accentSoft,
-                borderRadius: BorderRadius.circular(10.r),
+                color: danger ? palette.dangerSoft : palette.iconTile,
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: palette.accent, size: 18.sp),
+              child: icon != null
+                  ? AppIcons.icon(icon, size: 18, color: color)
+                  : Icon(materialIcon, size: 18, color: color),
             ),
-            SizedBox(width: 12.w),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.inter(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: palette.ink,
+                    style: DaymarkText.custom(14.5, FontWeight.w500).copyWith(
+                      color: danger ? palette.danger : palette.ink,
                     ),
                   ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 11.sp,
-                      color: palette.muted,
-                    ),
-                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(subtitle, style: DaymarkText.meta.copyWith(color: palette.muted)),
+                  ],
                 ],
               ),
             ),
-            AppIcons.icon(AppIcons.forward, color: palette.muted, size: 20.sp),
+            if (!danger) AppIcons.icon(AppIcons.forward, color: palette.muted, size: 18),
           ],
         ),
       ),
@@ -278,6 +234,7 @@ class _NoteDetailsScreenState extends ConsumerState<NoteDetailsScreen> {
     return Scaffold(
       backgroundColor: palette.background,
       body: SafeArea(
+        bottom: false,
         child: state.when(
           data: (noteState) {
             return Column(
@@ -287,11 +244,8 @@ class _NoteDetailsScreenState extends ConsumerState<NoteDetailsScreen> {
                   isEditMode: noteState.isEditMode,
                   isPinned: noteState.isPinned,
                   onTogglePin: () => notifier.togglePinned(),
-                  onDelete: noteState.isEditMode
-                      ? () => _showDeleteConfirmationDialog(context, notifier)
-                      : null,
-                  onExport: noteState.isEditMode
-                      ? () => _showExportNoteModal(context, noteState, notifier)
+                  onMore: noteState.isEditMode
+                      ? () => _showMoreSheet(context, noteState, notifier)
                       : null,
                 ),
                 Expanded(
@@ -299,6 +253,9 @@ class _NoteDetailsScreenState extends ConsumerState<NoteDetailsScreen> {
                     context: context,
                     state: noteState,
                     notifier: notifier,
+                    onDelete: noteState.isEditMode
+                        ? () => _showDeleteConfirmationDialog(context, notifier)
+                        : null,
                   ),
                 ),
               ],

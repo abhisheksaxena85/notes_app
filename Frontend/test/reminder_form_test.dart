@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/data/local/database/app_database.dart';
 import 'package:notes_app/data/network/dto/request/reminder/create_reminder_request_dto.dart';
 import 'package:notes_app/data/network/dto/request/reminder/update_reminder_request_dto.dart';
@@ -62,11 +63,11 @@ void main() {
       initialDateTime: DateTime(2026, 11, 26, 17, 30),
     )));
     await tester.enterText(find.byType(TextField), 'Call the bank');
-    await tester.tap(find.text('Create Reminder'));
+    await tester.tap(find.text('Create reminder'));
     await tester.pump();
 
     expect(find.text('Pick a time at least 1 minute from now.'), findsOneWidget);
-    expect(find.text('New Reminder'), findsOneWidget, reason: 'still open');
+    expect(find.text('New reminder'), findsOneWidget, reason: 'still open');
   });
 
   testWidgets('edit: the form is prefilled and offers delete', (tester) async {
@@ -84,14 +85,15 @@ void main() {
       ),
     )));
 
-    expect(find.text('Edit Reminder'), findsOneWidget);
-    expect(find.text('Save Changes'), findsOneWidget);
+    expect(find.text('Edit reminder'), findsOneWidget);
+    expect(find.text('Save changes'), findsOneWidget);
     expect(find.byTooltip('Delete'), findsOneWidget);
     expect(find.widgetWithText(TextField, 'Water plants'), findsOneWidget);
-    expect(find.text('2026-11-28'), findsOneWidget);
-    expect(find.text('07:45'), findsOneWidget);
-    expect(tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'WEEKLY')).selected, isTrue);
-    expect(tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'Home')).selected, isTrue);
+    expect(find.text('Sat, 28 Nov 2026'), findsOneWidget);
+    expect(find.text('7:45 AM'), findsOneWidget);
+    expect(tester.widget<Text>(find.text('Weekly')).style?.fontWeight, FontWeight.w600, reason: 'selected segment');
+    expect(tester.widget<Text>(find.text('Daily')).style?.fontWeight, FontWeight.w500);
+    expect(tester.widget<Text>(find.text('Home')).style?.color, DaymarkPalette.light.accent, reason: 'selected category');
   });
 
   group('edits are local first', () {

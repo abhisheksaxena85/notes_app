@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/data/network/dto/request/task/update_task_request_dto.dart';
 import 'package:notes_app/data/network/dto/response/task/task_item.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/res/api_error.dart';
+import 'package:notes_app/utils/date/display_format.dart';
+import 'package:notes_app/utils/themes/daymark_text.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
+import 'package:notes_app/views/widgets/daymark_chip.dart';
+import 'package:notes_app/views/widgets/labeled_field.dart';
+import 'package:notes_app/views/widgets/primary_button.dart';
+import 'package:notes_app/views/widgets/segmented_control.dart';
+import 'package:notes_app/views/widgets/sheet_scaffold.dart';
 
 /// The task form, to create a task or (with [initial], FE-06) edit one.
 /// Returns true when something was saved.
 Future<bool?> showCreateTaskModal(BuildContext context, {TaskItem? initial}) {
-  return showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+  return showDaymarkSheet<bool>(
+    context,
     builder: (ctx) => TaskFormModal(initial: initial),
   );
 }
@@ -195,258 +198,94 @@ class _TaskFormModalState extends ConsumerState<TaskFormModal> {
   @override
   Widget build(BuildContext context) {
     final palette = context.daymark;
-    final isDark = palette.brightness == Brightness.dark;
+    final fieldStyle = DaymarkText.custom(15, FontWeight.w400).copyWith(color: palette.ink);
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+    return SheetScaffold(
+      title: _isEdit ? "Edit task" : "New task",
+      footer: PrimaryButton(
+        label: _isEdit ? "Save changes" : "Create task",
+        loading: _isSaving,
+        onPressed: _saveTask,
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: palette.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-          border: Border.all(color: palette.line),
-        ),
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          LabeledField(
+            label: "Title",
+            child: TextField(
+              controller: _titleController,
+              style: fieldStyle,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(hintText: "What needs to be done?"),
+            ),
+          ),
+          const SizedBox(height: 14),
+          LabeledField(
+            label: "Notes",
+            child: TextField(
+              controller: _descController,
+              minLines: 1,
+              maxLines: 3,
+              style: fieldStyle,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(hintText: "Add details (optional)"),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
             children: [
-              // Top Drag Handle
-              Center(
-                child: Container(
-                  width: 38.w,
-                  height: 4.h,
-                  decoration: BoxDecoration(
-                    color: palette.muted.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2.r),
+              Expanded(
+                child: LabeledField(
+                  label: "Date",
+                  child: PickerField(
+                    icon: AppIcons.calendar,
+                    value: _selectedDueDate == null
+                        ? "Set date"
+                        : DisplayFormat.fieldDate(_selectedDueDate!),
+                    placeholder: _selectedDueDate == null,
+                    onTap: _pickDate,
                   ),
                 ),
               ),
-              SizedBox(height: 16.h),
-
-              // Title
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _isEdit ? "Edit Task" : "New Task",
-                    style: GoogleFonts.inter(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w800,
-                      color: palette.ink,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: AppIcons.icon(AppIcons.close, color: palette.muted),
-                  ),
-                ],
-              ),
-              SizedBox(height: 14.h),
-
-              // Task Title Input
-              TextField(
-                controller: _titleController,
-                style: GoogleFonts.inter(fontSize: 15.sp, color: palette.ink),
-                decoration: InputDecoration(
-                  hintText: "What needs to be done?",
-                  hintStyle: GoogleFonts.inter(fontSize: 14.sp, color: palette.muted),
-                  filled: true,
-                  fillColor: palette.background,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14.r),
-                    borderSide: BorderSide(color: palette.line),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14.r),
-                    borderSide: BorderSide(color: palette.line),
+              const SizedBox(width: 10),
+              Expanded(
+                child: LabeledField(
+                  label: "Time",
+                  child: PickerField(
+                    icon: AppIcons.clock,
+                    value: _selectedDueTime == null
+                        ? "Set time"
+                        : DisplayFormat.time(_selectedDueTime!.hour, _selectedDueTime!.minute),
+                    placeholder: _selectedDueTime == null,
+                    onTap: _pickTime,
                   ),
                 ),
               ),
-              SizedBox(height: 12.h),
-
-              // Task Description Input
-              TextField(
-                controller: _descController,
-                maxLines: 2,
-                style: GoogleFonts.inter(fontSize: 14.sp, color: palette.ink),
-                decoration: InputDecoration(
-                  hintText: "Description or notes (optional)",
-                  hintStyle: GoogleFonts.inter(fontSize: 13.sp, color: palette.muted),
-                  filled: true,
-                  fillColor: palette.background,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14.r),
-                    borderSide: BorderSide(color: palette.line),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14.r),
-                    borderSide: BorderSide(color: palette.line),
-                  ),
-                ),
-              ),
-              SizedBox(height: 16.h),
-
-              // Due Date & Time Pickers
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickDate,
-                      icon: AppIcons.icon(
-                        AppIcons.calendar,
-                        size: 16.sp,
-                        color: palette.accent,
-                      ),
-                      label: Text(
-                        _formatDate(_selectedDueDate) ?? "Set Due Date",
-                        style: GoogleFonts.inter(
-                          fontSize: 12.sp,
-                          color: palette.ink,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: palette.line),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        padding: EdgeInsets.symmetric(vertical: 12.h),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _pickTime,
-                      icon: AppIcons.icon(
-                        AppIcons.clock,
-                        size: 16.sp,
-                        color: palette.accent,
-                      ),
-                      label: Text(
-                        _formatTime(_selectedDueTime) ?? "Set Due Time",
-                        style: GoogleFonts.inter(
-                          fontSize: 12.sp,
-                          color: palette.ink,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: palette.line),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        padding: EdgeInsets.symmetric(vertical: 12.h),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 16.h),
-
-              // Category & Priority Chips
-              Text(
-                "Category",
-                style: GoogleFonts.inter(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w700,
-                  color: palette.muted,
-                ),
-              ),
-              SizedBox(height: 6.h),
-              Wrap(
-                spacing: 8.w,
-                children: _categories.map((cat) {
-                  final isSelected = _selectedCategory == cat;
-                  return ChoiceChip(
-                    label: Text(cat),
-                    selected: isSelected,
-                    onSelected: (val) {
-                      if (val) setState(() => _selectedCategory = cat);
-                    },
-                    selectedColor: isDark ? palette.accent : palette.ink,
-                    labelStyle: GoogleFonts.inter(
-                      fontSize: 11.sp,
-                      color: isSelected
-                          ? (isDark ? palette.background : palette.surface)
-                          : palette.muted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  );
-                }).toList(),
-              ),
-              SizedBox(height: 12.h),
-
-              Text(
-                "Priority",
-                style: GoogleFonts.inter(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w700,
-                  color: palette.muted,
-                ),
-              ),
-              SizedBox(height: 6.h),
-              Wrap(
-                spacing: 8.w,
-                children: _priorities.map((pri) {
-                  final isSelected = _selectedPriority == pri;
-                  return ChoiceChip(
-                    label: Text(pri),
-                    selected: isSelected,
-                    onSelected: (val) {
-                      if (val) setState(() => _selectedPriority = pri);
-                    },
-                    selectedColor: isDark ? palette.accent : palette.ink,
-                    labelStyle: GoogleFonts.inter(
-                      fontSize: 11.sp,
-                      color: isSelected
-                          ? (isDark ? palette.background : palette.surface)
-                          : palette.muted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  );
-                }).toList(),
-              ),
-              SizedBox(height: 20.h),
-
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                height: 48.h,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveTask,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDark ? palette.accent : palette.ink,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14.r),
-                    ),
-                  ),
-                  child: _isSaving
-                      ? SizedBox(
-                          width: 20.r,
-                          height: 20.r,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: isDark ? palette.background : palette.surface,
-                          ),
-                        )
-                      : Text(
-                          _isEdit ? "Save Changes" : "Create Task",
-                          style: GoogleFonts.inter(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? palette.background : palette.surface,
-                          ),
-                        ),
-                ),
-              ),
-              SizedBox(height: 10.h),
             ],
           ),
-        ),
+          const SizedBox(height: 14),
+          LabeledField(
+            label: "Priority",
+            child: SegmentedControl<String>(
+              height: 40,
+              segments: {
+                for (final pri in _priorities)
+                  pri: pri[0] + pri.substring(1).toLowerCase(),
+              },
+              value: _selectedPriority,
+              onChanged: (pri) => setState(() => _selectedPriority = pri),
+            ),
+          ),
+          const SizedBox(height: 14),
+          LabeledField(
+            label: "Category",
+            child: CategoryChipRow(
+              categories: _categories,
+              selected: _selectedCategory,
+              onSelected: (cat) => setState(() => _selectedCategory = cat),
+            ),
+          ),
+        ],
       ),
     );
   }

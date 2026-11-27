@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/themes/daymark_text.dart';
 
+/// The borderless `body` field of the note editor.
 Widget noteContentField({
   required TextEditingController controller,
   required Function(String) onChanged,
@@ -16,55 +16,28 @@ Widget noteContentField({
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            constraints: BoxConstraints(minHeight: 180.h),
-            padding: EdgeInsets.all(16.r),
-            decoration: BoxDecoration(
-              color: palette.surface,
-              borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(
-                color: hasError ? palette.danger : palette.line,
-                width: 1,
-              ),
-            ),
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              minLines: 8,
-              maxLines: 20,
-              keyboardType: TextInputType.multiline,
-              style: GoogleFonts.inter(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w400,
-                color: palette.ink,
-                height: 1.5,
-              ),
-              decoration: InputDecoration(
-                hintText: "Write your note description here...",
-                hintStyle: GoogleFonts.inter(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w400,
-                  color: palette.muted,
-                ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-              ),
+          TextField(
+            controller: controller,
+            onChanged: onChanged,
+            keyboardType: TextInputType.multiline,
+            textCapitalization: TextCapitalization.sentences,
+            minLines: 8,
+            maxLines: null,
+            style: DaymarkText.body.copyWith(color: palette.ink),
+            decoration: InputDecoration(
+              hintText: "Start writing…",
+              hintStyle: DaymarkText.body.copyWith(color: palette.muted),
+              filled: false,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
             ),
           ),
           if (hasError) ...[
-            SizedBox(height: 4.h),
-            Padding(
-              padding: EdgeInsets.only(left: 6.w),
-              child: Text(
-                errorText,
-                style: GoogleFonts.inter(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w500,
-                  color: palette.danger,
-                ),
-              ),
-            ),
+            const SizedBox(height: 4),
+            Text(errorText, style: DaymarkText.meta.copyWith(color: palette.danger)),
           ],
         ],
       );

@@ -327,7 +327,7 @@ void main() {
 
     final answer = showReminderAnswerSheet(context, 'Take pills');
     await tester.pumpAndSettle();
-    expect(find.text("Did you complete 'Take pills'?"), findsOneWidget);
+    expect(find.text('Did you take pills?'), findsOneWidget);
     expect(find.text('Not done'), findsOneWidget);
     expect(find.text('Snooze 10 min'), findsOneWidget);
     await tester.tap(find.text('Done'));

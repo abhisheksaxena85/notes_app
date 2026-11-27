@@ -1,132 +1,66 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
+import 'package:notes_app/utils/themes/daymark_text.dart';
 
+/// The editor's top bar: back, "Edit note" / "New note", pin and more.
+/// [pinSlot] and [moreSlot] replace the pin and more buttons (loading state).
 Widget noteDetailsAppBar({
   required BuildContext context,
   required bool isEditMode,
   required bool isPinned,
-  required VoidCallback onTogglePin,
-  VoidCallback? onDelete,
-  VoidCallback? onExport,
+  required VoidCallback? onTogglePin,
+  VoidCallback? onMore,
+  Widget? pinSlot,
+  Widget? moreSlot,
 }) {
   final palette = context.daymark;
 
-  return Padding(
-    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Drag handle pill matching Figma (width 38, height 4, rx 2)
-        Center(
-          child: Container(
-            width: 38.w,
-            height: 4.h,
-            margin: EdgeInsets.only(bottom: 16.h),
-            decoration: BoxDecoration(
-              color: palette.line,
-              borderRadius: BorderRadius.circular(2.r),
+  return SizedBox(
+    height: 56,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            tooltip: 'Back',
+            icon: AppIcons.icon(AppIcons.back, size: 20, color: palette.ink),
+            constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+          ),
+          const SizedBox(width: 2),
+          Expanded(
+            child: Text(
+              isEditMode ? "Edit note" : "New note",
+              style: DaymarkText.custom(15, FontWeight.w600).copyWith(color: palette.ink),
             ),
           ),
-        ),
-
-        // Header Row: Back/Close + Title + Pin Button + (Delete if edit mode)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    width: 36.r,
-                    height: 36.r,
-                    decoration: BoxDecoration(
-                      color: palette.surface,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: palette.line),
-                    ),
-                    child: Center(
-                      child: AppIcons.icon(
-                        AppIcons.close,
-                        size: 20.sp,
-                        color: palette.ink,
-                      ),
-                    ),
+          pinSlot ??
+              Semantics(
+                toggled: isPinned,
+                child: IconButton(
+                  onPressed: onTogglePin,
+                  tooltip: isPinned ? 'Unpin' : 'Pin',
+                  style: IconButton.styleFrom(
+                    backgroundColor: isPinned
+                        ? palette.accent.withValues(alpha: 0.15)
+                        : Colors.transparent,
                   ),
+                  icon: AppIcons.icon(AppIcons.pin, size: 20, color: palette.accent),
+                  constraints: const BoxConstraints.tightFor(width: 44, height: 44),
                 ),
-                SizedBox(width: 12.w),
-                Text(
-                  isEditMode ? "Edit note" : "New note",
-                  style: GoogleFonts.inter(
-                    fontSize: 23.sp,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                    color: palette.ink,
-                  ),
-                ),
-              ],
+              ),
+          if (moreSlot != null)
+            moreSlot
+          else if (onMore != null)
+            IconButton(
+              onPressed: onMore,
+              tooltip: 'More',
+              icon: AppIcons.icon(AppIcons.more, size: 20, color: palette.ink),
+              constraints: const BoxConstraints.tightFor(width: 44, height: 44),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isEditMode && onExport != null) ...[
-                  IconButton(
-                    onPressed: onExport,
-                    tooltip: 'Export Note',
-                    icon: AppIcons.icon(
-                      AppIcons.export,
-                      color: palette.ink,
-                      size: 22.sp,
-                    ),
-                  ),
-                  SizedBox(width: 4.w),
-                ],
-                if (isEditMode && onDelete != null) ...[
-                  IconButton(
-                    onPressed: onDelete,
-                    tooltip: 'Delete Note',
-                    icon: AppIcons.icon(
-                      AppIcons.delete,
-                      color: palette.danger,
-                      size: 22.sp,
-                    ),
-                  ),
-                  SizedBox(width: 6.w),
-                ],
-                // Pin button matching Figma (36x36 rx 18)
-                GestureDetector(
-                  onTap: onTogglePin,
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    width: 36.r,
-                    height: 36.r,
-                    decoration: BoxDecoration(
-                      color: isPinned ? palette.accentSoft : palette.surface,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isPinned ? palette.accent : palette.line,
-                        width: 1,
-                      ),
-                    ),
-                    child: Center(
-                      child: AppIcons.icon(
-                        AppIcons.pin,
-                        size: 16.sp,
-                        color: isPinned ? palette.accent : palette.muted,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }

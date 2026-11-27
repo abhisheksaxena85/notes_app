@@ -3,11 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
 import 'package:notes_app/utils/services/reminder_action_handler.dart';
+import 'package:notes_app/utils/reminder_time.dart';
+import 'package:notes_app/utils/themes/daymark_text.dart';
+import 'package:notes_app/views/widgets/icon_tile.dart';
+import 'package:notes_app/views/widgets/primary_button.dart';
+import 'package:notes_app/views/widgets/sheet_scaffold.dart';
 
 /// Payloads of tapped reminder notifications waiting for the Workspace to
 /// ask "Did you complete it?" (REM-04). Set from the notification callback
@@ -55,69 +58,103 @@ Future<void> promptForReminder(
     ));
     return;
   }
-  final action = await showReminderAnswerSheet(context, reminder.title);
+  final action = await showReminderAnswerSheet(
+    context,
+    reminder.title,
+    meta: reminderAnswerMeta(
+      context,
+      remindAt: reminder.remindAt,
+      repeatInterval: reminder.repeatInterval,
+    ),
+  );
   if (action == null) return;
   final result = await handler.handle(action, payload);
   showReminderAnswerSnackBar(messenger, handler, result);
 }
 
-/// "Did you complete '<title>'?" [Done] [Not done] [Snooze 10 min].
-/// Returns the chosen [ReminderActions] id, or null if dismissed.
-Future<String?> showReminderAnswerSheet(BuildContext context, String title) {
+/// "Did you {title}?" with [meta] ("Due 6:00 PM · Repeats daily") and
+/// [Done] [Not done] [Snooze 10 min]. Returns the chosen [ReminderActions]
+/// id, or null if dismissed.
+Future<String?> showReminderAnswerSheet(
+  BuildContext context,
+  String title, {
+  String? meta,
+}) {
   final palette = context.daymark;
-  final isDark = palette.brightness == Brightness.dark;
-  Widget button(BuildContext sheetContext, String action, String label, String icon, Color color) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 8.h),
-      child: SizedBox(
-        width: double.infinity,
-        height: 46.h,
-        child: OutlinedButton.icon(
-          onPressed: () => Navigator.of(sheetContext).pop(action),
-          icon: AppIcons.icon(icon, color: color, size: 18.sp),
-          label: Text(
-            label,
-            style: GoogleFonts.inter(fontSize: 14.sp, fontWeight: FontWeight.w700, color: palette.ink),
+  return showDaymarkSheet<String>(
+    context,
+    builder: (sheetContext) => SheetScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconTile(
+            icon: AppIcons.reminder,
+            size: 48,
+            radius: 15,
+            iconSize: 22,
+            background: palette.accentSoft,
+            color: palette.accent,
           ),
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: palette.line),
-            backgroundColor: isDark ? palette.background : palette.surface,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+          const SizedBox(height: 14),
+          Text(
+            reminderQuestion(title),
+            style: DaymarkText.custom(19, FontWeight.w600, letterSpacing: -0.3)
+                .copyWith(color: palette.ink),
           ),
-        ),
-      ),
-    );
-  }
-
-  return showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: palette.surface,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-    ),
-    builder: (sheetContext) => SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(24.w, 20.h, 24.w, 12.h),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Did you complete '$title'?",
-              style: GoogleFonts.inter(fontSize: 18.sp, fontWeight: FontWeight.w800, color: palette.ink),
-            ),
-            SizedBox(height: 16.h),
-            button(sheetContext, ReminderActions.done, 'Done', AppIcons.done, palette.success),
-            button(sheetContext, ReminderActions.notDone, 'Not done', AppIcons.close,
-                palette.danger),
-            button(sheetContext, ReminderActions.snooze, 'Snooze 10 min', AppIcons.snooze,
-                palette.accent),
+          if (meta != null && meta.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(meta, style: DaymarkText.meta.copyWith(color: palette.muted)),
           ],
-        ),
+          const SizedBox(height: 20),
+          PrimaryButton(
+            label: 'Done',
+            icon: AppIcons.check,
+            onPressed: () => Navigator.of(sheetContext).pop(ReminderActions.done),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlineButton(
+                  label: 'Not done',
+                  onPressed: () => Navigator.of(sheetContext).pop(ReminderActions.notDone),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlineButton(
+                  label: 'Snooze 10 min',
+                  icon: AppIcons.snooze,
+                  onPressed: () => Navigator.of(sheetContext).pop(ReminderActions.snooze),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     ),
   );
+}
+
+/// "Did you take pills?" from "Take pills"; keeps a leading acronym or
+/// name ("Call NASA", "iPhone") as typed.
+String reminderQuestion(String title) {
+  final trimmed = title.trim();
+  if (trimmed.isEmpty) return 'Did you complete it?';
+  final first = trimmed.split(RegExp(r'\s+')).first;
+  final keepCase = first.length > 1 && first.substring(1) != first.substring(1).toLowerCase();
+  final text = keepCase ? trimmed : trimmed[0].toLowerCase() + trimmed.substring(1);
+  return 'Did you $text?';
+}
+
+/// "Due 6:00 PM · Repeats daily" for the in-app sheet.
+String reminderAnswerMeta(BuildContext context, {required String remindAt, required String repeatInterval}) {
+  final at = parseWallClock(remindAt);
+  final use24h = MediaQuery.maybeAlwaysUse24HourFormatOf(context) ?? false;
+  return [
+    if (at != null) 'Due ${formatDue(at, use24h: use24h)}',
+    ?repeatLabel(repeatInterval),
+  ].join(' · ');
 }
 
 /// "Marked done ✓ — Undo" after an answer given in the app.
