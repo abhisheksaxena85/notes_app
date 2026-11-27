@@ -15,6 +15,7 @@ import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/utils/services/digest_scheduler.dart';
 import 'package:notes_app/utils/services/note_data_transfer_service.dart';
+import 'package:notes_app/utils/services/note_export_file.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
@@ -724,10 +725,63 @@ class BuildProfileWidget extends ConsumerWidget {
                         ),
                       ),
                       SizedBox(height: 16.h),
+                      // FE-06: a file through the share sheet (save or send);
+                      // large exports don't fit the Android clipboard.
                       SizedBox(
                         width: double.infinity,
                         height: 48.h,
-                        child: ElevatedButton.icon(
+                        child: Builder(
+                          builder: (buttonContext) => ElevatedButton.icon(
+                            onPressed: () async {
+                              final box = buttonContext.findRenderObject() as RenderBox?;
+                              final origin = box == null
+                                  ? null
+                                  : box.localToGlobal(Offset.zero) & box.size;
+                              try {
+                                await NoteExportFile.share(
+                                  previewString,
+                                  exportFormat,
+                                  origin: origin,
+                                );
+                              } catch (e) {
+                                debugPrint('Export share failed: $e');
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    failedSnackBar(
+                                      "Couldn't create the export file. Try copying it instead.",
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            icon: const Icon(
+                              Icons.ios_share_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            label: Text(
+                              "Save / Share .${NoteExportFile.extension(exportFormat)} file",
+                              style: GoogleFonts.inter(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: palette.accent,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16.r),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 44.h,
+                        child: OutlinedButton.icon(
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: previewString));
                             Navigator.pop(ctx);
@@ -737,22 +791,21 @@ class BuildProfileWidget extends ConsumerWidget {
                               ),
                             );
                           },
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.copy_rounded,
-                            color: Colors.white,
+                            color: palette.ink,
                             size: 18,
                           ),
                           label: Text(
                             "Copy ${exportFormat.name.toUpperCase()} to Clipboard",
                             style: GoogleFonts.inter(
                               fontSize: 14.sp,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              color: palette.ink,
                             ),
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: palette.accent,
-                            elevation: 0,
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: palette.line),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16.r),
                             ),
@@ -1014,7 +1067,7 @@ class BuildProfileWidget extends ConsumerWidget {
                                     setModalState(() => isImporting = false);
                                     if (modalContext.mounted) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        failedSnackBar("Import failed: $e"),
+                                        failedSnackBar("Import failed. ${userMessage(e)}"),
                                       );
                                     }
                                   }

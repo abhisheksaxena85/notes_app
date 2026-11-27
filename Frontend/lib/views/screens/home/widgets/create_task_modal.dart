@@ -2,26 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:notes_app/data/network/dto/request/task/update_task_request_dto.dart';
+import 'package:notes_app/data/network/dto/response/task/task_item.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 
-Future<bool?> showCreateTaskModal(BuildContext context) {
+/// The task form, to create a task or (with [initial], FE-06) edit one.
+/// Returns true when something was saved.
+Future<bool?> showCreateTaskModal(BuildContext context, {TaskItem? initial}) {
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => const _CreateTaskModalView(),
+    builder: (ctx) => TaskFormModal(initial: initial),
   );
 }
 
-class _CreateTaskModalView extends ConsumerStatefulWidget {
-  const _CreateTaskModalView();
+class TaskFormModal extends ConsumerStatefulWidget {
+  /// The task to edit; null to create one.
+  final TaskItem? initial;
+
+  const TaskFormModal({super.key, this.initial});
 
   @override
-  ConsumerState<_CreateTaskModalView> createState() => _CreateTaskModalViewState();
+  ConsumerState<TaskFormModal> createState() => _TaskFormModalState();
 }
 
-class _CreateTaskModalViewState extends ConsumerState<_CreateTaskModalView> {
+class _TaskFormModalState extends ConsumerState<TaskFormModal> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   String _selectedCategory = "General";
@@ -33,6 +41,50 @@ class _CreateTaskModalViewState extends ConsumerState<_CreateTaskModalView> {
   final List<String> _categories = ["General", "Work", "Personal", "Urgent"];
   final List<String> _priorities = ["LOW", "MEDIUM", "HIGH"];
 
+  bool get _isEdit => widget.initial != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initial;
+    if (initial == null) return;
+    _titleController.text = initial.title;
+    _descController.text = initial.description ?? '';
+    final category = initial.category;
+    if (category != null && category.trim().isNotEmpty) {
+      _selectedCategory = category;
+      if (!_categories.contains(category)) _categories.add(category);
+    }
+    final priority = initial.priority.toUpperCase();
+    _selectedPriority = priority;
+    if (!_priorities.contains(priority)) _priorities.add(priority);
+    _selectedDueDate = _parseDate(initial.dueDate);
+    _selectedDueTime = _parseTime(initial.dueTime);
+  }
+
+  static DateTime? _parseDate(String? value) {
+    if (value == null || value.length < 10) return null;
+    return DateTime.tryParse(value.substring(0, 10));
+  }
+
+  static TimeOfDay? _parseTime(String? value) {
+    if (value == null) return null;
+    final parts = value.split(':');
+    if (parts.length < 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null || hour > 23 || minute > 59) return null;
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  static String? _formatDate(DateTime? date) => date == null
+      ? null
+      : "${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+
+  static String? _formatTime(TimeOfDay? time) => time == null
+      ? null
+      : "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}";
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -42,10 +94,13 @@ class _CreateTaskModalViewState extends ConsumerState<_CreateTaskModalView> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
+    final initialDate = _selectedDueDate ?? now;
+    final firstDate = now.subtract(const Duration(days: 365));
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDueDate ?? now,
-      firstDate: now.subtract(const Duration(days: 365)),
+      initialDate: initialDate,
+      // An edited task may be older than a year; keep its date pickable.
+      firstDate: initialDate.isBefore(firstDate) ? initialDate : firstDate,
       lastDate: now.add(const Duration(days: 365 * 5)),
     );
     if (picked != null) {
@@ -80,29 +135,24 @@ class _CreateTaskModalViewState extends ConsumerState<_CreateTaskModalView> {
       _isSaving = true;
     });
 
-    String? dueDateStr;
-    if (_selectedDueDate != null) {
-      dueDateStr =
-          "${_selectedDueDate!.year.toString().padLeft(4, '0')}-${_selectedDueDate!.month.toString().padLeft(2, '0')}-${_selectedDueDate!.day.toString().padLeft(2, '0')}";
-    }
-
-    String? dueTimeStr;
-    if (_selectedDueTime != null) {
-      dueTimeStr =
-          "${_selectedDueTime!.hour.toString().padLeft(2, '0')}:${_selectedDueTime!.minute.toString().padLeft(2, '0')}";
-    }
+    final dueDateStr = _formatDate(_selectedDueDate);
+    final dueTimeStr = _formatTime(_selectedDueTime);
+    final description = _descController.text.trim();
 
     try {
-      await ref.read(taskController.notifier).createTask(
-            title: title,
-            description: _descController.text.trim().isNotEmpty
-                ? _descController.text.trim()
-                : null,
-            dueDate: dueDateStr,
-            dueTime: dueTimeStr,
-            category: _selectedCategory,
-            priority: _selectedPriority,
-          );
+      final initial = widget.initial;
+      if (initial != null) {
+        await _saveEdit(initial, title, description, dueDateStr, dueTimeStr);
+      } else {
+        await ref.read(taskController.notifier).createTask(
+              title: title,
+              description: description.isNotEmpty ? description : null,
+              dueDate: dueDateStr,
+              dueTime: dueTimeStr,
+              category: _selectedCategory,
+              priority: _selectedPriority,
+            );
+      }
       if (mounted) {
         Navigator.pop(context, true);
       }
@@ -112,10 +162,33 @@ class _CreateTaskModalViewState extends ConsumerState<_CreateTaskModalView> {
           _isSaving = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create task: $e')),
+          SnackBar(content: Text(userMessage(e))),
         );
       }
     }
+  }
+
+  /// Sends only the fields that changed; saved locally first and synced in
+  /// the background (FE-02), so it works offline and before the first sync.
+  Future<void> _saveEdit(
+    TaskItem initial,
+    String title,
+    String description,
+    String? dueDate,
+    String? dueTime,
+  ) async {
+    String? changed(String? value, String? before) => value == before ? null : value;
+    await ref.read(taskController.notifier).updateTask(
+          UpdateTaskRequestDto(
+            taskId: initial.taskId!,
+            title: changed(title, initial.title),
+            description: changed(description, initial.description ?? ''),
+            dueDate: changed(dueDate, _formatDate(_parseDate(initial.dueDate))),
+            dueTime: changed(dueTime, _formatTime(_parseTime(initial.dueTime))),
+            category: changed(_selectedCategory, initial.category),
+            priority: changed(_selectedPriority, initial.priority.toUpperCase()),
+          ),
+        );
   }
 
   @override
@@ -157,7 +230,7 @@ class _CreateTaskModalViewState extends ConsumerState<_CreateTaskModalView> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "New Task",
+                    _isEdit ? "Edit Task" : "New Task",
                     style: GoogleFonts.inter(
                       fontSize: 20.sp,
                       fontWeight: FontWeight.w800,
@@ -227,9 +300,7 @@ class _CreateTaskModalViewState extends ConsumerState<_CreateTaskModalView> {
                         color: palette.accent,
                       ),
                       label: Text(
-                        _selectedDueDate == null
-                            ? "Set Due Date"
-                            : "${_selectedDueDate!.year}-${_selectedDueDate!.month.toString().padLeft(2, '0')}-${_selectedDueDate!.day.toString().padLeft(2, '0')}",
+                        _formatDate(_selectedDueDate) ?? "Set Due Date",
                         style: GoogleFonts.inter(
                           fontSize: 12.sp,
                           color: palette.ink,
@@ -255,9 +326,7 @@ class _CreateTaskModalViewState extends ConsumerState<_CreateTaskModalView> {
                         color: palette.accent,
                       ),
                       label: Text(
-                        _selectedDueTime == null
-                            ? "Set Due Time"
-                            : "${_selectedDueTime!.hour.toString().padLeft(2, '0')}:${_selectedDueTime!.minute.toString().padLeft(2, '0')}",
+                        _formatTime(_selectedDueTime) ?? "Set Due Time",
                         style: GoogleFonts.inter(
                           fontSize: 12.sp,
                           color: palette.ink,
@@ -364,7 +433,7 @@ class _CreateTaskModalViewState extends ConsumerState<_CreateTaskModalView> {
                           ),
                         )
                       : Text(
-                          "Create Task",
+                          _isEdit ? "Save Changes" : "Create Task",
                           style: GoogleFonts.inter(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.w700,

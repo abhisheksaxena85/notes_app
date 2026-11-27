@@ -50,9 +50,12 @@ final registerController =
   RegisterViewmodel.new,
 );
 
-final noteDetailsController =
-    AsyncNotifierProvider<NoteDetailsViewmodel, NoteDetailsState>(
+/// FE-06: keyed by note id (null = new note) and disposed with the screen.
+/// No automatic retry: a failed load shows the error and a Retry button.
+final noteDetailsController = AsyncNotifierProvider.autoDispose
+    .family<NoteDetailsViewmodel, NoteDetailsState, int?>(
   NoteDetailsViewmodel.new,
+  retry: (_, _) => null,
 );
 
 final syncStatusController =

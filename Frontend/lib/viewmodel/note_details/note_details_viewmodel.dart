@@ -12,66 +12,77 @@ import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/viewmodel/note_details/note_details_state.dart';
 
+/// FE-06: one instance per open note (family keyed by [noteId], auto-disposed
+/// when the screen closes), so opening note B never shows note A first.
 class NoteDetailsViewmodel extends AsyncNotifier<NoteDetailsState> {
+  NoteDetailsViewmodel(this.noteId);
+
+  /// The note being edited; null when creating one.
+  final int? noteId;
+
   final NoteRepo _noteRepo = getIt<NoteRepo>();
 
   /// MARK: Controllers
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController contentController = TextEditingController();
+  /// Created per build and disposed with it (see [build]).
+  late TextEditingController titleController;
+  late TextEditingController contentController;
 
   @override
-  FutureOr<NoteDetailsState> build() {
+  Future<NoteDetailsState> build() async {
     // A different user starts from an empty form.
     ref.watch(sessionUserIdProvider);
-    return const NoteDetailsState();
+
+    final title = TextEditingController();
+    final content = TextEditingController();
+    titleController = title;
+    contentController = content;
+    ref.onDispose(() {
+      title.dispose();
+      content.dispose();
+    });
+
+    final id = noteId;
+    if (id == null) {
+      // Create mode
+      return const NoteDetailsState(
+        isEditMode: false,
+        selectedCategory: "General",
+        isPinned: false,
+      );
+    }
+
+    // Edit mode: fetch note details
+    try {
+      log("Fetching note details for noteId: $id");
+      final response = await _noteRepo.getNoteDetails(getUserId(), id);
+      final noteData = response.data;
+      title.text = noteData?.title ?? "";
+      content.text = noteData?.content ?? "";
+      return NoteDetailsState(
+        noteData: noteData,
+        isEditMode: true,
+        noteId: id,
+        selectedCategory:
+            (noteData?.category != null && noteData!.category!.isNotEmpty)
+            ? noteData.category!
+            : "General",
+        isPinned: noteData?.pinned ?? false,
+        createdAt: noteData?.createdAt,
+        updatedAt: noteData?.updatedAt,
+      );
+    } catch (e) {
+      log("Error while fetching note details: $e");
+      // Shown as-is by the screen: a short message, never the raw exception.
+      throw ApiError.from(e);
+    }
   }
 
   int getUserId() {
     return ref.read(sessionUserIdProvider);
   }
 
-  Future<void> loadNote(int? noteId) async {
-    if (noteId == null) {
-      // Create mode
-      titleController.clear();
-      contentController.clear();
-      state = const AsyncData(
-        NoteDetailsState(
-          isEditMode: false,
-          selectedCategory: "General",
-          isPinned: false,
-        ),
-      );
-      return;
-    }
-
-    // Edit mode: fetch note details
-    state = const AsyncLoading();
-    try {
-      log("Fetching note details for noteId: $noteId");
-      final response = await _noteRepo.getNoteDetails(getUserId(), noteId);
-      final noteData = response.data;
-      titleController.text = noteData?.title ?? "";
-      contentController.text = noteData?.content ?? "";
-      state = AsyncData(
-        NoteDetailsState(
-          noteData: noteData,
-          isEditMode: true,
-          noteId: noteId,
-          selectedCategory:
-              (noteData?.category != null && noteData!.category!.isNotEmpty)
-              ? noteData.category!
-              : "General",
-          isPinned: noteData?.pinned ?? false,
-          createdAt: noteData?.createdAt,
-          updatedAt: noteData?.updatedAt,
-        ),
-      );
-    } catch (e, st) {
-      log("Error while fetching note details: $e");
-      state = AsyncError(userMessage(e), st);
-    }
-  }
+  /// Loads the note again (the error screen's Retry).
+  void reload() => ref.invalidateSelf();
 
   void setCategory(String category) {
     final current = state.value;
@@ -170,7 +181,8 @@ class NoteDetailsViewmodel extends AsyncNotifier<NoteDetailsState> {
             .showSnackBar(failedSnackBar(userMessage(e)));
       }
     } finally {
-      if (state.value != null) {
+      // The screen may have closed (auto-dispose) while saving.
+      if (ref.mounted && state.value != null) {
         state = AsyncData(state.value!.copyWith(isSaving: false));
       }
     }
@@ -198,7 +210,8 @@ class NoteDetailsViewmodel extends AsyncNotifier<NoteDetailsState> {
             .showSnackBar(failedSnackBar(userMessage(e)));
       }
     } finally {
-      if (state.value != null) {
+      // The screen may have closed (auto-dispose) while saving.
+      if (ref.mounted && state.value != null) {
         state = AsyncData(state.value!.copyWith(isSaving: false));
       }
     }

@@ -8,6 +8,7 @@ import 'package:notes_app/data/network/dto/response/reminder/reminder_item.dart'
 import 'package:notes_app/data/network/dto/response/task/task_item.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
+import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/viewmodel/home/home_viewmodel.dart';
@@ -23,6 +24,7 @@ import 'package:notes_app/views/screens/home/widgets/sync_failures_banner.dart';
 import 'package:notes_app/views/screens/home/widgets/task_item_card.dart';
 import 'package:notes_app/views/screens/note_details/note_details_screen.dart';
 import 'package:notes_app/views/widgets/notification_permission_prompt.dart';
+import 'package:notes_app/views/widgets/undo_delete.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -38,6 +40,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isSpeedDialOpen = false;
 
   final List<String> _filters = ["All", "Notes", "Tasks", "Reminders"];
+
+  /// FE-06: items deleted with an "Undo" snackbar still open (or already
+  /// deleted), hidden until the delete lands. Keyed by clientId, which stays
+  /// the same when a local item gets its server id during the undo window.
+  final Set<String> _hiddenTasks = {};
+  final Set<String> _hiddenReminders = {};
+
+  static String _taskKey(TaskItem t) => t.clientId ?? 'id:${t.taskId}';
+  static String _reminderKey(ReminderItem r) => r.clientId ?? 'id:${r.reminderId}';
+
+  void _deleteTask(TaskItem task) {
+    final id = task.taskId;
+    if (id == null) return;
+    final key = _taskKey(task);
+    final tasks = ref.read(taskController.notifier);
+    deleteWithUndo(
+      messenger: ScaffoldMessenger.of(context),
+      message: 'Task deleted',
+      hide: () => setState(() => _hiddenTasks.add(key)),
+      restore: () {
+        if (mounted) setState(() => _hiddenTasks.remove(key));
+      },
+      delete: () => tasks.deleteTask(id),
+    );
+  }
+
+  void _deleteReminder(ReminderItem reminder) {
+    final id = reminder.reminderId;
+    if (id == null) return;
+    final key = _reminderKey(reminder);
+    final reminders = ref.read(reminderController.notifier);
+    deleteWithUndo(
+      messenger: ScaffoldMessenger.of(context),
+      message: 'Reminder deleted',
+      hide: () => setState(() => _hiddenReminders.add(key)),
+      restore: () {
+        if (mounted) setState(() => _hiddenReminders.remove(key));
+      },
+      delete: () => reminders.deleteReminder(id),
+    );
+  }
 
   @override
   void dispose() {
@@ -58,7 +101,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not refresh items: $error')),
+        SnackBar(content: Text('Could not refresh items. ${userMessage(error)}')),
       );
     }
   }
@@ -86,7 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   List<TaskItem> _filterTasks(List<TaskItem> rawTasks) {
-    var list = List<TaskItem>.from(rawTasks);
+    var list = rawTasks.where((t) => !_hiddenTasks.contains(_taskKey(t))).toList();
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.trim().toLowerCase();
       list = list.where((t) {
@@ -108,7 +151,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   List<ReminderItem> _filterReminders(List<ReminderItem> rawReminders) {
-    var list = List<ReminderItem>.from(rawReminders);
+    var list = rawReminders.where((r) => !_hiddenReminders.contains(_reminderKey(r))).toList();
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.trim().toLowerCase();
       list = list.where((r) {
@@ -153,7 +196,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final displayedTasks = _filterTasks(allTasks);
     final displayedReminders = _filterReminders(allReminders);
 
-    final int totalActiveItems = allNotes.length + allTasks.length + allReminders.length;
+    final int totalActiveItems = allNotes.length +
+        allTasks.where((t) => !_hiddenTasks.contains(_taskKey(t))).length +
+        allReminders.where((r) => !_hiddenReminders.contains(_reminderKey(r))).length;
 
     return Scaffold(
       backgroundColor: palette.background,
@@ -317,7 +362,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
                 loading: () => notesLoadingWidget(),
                 error: (error, stack) => notesErrorWidget(
-                  message: error.toString(),
+                  message: userMessage(error),
                   onRetry: () => _refreshAll(context, homeNotifier),
                 ),
               ),
@@ -440,11 +485,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         );
                   }
                 },
-                onDelete: () {
-                  if (task.taskId != null) {
-                    ref.read(taskController.notifier).deleteTask(task.taskId!);
-                  }
-                },
+                // FE-06: tap to edit.
+                onTap: task.taskId == null
+                    ? null
+                    : () => showCreateTaskModal(context, initial: task),
+                onDelete: () => _deleteTask(task),
                 onStatusSelected: (status) {
                   if (task.taskId != null) {
                     ref
@@ -475,13 +520,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? null
                       : () => showReminderFormModal(context, initial: reminder),
                   onStatusChange: (newStatus) => _applyReminderChoice(reminder, newStatus),
-                  onDelete: () {
-                    if (reminder.reminderId != null) {
-                      ref.read(reminderController.notifier).deleteReminder(
-                            reminder.reminderId!,
-                          );
-                    }
-                  },
+                  onDelete: () => _deleteReminder(reminder),
                   onStatusSelected: (status) => _applyReminderChoice(reminder, status),
                 ),
               );

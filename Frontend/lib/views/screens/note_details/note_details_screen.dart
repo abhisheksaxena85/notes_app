@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/utils/services/note_data_transfer_service.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
@@ -24,14 +25,6 @@ class NoteDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _NoteDetailsScreenState extends ConsumerState<NoteDetailsScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(noteDetailsController.notifier).loadNote(widget.noteId);
-    });
-  }
-
   void _showDeleteConfirmationDialog(
     BuildContext context,
     NoteDetailsViewmodel notifier,
@@ -277,8 +270,9 @@ class _NoteDetailsScreenState extends ConsumerState<NoteDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final palette = context.daymark;
-    final state = ref.watch(noteDetailsController);
-    final notifier = ref.read(noteDetailsController.notifier);
+    final provider = noteDetailsController(widget.noteId);
+    final state = ref.watch(provider);
+    final notifier = ref.read(provider.notifier);
 
     return Scaffold(
       backgroundColor: palette.background,
@@ -311,8 +305,8 @@ class _NoteDetailsScreenState extends ConsumerState<NoteDetailsScreen> {
           },
           loading: () => noteDetailsLoadingWidget(),
           error: (error, stack) => noteDetailsErrorWidget(
-            message: error.toString(),
-            onRetry: () => notifier.loadNote(widget.noteId),
+            message: userMessage(error),
+            onRetry: notifier.reload,
           ),
         ),
       ),

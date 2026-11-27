@@ -63,7 +63,7 @@ Priority: **P0** = security hole or data loss, fix first · **P1** = broken beha
 | ☑ | [FE-03](FE-03-sync-races-and-idempotency.md) | Sync races create duplicates; one failing item blocks all syncing | P0 | — |
 | ☑ | [FE-04](FE-04-drift-upsert-and-stable-ids.md) | Drift upserts break the unique key; cache refresh changes local ids | P1 | — |
 | ☑ | [FE-05](FE-05-connectivity-listener-leak.md) | A new connectivity listener is created on every app rebuild | P1 | — |
-| ☐ | [FE-06](FE-06-ux-errors-and-small-bugs.md) | Raw exceptions shown to users, stale note screen, delete without confirmation | P2 | — |
+| ☑ | [FE-06](FE-06-ux-errors-and-small-bugs.md) | Raw exceptions shown to users, stale note screen, delete without confirmation | P2 | — |
 
 ### Feature: real reminders with system notifications
 | ✓ | ID | Title | Priority | Depends on |

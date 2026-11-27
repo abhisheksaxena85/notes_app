@@ -184,9 +184,9 @@ class RegisterViewmodel extends AsyncNotifier<RegisterState> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(failedSnackBar(message));
       }
+      // FE-06: stays an error (the button shows "Retry") until the next
+      // attempt or edit; no `finally` overwriting it with data.
       state = AsyncError(message, StackTrace.current);
-    } finally {
-      state = AsyncData(RegisterState(registerData: registerData));
     }
   }
 }

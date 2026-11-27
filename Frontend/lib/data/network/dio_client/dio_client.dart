@@ -6,7 +6,6 @@ import 'package:notes_app/data/local/secure_storage/token_store.dart';
 import 'package:notes_app/data/network/config/api_config.dart';
 import 'package:notes_app/data/network/interceptors/auth_interceptor.dart';
 import 'package:notes_app/data/network/interceptors/logging_interceptor.dart';
-import 'package:notes_app/data/network/interceptors/retry_interceptor.dart';
 
 class DioClient {
   final Dio dio;
@@ -34,7 +33,6 @@ class DioClient {
       // Bodies can contain passwords and note text: never log them in release.
       // Headers (with the bearer token) are never logged.
       if (kDebugMode) LoggingInterceptor(),
-      RetryInterceptor(dio),
     ]);
 
     return DioClient(dio);
