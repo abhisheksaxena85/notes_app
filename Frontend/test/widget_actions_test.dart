@@ -269,6 +269,7 @@ void main() {
     );
     expect(reminder, isA<ReminderDoneAction>());
     expect((reminder! as ReminderDoneAction).occurrence, '2026-11-27T18:00:00');
+    expect(WidgetAction.parse(Uri.parse('daymark://widget/import-inbox')), isA<ImportInboxAction>());
     expect(WidgetAction.parse(Uri.parse('daymark://widget/toggle-task')), isNull);
     expect(WidgetAction.parse(Uri.parse('daymark://task/4')), isNull);
   });

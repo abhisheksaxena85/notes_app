@@ -73,6 +73,10 @@ class TaskRepo {
 
   /// Saves the task locally, queues its upload (tagged with a new client id
   /// so a retried upload can't create it twice) and asks for a sync.
+  ///
+  /// A [CreateTaskRequestDto.clientId] given by the caller is used instead
+  /// (W-03: a task added from the iOS widget inbox keeps its inbox id, so it
+  /// can't be imported twice).
   Future<int> enqueueTask(CreateTaskRequestDto requestDto) async {
     final userId = requestDto.userId;
     final title = requestDto.title;
@@ -80,7 +84,7 @@ class TaskRepo {
       throw ArgumentError('A task requires a title.');
     }
 
-    final clientId = const Uuid().v4();
+    final clientId = requestDto.clientId ?? const Uuid().v4();
     final localId = await database.enqueueTask(
       userId: userId,
       title: title,
@@ -183,6 +187,16 @@ class TaskRepo {
   }
 
   static Value<T> _set<T>(T? value) => value == null ? const Value.absent() : Value(value);
+
+  /// Whether [userId] already has a task created with [clientId] (deleted
+  /// ones included, so an imported item deleted since isn't re-added).
+  Future<bool> hasTaskWithClientId(int userId, String clientId) async {
+    final row = await (database.select(database.cachedTasks)
+          ..where((t) => t.userId.equals(userId) & t.clientId.equals(clientId))
+          ..limit(1))
+        .getSingleOrNull();
+    return row != null;
+  }
 
   Future<List<TaskItem>> getTasksByDate(int userId, String date) async {
     final cached = await database.getTasksByDate(userId, date);

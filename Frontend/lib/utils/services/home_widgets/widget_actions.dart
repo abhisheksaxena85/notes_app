@@ -8,6 +8,7 @@ import 'package:notes_app/data/repository/task/task_repo.dart';
 import 'package:notes_app/utils/reminder_time.dart';
 import 'package:notes_app/utils/services/background_graph.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_host.dart';
+import 'package:notes_app/utils/services/home_widgets/widget_inbox.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_snapshot_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
 import 'package:notes_app/utils/services/reminder_action_handler.dart';
@@ -19,6 +20,8 @@ import 'package:notes_app/utils/services/reminder_scheduler.dart';
 /// - `daymark://widget/toggle-task?id=<id>`: completes the task.
 /// - `daymark://widget/reminder-done?id=<id>&occurrence=<wall clock>`:
 ///   answers that occurrence Done, exactly like the notification's Done.
+/// - `daymark://widget/import-inbox`: imports tasks added through the iOS
+///   App Intent (W-03, [WidgetTaskInbox]).
 ///
 /// Ids are the app's item ids (server id, or minus the local id); a local id
 /// still matches after the item got its server id.
@@ -29,9 +32,11 @@ sealed class WidgetAction {
     if (uri == null || uri.scheme.toLowerCase() != 'daymark' || uri.host.toLowerCase() != 'widget') {
       return null;
     }
+    final path = uri.pathSegments.where((s) => s.isNotEmpty).firstOrNull;
+    if (path == 'import-inbox') return const ImportInboxAction();
     final id = int.tryParse(uri.queryParameters['id'] ?? '');
     if (id == null || id == 0) return null;
-    switch (uri.pathSegments.where((s) => s.isNotEmpty).firstOrNull) {
+    switch (path) {
       case 'toggle-task':
         return ToggleTaskAction(id);
       case 'reminder-done':
@@ -53,6 +58,10 @@ final class ReminderDoneAction extends WidgetAction {
   final int id;
   final String occurrence;
   const ReminderDoneAction(this.id, this.occurrence);
+}
+
+final class ImportInboxAction extends WidgetAction {
+  const ImportInboxAction();
 }
 
 enum WidgetActionOutcome {
@@ -79,6 +88,9 @@ class WidgetActionHandler {
   final WidgetSnapshotService widgets;
   final int Function() currentUserId;
 
+  /// For [ImportInboxAction]; without it that action is ignored.
+  final WidgetTaskInbox? inbox;
+
   /// Pushes queued changes to the server (OfflineSyncService.requestSync).
   final Future<void> Function()? pushChanges;
   final Duration syncTimeout;
@@ -90,6 +102,7 @@ class WidgetActionHandler {
     required this.reminderActions,
     required this.widgets,
     required this.currentUserId,
+    this.inbox,
     this.pushChanges,
     this.syncTimeout = const Duration(seconds: 8),
   });
@@ -104,6 +117,7 @@ class WidgetActionHandler {
       final outcome = switch (action) {
         ToggleTaskAction(:final id) => await _completeTask(id),
         ReminderDoneAction(:final id, :final occurrence) => await _reminderDone(id, occurrence),
+        ImportInboxAction() => await _importInbox(),
       };
       return outcome;
     } catch (error, stackTrace) {
@@ -160,6 +174,15 @@ class WidgetActionHandler {
     };
   }
 
+  Future<WidgetActionOutcome> _importInbox() async {
+    final importer = inbox;
+    if (importer == null) return WidgetActionOutcome.ignored;
+    final added = await importer.importAll();
+    if (added == 0) return WidgetActionOutcome.ignored;
+    await _push();
+    return WidgetActionOutcome.applied;
+  }
+
   /// Tries to upload now; the app's sync retries later if this fails.
   Future<void> _push() async {
     final push = pushChanges;
@@ -204,6 +227,11 @@ Future<void> _handleInBackground(Uri? uri) async {
         reminderActions: graph.reminderActions,
         widgets: widgets,
         currentUserId: () => graph.userId,
+        inbox: WidgetTaskInbox(
+          host: HomeWidgetHost(),
+          repo: graph.taskRepo,
+          currentUserId: () => graph.userId,
+        ),
         pushChanges: () {
           graph.sync.setUserId(graph.userId);
           return graph.sync.requestSync();

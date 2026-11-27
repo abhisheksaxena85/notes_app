@@ -14,6 +14,7 @@ import 'package:notes_app/views/screens/home/widgets/create_task_modal.dart';
 import 'package:notes_app/views/screens/home/widgets/reminder_form_modal.dart';
 import 'package:notes_app/views/screens/profile/profile_screen.dart';
 import 'package:notes_app/views/widgets/daymark_bottom_nav.dart';
+import 'package:notes_app/views/widgets/quick_add_task_sheet.dart';
 import 'package:notes_app/views/widgets/reminder_answer_sheet.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -60,7 +61,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case WorkspaceLink():
         return;
       case QuickAddTaskLink():
-        await showCreateTaskModal(context);
+        await showQuickAddTaskSheet(context);
       case NewReminderLink():
         await showReminderFormModal(context);
       case OpenTaskLink(:final id):

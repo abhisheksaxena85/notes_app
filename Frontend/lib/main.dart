@@ -13,6 +13,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:notes_app/utils/services/digest_scheduler.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_actions.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_host.dart';
+import 'package:notes_app/utils/services/home_widgets/widget_inbox.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_links.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_snapshot_service.dart';
 import 'package:notes_app/utils/services/notification_background.dart';
@@ -24,6 +25,7 @@ import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/views/screens/auth/login/login_screen.dart';
+import 'package:notes_app/views/screens/quick_add/quick_add_task_app.dart';
 import 'package:notes_app/views/screens/splash/splash_screen.dart';
 import 'package:notes_app/views/widgets/connectivity_snackbar_listener.dart';
 import 'package:notes_app/views/widgets/reminder_answer_sheet.dart';
@@ -34,6 +36,11 @@ GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 /// App-wide snackbars that don't belong to one screen (connectivity).
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
+/// W-03 (Android): the Dart entrypoint of QuickAddTaskActivity, the
+/// quick-add pop-up the Tasks widget's plus opens over the home screen.
+@pragma('vm:entry-point')
+void quickAddTaskMain() => runQuickAddTaskApp();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -90,6 +97,12 @@ Future<void> initialize() async {
       userChanges: session.changes,
       syncCompletions: getIt<OfflineSyncService>().completions,
     );
+  // W-03: tasks added through the iOS App Intent while the app was closed.
+  final inbox = getIt<WidgetTaskInbox>();
+  unawaited(inbox.importAll());
+  session.changes.listen((userId) {
+    if (userId != 0) unawaited(inbox.importAll());
+  });
   unawaited(_listenForWidgetLaunches());
   // Sync queued changes when the app returns to the foreground too, not only
   // when connectivity changes. The listener registers itself with the binding
@@ -102,7 +115,7 @@ Future<void> initialize() async {
       // REM-03: time zone changes and occurrences missed while closed.
       unawaited(scheduler.onAppResumed());
       unawaited(digests.reconcile());
-      unawaited(widgets.onAppResumed());
+      unawaited(inbox.importAll().then((_) => widgets.onAppResumed()));
     },
   );
 }

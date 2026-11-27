@@ -14,6 +14,7 @@ import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/connectivity_service.dart';
 import 'package:notes_app/utils/services/digest_scheduler.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_host.dart';
+import 'package:notes_app/utils/services/home_widgets/widget_inbox.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_snapshot_service.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
@@ -61,6 +62,15 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<ConnectivityService>(
     () => ConnectivityService.device(),
     dispose: (service) => service.dispose(),
+  );
+
+  /// Tasks added from the iOS "Add task in Daymark" intent (W-03).
+  getIt.registerLazySingleton<WidgetTaskInbox>(
+    () => WidgetTaskInbox(
+      host: HomeWidgetHost(),
+      repo: getIt<TaskRepo>(),
+      currentUserId: () => getIt<SessionService>().userId,
+    ),
   );
 
   /// Background synchronization: the only path from the offline queues to

@@ -36,6 +36,19 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- W-03: quick add from the Tasks widget, a pop-up over the home
+             screen with its own Flutter entrypoint (quickAddTaskMain). -->
+        <activity
+            android:name=".widgets.QuickAddTaskActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleTask"
+            android:taskAffinity="com.devquorix.daymark.quickadd"
+            android:theme="@style/QuickAddTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize|stateAlwaysVisible"/>
         <!-- flutter_local_notifications: action buttons, scheduled
              notifications, and rescheduling after a reboot or app update. -->
         <receiver
