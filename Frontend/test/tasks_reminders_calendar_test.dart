@@ -151,6 +151,18 @@ void main() {
         .map((c) => c.decoration)
         .whereType<BoxDecoration>();
 
+    /// Colour of the meta-line span reading [text].
+    Color? spanColor(WidgetTester tester, String text) {
+      Color? found;
+      for (final rich in tester.widgetList<RichText>(find.byType(RichText))) {
+        rich.text.visitChildren((span) {
+          if (span is TextSpan && span.text == text) found = span.style?.color;
+          return found == null;
+        });
+      }
+      return found;
+    }
+
     bool hasRing(WidgetTester tester, Color color) => statusDecorations(tester)
         .any((d) => d.border is Border && (d.border as Border).top.color == color);
 
@@ -196,8 +208,7 @@ void main() {
       expect(textWidget.style?.decoration, TextDecoration.lineThrough);
       expect(textWidget.style?.color, palette.muted);
       expect(statusDecorations(tester).any((d) => d.color == palette.success), isTrue);
-      final done = tester.widget<Text>(find.text('Done'));
-      expect(done.style?.color, palette.success);
+      expect(spanColor(tester, 'Done'), palette.success);
     });
 
     testWidgets('a missed task has a danger ring and a Missed pill',

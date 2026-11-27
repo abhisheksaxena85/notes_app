@@ -14,7 +14,9 @@ import 'package:notes_app/views/screens/note_details/note_details_screen.dart';
 import 'package:notes_app/utils/date/date_keys.dart';
 import 'package:notes_app/utils/date/display_format.dart';
 import 'package:notes_app/utils/themes/daymark_text.dart';
+import 'package:notes_app/views/screens/calendar/widgets/calendar_loading_widget.dart';
 import 'package:notes_app/views/widgets/daymark_card.dart';
+import 'package:notes_app/views/widgets/skeleton/skeleton.dart';
 import 'package:notes_app/views/widgets/icon_tile.dart';
 import 'package:notes_app/views/widgets/segmented_control.dart';
 
@@ -31,6 +33,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   late DateTime _selectedDate;
   late DateTime _currentMonth;
   CalendarMode _mode = CalendarMode.month;
+
+  /// True during the first load (set in build).
+  bool _loading = false;
+
+  Widget _maybeShimmer(Widget child) => _loading ? Shimmer(child: child) : child;
 
   @override
   void initState() {
@@ -169,6 +176,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     int countFor(DateTime date) =>
         _getActivityCountForDate(date, allNotes, allTasks, allReminders);
 
+    // First load: badges, the count and the day list shimmer; the grid
+    // itself needs no data.
+    bool firstLoad(AsyncValue<Object?> value) => value.isLoading && !value.hasValue;
+    _loading = firstLoad(homeState) || firstLoad(taskState) || firstLoad(reminderState);
+
     return Scaffold(
       backgroundColor: palette.background,
       body: SafeArea(
@@ -183,7 +195,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ref.read(reminderController.notifier).refreshReminders(),
             ]);
           },
-          child: ListView(
+          child: _maybeShimmer(ListView(
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
@@ -233,21 +245,27 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       style: DaymarkText.section.copyWith(color: palette.ink),
                     ),
                   ),
-                  Text(
-                    "$totalItemsToday ${totalItemsToday == 1 ? "item" : "items"}",
-                    style: DaymarkText.meta.copyWith(color: palette.muted),
-                  ),
+                  if (_loading)
+                    const CalendarCountSkeleton()
+                  else
+                    Text(
+                      "$totalItemsToday ${totalItemsToday == 1 ? "item" : "items"}",
+                      style: DaymarkText.meta.copyWith(color: palette.muted),
+                    ),
                 ],
               ),
               const SizedBox(height: 10),
-              _buildDayList(
-                palette: palette,
-                tasks: selectedDayTasks,
-                reminders: selectedDayReminders,
-                notes: selectedDayNotes,
-              ),
+              if (_loading)
+                const CalendarDayListSkeleton()
+              else
+                _buildDayList(
+                  palette: palette,
+                  tasks: selectedDayTasks,
+                  reminders: selectedDayReminders,
+                  notes: selectedDayNotes,
+                ),
             ],
-          ),
+          )),
         ),
       ),
     );
@@ -427,7 +445,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ),
             ),
           ),
-          if (isCurrentMonth && activityCount > 0)
+          if (isCurrentMonth && _loading)
+            const Positioned(top: 34, child: CalendarBadgeSkeleton())
+          else if (isCurrentMonth && activityCount > 0)
             Positioned(
               top: 31,
               child: Container(

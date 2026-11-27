@@ -261,7 +261,7 @@ class _NoteDetailsScreenState extends ConsumerState<NoteDetailsScreen> {
               ],
             );
           },
-          loading: () => noteDetailsLoadingWidget(),
+          loading: () => noteDetailsLoadingWidget(isEditMode: widget.noteId != null),
           error: (error, stack) => noteDetailsErrorWidget(
             message: userMessage(error),
             onRetry: notifier.reload,

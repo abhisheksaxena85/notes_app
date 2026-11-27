@@ -63,8 +63,8 @@ class DisplayFormat {
   static bool sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
-  /// When something is due: "10:30 AM" today, "Tomorrow · 10:30 AM",
-  /// "28 Nov · 10:30 AM", or just the date or time that is set.
+  /// When something is due: "10:30 AM" today, "Tomorrow, 10:30 AM",
+  /// "28 Nov, 10:30 AM", or just the date or time that is set.
   static String due(String? dueDate, String? dueTime, [DateTime? now]) {
     final today = now ?? DateTime.now();
     final date = day(dueDate);
@@ -84,7 +84,7 @@ class DisplayFormat {
           : '${shortDate(date)} ${date.year}';
     }
     if (timeText == null) return dateText;
-    return dateText == 'Today' ? timeText : '$dateText · $timeText';
+    return dateText == 'Today' ? timeText : '$dateText, $timeText';
   }
 
   /// "Just now", "5m ago", "2h ago", "Yesterday", "24 Nov".

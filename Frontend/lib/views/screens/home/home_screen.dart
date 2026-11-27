@@ -17,7 +17,7 @@ import 'package:notes_app/views/screens/home/widgets/create_task_modal.dart';
 import 'package:notes_app/views/screens/home/widgets/note_item_card.dart';
 import 'package:notes_app/views/screens/home/widgets/notes_error_widget.dart';
 import 'package:notes_app/views/screens/home/widgets/workspace_header.dart';
-import 'package:notes_app/views/screens/home/widgets/notes_loading_widget.dart';
+import 'package:notes_app/views/screens/home/widgets/workspace_loading_widget.dart';
 import 'package:notes_app/views/screens/home/widgets/reminder_item_card.dart';
 import 'package:notes_app/views/screens/home/widgets/sync_failures_banner.dart';
 import 'package:notes_app/views/screens/home/widgets/task_item_card.dart';
@@ -54,7 +54,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final Set<String> _hiddenReminders = {};
 
   static String _taskKey(TaskItem t) => t.clientId ?? 'id:${t.taskId}';
-  static String _reminderKey(ReminderItem r) => r.clientId ?? 'id:${r.reminderId}';
+  static String _reminderKey(ReminderItem r) =>
+      r.clientId ?? 'id:${r.reminderId}';
 
   void _deleteTask(TaskItem task) {
     final id = task.taskId;
@@ -94,10 +95,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _refreshAll(
-    BuildContext context,
-    HomeViewmodel notifier,
-  ) async {
+  Future<void> _refreshAll(BuildContext context, HomeViewmodel notifier) async {
     try {
       await Future.wait([
         notifier.getAllNotes(),
@@ -107,7 +105,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not refresh items. ${userMessage(error)}')),
+        SnackBar(
+          content: Text('Could not refresh items. ${userMessage(error)}'),
+        ),
       );
     }
   }
@@ -135,7 +135,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   List<TaskItem> _filterTasks(List<TaskItem> rawTasks) {
-    var list = rawTasks.where((t) => !_hiddenTasks.contains(_taskKey(t))).toList();
+    var list = rawTasks
+        .where((t) => !_hiddenTasks.contains(_taskKey(t)))
+        .toList();
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.trim().toLowerCase();
       list = list.where((t) {
@@ -157,7 +159,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   List<ReminderItem> _filterReminders(List<ReminderItem> rawReminders) {
-    var list = rawReminders.where((r) => !_hiddenReminders.contains(_reminderKey(r))).toList();
+    var list = rawReminders
+        .where((r) => !_hiddenReminders.contains(_reminderKey(r)))
+        .toList();
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.trim().toLowerCase();
       list = list.where((r) {
@@ -180,7 +184,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// A status from the card, or a REM-05 RepeatingChoice for repeats.
   void _applyReminderChoice(ReminderItem reminder, String choice) {
     final id = reminder.reminderId;
-    if (id != null) ref.read(reminderController.notifier).applyChoice(id, choice);
+    if (id != null) {
+      ref.read(reminderController.notifier).applyChoice(id, choice);
+    }
   }
 
   @override
@@ -202,8 +208,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final displayedTasks = _filterTasks(allTasks);
     final displayedReminders = _filterReminders(allReminders);
 
-    final visibleTasks = allTasks.where((t) => !_hiddenTasks.contains(_taskKey(t)));
-    final visibleReminders = allReminders.where((r) => !_hiddenReminders.contains(_reminderKey(r)));
+    final visibleTasks = allTasks.where(
+      (t) => !_hiddenTasks.contains(_taskKey(t)),
+    );
+    final visibleReminders = allReminders.where(
+      (r) => !_hiddenReminders.contains(_reminderKey(r)),
+    );
     final today = DateTime.now();
     final tasksToday = visibleTasks.where((t) {
       final due = DisplayFormat.day(t.dueDate);
@@ -211,6 +221,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }).length;
 
     Future<void> onRefresh() => _refreshAll(context, homeNotifier);
+    // First load: the whole screen is a skeleton (data on later refreshes
+    // stays on screen).
+    final isLoading = homeState.isLoading && !homeState.hasValue;
 
     return Scaffold(
       backgroundColor: palette.background,
@@ -218,6 +231,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 2, right: 4),
         child: AddMenuFab(
+          enabled: !isLoading,
           isOpen: _isSpeedDialOpen,
           onOpenChanged: (val) {
             setState(() {
@@ -257,105 +271,107 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           SafeArea(
             bottom: false,
-            child: RefreshIndicator(
-              color: palette.accent,
-              backgroundColor: palette.surface,
-              onRefresh: onRefresh,
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
-                ),
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                    sliver: SliverList.list(
-                      children: [
-                        WorkspaceHeader(
-                          userName: userName,
-                          onAvatarTap: widget.onOpenProfile,
+            child: isLoading
+                ? const WorkspaceLoadingWidget()
+                : RefreshIndicator(
+                    color: palette.accent,
+                    backgroundColor: palette.surface,
+                    onRefresh: onRefresh,
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                          sliver: SliverList.list(
+                            children: [
+                              WorkspaceHeader(
+                                userName: userName,
+                                onAvatarTap: widget.onOpenProfile,
+                              ),
+                              const SizedBox(height: 18),
+                              WorkspaceStats(
+                                tasksToday: tasksToday,
+                                reminders: visibleReminders.length,
+                                notes: allNotes.length,
+                              ),
+                              const SizedBox(height: 14),
+                              WorkspaceSearchField(
+                                controller: _searchController,
+                                onChanged: (val) =>
+                                    setState(() => _searchQuery = val),
+                                onClear: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = "");
+                                },
+                              ),
+                              const SizedBox(height: 14),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 18),
-                        WorkspaceStats(
-                          tasksToday: tasksToday,
-                          reminders: visibleReminders.length,
-                          notes: allNotes.length,
+
+                        // Queued changes the server refused (retry / discard)
+                        const SliverToBoxAdapter(child: SyncFailuresBanner()),
+
+                        // REM-02: upcoming reminders that won't alert
+                        SliverToBoxAdapter(
+                          child: NotificationsOffBanner(
+                            permissions: getIt<NotificationPermissionService>(),
+                            hasUpcomingReminders: allReminders.any(
+                              (r) => r.isUpcoming(),
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 14),
-                        WorkspaceSearchField(
-                          controller: _searchController,
-                          onChanged: (val) => setState(() => _searchQuery = val),
-                          onClear: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = "");
-                          },
+
+                        // Filter chips: All, Notes, Tasks, Reminders
+                        SliverToBoxAdapter(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              children: [
+                                for (final filter in _filters) ...[
+                                  DaymarkChip(
+                                    label: filter,
+                                    selected: _selectedFilter == filter,
+                                    onTap: () => setState(
+                                      () => _selectedFilter = filter,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                              ],
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 14),
+                        const SliverToBoxAdapter(child: SizedBox(height: 22)),
+
+                        // Unified Workspace Feed
+                        ...homeState.when(
+                          data: (_) => _buildFeed(
+                            context: context,
+                            palette: palette,
+                            notes: displayedNotes,
+                            tasks: displayedTasks,
+                            reminders: displayedReminders,
+                            onRefresh: onRefresh,
+                          ),
+                          loading: () => const [],
+                          error: (error, stack) => [
+                            SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: notesErrorWidget(
+                                message: userMessage(error),
+                                onRetry: onRefresh,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SliverToBoxAdapter(child: SizedBox(height: 100)),
                       ],
                     ),
                   ),
-
-                  // Queued changes the server refused (retry / discard)
-                  const SliverToBoxAdapter(child: SyncFailuresBanner()),
-
-                  // REM-02: upcoming reminders that won't alert
-                  SliverToBoxAdapter(
-                    child: NotificationsOffBanner(
-                      permissions: getIt<NotificationPermissionService>(),
-                      hasUpcomingReminders: allReminders.any((r) => r.isUpcoming()),
-                    ),
-                  ),
-
-                  // Filter chips: All, Notes, Tasks, Reminders
-                  SliverToBoxAdapter(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        children: [
-                          for (final filter in _filters) ...[
-                            DaymarkChip(
-                              label: filter,
-                              selected: _selectedFilter == filter,
-                              onTap: () => setState(() => _selectedFilter = filter),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 22)),
-
-                  // Unified Workspace Feed
-                  ...homeState.when(
-                    data: (_) => _buildFeed(
-                      context: context,
-                      palette: palette,
-                      notes: displayedNotes,
-                      tasks: displayedTasks,
-                      reminders: displayedReminders,
-                      onRefresh: onRefresh,
-                    ),
-                    loading: () => [
-                      SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: notesLoadingWidget(),
-                      ),
-                    ],
-                    error: (error, stack) => [
-                      SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: notesErrorWidget(
-                          message: userMessage(error),
-                          onRetry: onRefresh,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
-                ],
-              ),
-            ),
           ),
           // Full-screen dismissable scrim while the add menu is open
           if (_isSpeedDialOpen)
@@ -388,7 +404,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final showTasks = isAll || _selectedFilter == "Tasks";
     final showReminders = isAll || _selectedFilter == "Reminders";
 
-    final hasAnyItems = (showNotes && notes.isNotEmpty) ||
+    final hasAnyItems =
+        (showNotes && notes.isNotEmpty) ||
         (showTasks && tasks.isNotEmpty) ||
         (showReminders && reminders.isNotEmpty);
 
@@ -402,7 +419,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Text(
                     "No results match your search.",
                     textAlign: TextAlign.center,
-                    style: DaymarkText.custom(14, FontWeight.w400).copyWith(color: palette.muted),
+                    style: DaymarkText.custom(
+                      14,
+                      FontWeight.w400,
+                    ).copyWith(color: palette.muted),
                   ),
                 )
               : _buildEmptyWidget(palette),
@@ -411,13 +431,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     Widget header(String title, int count, String filter) => Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: SectionHeader(
-            title: title,
-            count: count,
-            onSeeAll: isAll ? () => setState(() => _selectedFilter = filter) : null,
-          ),
-        );
+      padding: const EdgeInsets.only(bottom: 10),
+      child: SectionHeader(
+        title: title,
+        count: count,
+        onSeeAll: isAll ? () => setState(() => _selectedFilter = filter) : null,
+      ),
+    );
 
     final children = <Widget>[
       // Tasks Section
@@ -429,10 +449,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             task: task,
             onToggleComplete: (val) {
               if (task.taskId != null) {
-                ref.read(taskController.notifier).toggleTaskStatus(
-                      task.taskId!,
-                      val,
-                    );
+                ref
+                    .read(taskController.notifier)
+                    .toggleTaskStatus(task.taskId!, val);
               }
             },
             // FE-06: tap to edit.
@@ -466,9 +485,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onTap: reminder.reminderId == null
                   ? null
                   : () => showReminderFormModal(context, initial: reminder),
-              onStatusChange: (newStatus) => _applyReminderChoice(reminder, newStatus),
+              onStatusChange: (newStatus) =>
+                  _applyReminderChoice(reminder, newStatus),
               onDelete: () => _deleteReminder(reminder),
-              onStatusSelected: (status) => _applyReminderChoice(reminder, status),
+              onStatusSelected: (status) =>
+                  _applyReminderChoice(reminder, status),
             ),
           );
         }),
@@ -551,7 +572,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: DaymarkText.custom(17, FontWeight.w600).copyWith(color: palette.ink),
+            style: DaymarkText.custom(
+              17,
+              FontWeight.w600,
+            ).copyWith(color: palette.ink),
           ),
           const SizedBox(height: 6),
           Text(

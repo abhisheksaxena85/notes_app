@@ -91,58 +91,74 @@ class _DaymarkTextFieldState extends State<DaymarkTextField> {
   Widget build(BuildContext context) {
     final palette = context.daymark;
     final hasError = widget.errorText != null && widget.errorText!.isNotEmpty;
-    OutlineInputBorder border(Color color, [double width = 1]) => OutlineInputBorder(
+    OutlineInputBorder border(Color color, [double width = 1]) =>
+        OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: color, width: width),
         );
     return LabeledField(
       label: widget.label,
       errorText: widget.errorText,
-      child: SizedBox(
-        height: 48,
-        child: TextField(
-          controller: widget.controller,
-          focusNode: widget.focusNode,
-          enabled: widget.enabled,
-          keyboardType: widget.keyboardType,
-          obscureText: _hidden,
-          enableSuggestions: !widget.obscureText,
-          autocorrect: !widget.obscureText,
-          maxLength: widget.maxLength,
-          maxLines: 1,
-          inputFormatters: widget.inputFormatters,
-          onChanged: widget.onChanged,
-          buildCounter: (context, {required currentLength, required isFocused, required maxLength}) => null,
-          textAlignVertical: TextAlignVertical.center,
-          style: DaymarkText.custom(15, FontWeight.w400).copyWith(
-            color: widget.enabled == false ? palette.muted : palette.ink,
+      child: TextField(
+        controller: widget.controller,
+        focusNode: widget.focusNode,
+        enabled: widget.enabled,
+        keyboardType: widget.keyboardType,
+        obscureText: _hidden,
+        enableSuggestions: !widget.obscureText,
+        autocorrect: !widget.obscureText,
+        maxLength: widget.maxLength,
+        maxLines: 1,
+        inputFormatters: widget.inputFormatters,
+        onChanged: widget.onChanged,
+        buildCounter: (
+          context, {
+          required currentLength,
+          required isFocused,
+          required maxLength,
+        }) => null,
+        textAlignVertical: TextAlignVertical.center,
+        style: DaymarkText.custom(15, FontWeight.w400).copyWith(
+          color: widget.enabled == false ? palette.muted : palette.ink,
+        ),
+        decoration: InputDecoration(
+          hintText: widget.hintText,
+          fillColor: widget.backgroundColor ?? palette.background,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 14,
           ),
-          decoration: InputDecoration(
-            hintText: widget.hintText,
-            fillColor: widget.backgroundColor ?? palette.background,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-            prefixIcon: widget.prefixIcon == null
-                ? null
-                : Padding(
-                    padding: const EdgeInsets.only(left: 14, right: 10),
-                    child: AppIcons.icon(widget.prefixIcon!, size: 18, color: palette.muted),
+          prefixIcon: widget.prefixIcon == null
+              ? null
+              : Padding(
+                  padding: const EdgeInsets.only(left: 14, right: 10),
+                  child: AppIcons.icon(
+                    widget.prefixIcon!,
+                    size: 18,
+                    color: palette.muted,
                   ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-            suffixIcon: widget.obscureText
-                ? IconButton(
-                    tooltip: _hidden ? 'Show password' : 'Hide password',
-                    onPressed: () => setState(() => _hidden = !_hidden),
-                    icon: AppIcons.icon(
-                      AppIcons.show,
-                      size: 18,
-                      color: _hidden ? palette.muted : palette.accent,
-                    ),
-                  )
-                : null,
-            enabledBorder: border(hasError ? palette.danger : palette.line),
-            focusedBorder: border(hasError ? palette.danger : palette.accent, 1.5),
-            disabledBorder: border(palette.line),
+                ),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 0,
+            minHeight: 48,
           ),
+          suffixIcon: widget.obscureText
+              ? IconButton(
+                  tooltip: _hidden ? 'Show password' : 'Hide password',
+                  onPressed: () => setState(() => _hidden = !_hidden),
+                  icon: AppIcons.icon(
+                    AppIcons.show,
+                    size: 18,
+                    color: _hidden ? palette.muted : palette.accent,
+                  ),
+                )
+              : null,
+          enabledBorder: border(hasError ? palette.danger : palette.line),
+          focusedBorder: border(
+            hasError ? palette.danger : palette.accent,
+            1.5,
+          ),
+          disabledBorder: border(palette.line),
         ),
       ),
     );

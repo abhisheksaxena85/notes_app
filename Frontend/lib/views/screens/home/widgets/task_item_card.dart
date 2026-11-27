@@ -32,7 +32,7 @@ Widget taskItemCard({
   final bool hasDue = (task.dueDate?.isNotEmpty ?? false) || (task.dueTime?.isNotEmpty ?? false);
   final bool high = task.priority == 'HIGH';
   final metaStyle = DaymarkText.meta.copyWith(color: palette.muted);
-  final dot = Text('  ·  ', style: metaStyle);
+  const dot = TextSpan(text: '\u00A0\u00A0·  ');
 
   return Padding(
     padding: const EdgeInsets.only(bottom: 8),
@@ -93,15 +93,26 @@ Widget taskItemCard({
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: DaymarkText.bodyStrong.copyWith(
-                      color: isCompleted ? palette.muted : palette.ink,
-                      decoration: isCompleted ? TextDecoration.lineThrough : null,
-                      decorationColor: palette.muted,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: DaymarkText.bodyStrong.copyWith(
+                            color: isCompleted ? palette.muted : palette.ink,
+                            decoration: isCompleted ? TextDecoration.lineThrough : null,
+                            decorationColor: palette.muted,
+                          ),
+                        ),
+                      ),
+                      if (isMissedOrRejected) ...[
+                        const SizedBox(width: 8),
+                        StatusPill(StatusPill.labelFor(status)),
+                      ],
+                    ],
                   ),
                   if (description.isNotEmpty) ...[
                     const SizedBox(height: 3),
@@ -115,40 +126,34 @@ Widget taskItemCard({
                     ),
                   ],
                   const SizedBox(height: 6),
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    runSpacing: 4,
-                    children: [
-                      if (hasDue) ...[
-                        AppIcons.icon(AppIcons.clock, size: 14, color: palette.muted),
-                        const SizedBox(width: 5),
-                        Text(DisplayFormat.due(task.dueDate, task.dueTime), style: metaStyle),
+                  Text.rich(
+                    TextSpan(
+                      style: metaStyle,
+                      children: [
+                        if (hasDue) ...[
+                          _iconSpan(AppIcons.clock, palette.muted),
+                          TextSpan(text: DisplayFormat.due(task.dueDate, task.dueTime)),
+                          dot,
+                        ],
+                        TextSpan(text: category),
                         dot,
+                        if (isCompleted)
+                          TextSpan(
+                            text: 'Done',
+                            style: TextStyle(color: palette.success, fontWeight: FontWeight.w500),
+                          )
+                        else if (high) ...[
+                          _iconSpan(AppIcons.priority, palette.danger),
+                          TextSpan(text: 'High', style: TextStyle(color: palette.danger)),
+                        ] else
+                          TextSpan(text: StatusPill.labelFor(task.priority)),
                       ],
-                      Text(category, style: metaStyle),
-                      dot,
-                      if (isCompleted)
-                        Text(
-                          'Done',
-                          style: DaymarkText.custom(12.5, FontWeight.w500).copyWith(color: palette.success),
-                        )
-                      else if (high) ...[
-                        AppIcons.icon(AppIcons.priority, size: 14, color: palette.danger),
-                        const SizedBox(width: 4),
-                        Text('High', style: metaStyle.copyWith(color: palette.danger)),
-                      ] else
-                        Text(StatusPill.labelFor(task.priority), style: metaStyle),
-                    ],
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-          if (isMissedOrRejected)
-            Padding(
-              padding: const EdgeInsets.only(top: 12, left: 6),
-              child: StatusPill(StatusPill.labelFor(status)),
-            ),
           if (onDelete != null)
             CardIconButton(
               icon: AppIcons.icon(AppIcons.delete, size: 18, color: palette.muted),
@@ -162,3 +167,12 @@ Widget taskItemCard({
     ),
   );
 }
+
+/// A 14 px icon inline with meta text.
+InlineSpan _iconSpan(String icon, Color color) => WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 5),
+        child: AppIcons.icon(icon, size: 14, color: color),
+      ),
+    );

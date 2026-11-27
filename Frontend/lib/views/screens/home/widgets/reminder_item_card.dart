@@ -52,7 +52,7 @@ Widget reminderItemCard({
   final due = DisplayFormat.day(reminder.dueDate);
   final bool dueToday = due != null && DisplayFormat.sameDay(due, DateTime.now());
   final metaStyle = DaymarkText.meta.copyWith(color: palette.muted);
-  final dot = Text('  ·  ', style: metaStyle);
+  const dot = TextSpan(text: '\u00A0\u00A0·  ');
   final lastOutcome = repeating ? _lastOutcomeLabel(reminder) : null;
 
   return Padding(
@@ -114,45 +114,68 @@ Widget reminderItemCard({
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: DaymarkText.bodyStrong.copyWith(
-                      color: isCompleted ? palette.muted : palette.ink,
-                      decoration: isCompleted ? TextDecoration.lineThrough : null,
-                      decorationColor: palette.muted,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    runSpacing: 4,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppIcons.icon(AppIcons.clock, size: 14, color: palette.muted),
-                      const SizedBox(width: 5),
-                      Text(_formatReminderTime(reminder), style: metaStyle),
-                      dot,
-                      Text(category, style: metaStyle),
-                      if (repeating) ...[
-                        dot,
-                        AppIcons.icon(AppIcons.repeat, size: 14, color: palette.muted),
-                        const SizedBox(width: 4),
-                        Text(StatusPill.labelFor(reminder.repeatInterval), style: metaStyle),
-                      ],
-                      // REM-06: will this reminder alert?
-                      if (alerts != null && alerts.isSupported && reminder.isUpcoming()) ...[
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: DaymarkText.bodyStrong.copyWith(
+                            color: isCompleted ? palette.muted : palette.ink,
+                            decoration: isCompleted ? TextDecoration.lineThrough : null,
+                            decorationColor: palette.muted,
+                          ),
+                        ),
+                      ),
+                      if (isMissedOrRejected) ...[
                         const SizedBox(width: 8),
-                        Tooltip(
-                          message: alerts.alertsOn
-                              ? 'Notification scheduled'
-                              : 'Notifications are off',
-                          child: alerts.alertsOn
-                              ? AppIcons.icon(AppIcons.reminder, size: 14, color: palette.accent)
-                              : Icon(Icons.notifications_off_outlined, size: 14, color: palette.muted),
+                        StatusPill(StatusPill.labelFor(status)),
+                      ] else if (dueToday && !isCompleted) ...[
+                        const SizedBox(width: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 1),
+                          child: Text(
+                            'Today',
+                            style: DaymarkText.custom(12.5, FontWeight.w500).copyWith(color: palette.accent),
+                          ),
                         ),
                       ],
                     ],
+                  ),
+                  const SizedBox(height: 5),
+                  Text.rich(
+                    TextSpan(
+                      style: metaStyle,
+                      children: [
+                        _iconSpan(AppIcons.clock, palette.muted),
+                        TextSpan(text: _formatReminderTime(reminder)),
+                        dot,
+                        TextSpan(text: category),
+                        if (repeating) ...[
+                          dot,
+                          _iconSpan(AppIcons.repeat, palette.muted),
+                          TextSpan(text: StatusPill.labelFor(reminder.repeatInterval)),
+                        ],
+                        // REM-06: will this reminder alert?
+                        if (alerts != null && alerts.isSupported && reminder.isUpcoming())
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Tooltip(
+                                message: alerts.alertsOn
+                                    ? 'Notification scheduled'
+                                    : 'Notifications are off',
+                                child: alerts.alertsOn
+                                    ? AppIcons.icon(AppIcons.reminder, size: 14, color: palette.accent)
+                                    : Icon(Icons.notifications_off_outlined, size: 14, color: palette.muted),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                   // REM-05: how the last occurrence went
                   if (lastOutcome != null) ...[
@@ -170,17 +193,6 @@ Widget reminderItemCard({
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 14, left: 6),
-            child: isMissedOrRejected
-                ? StatusPill(StatusPill.labelFor(status))
-                : (dueToday && !isCompleted
-                    ? Text(
-                        'Today',
-                        style: DaymarkText.custom(12.5, FontWeight.w500).copyWith(color: palette.accent),
-                      )
-                    : const SizedBox.shrink()),
-          ),
           if (onDelete != null)
             CardIconButton(
               icon: AppIcons.icon(AppIcons.delete, size: 18, color: palette.muted),
@@ -194,6 +206,15 @@ Widget reminderItemCard({
     ),
   );
 }
+
+/// A 14 px icon inline with meta text.
+InlineSpan _iconSpan(String icon, Color color) => WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 5),
+        child: AppIcons.icon(icon, size: 14, color: color),
+      ),
+    );
 
 String _formatReminderTime(ReminderItem reminder) {
   if (reminder.dueDate != null && reminder.dueDate!.isNotEmpty) {
