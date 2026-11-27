@@ -15,7 +15,7 @@ import 'package:notes_app/data/repository/task/task_repo.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
 import 'package:notes_app/views/screens/calendar/calendar_screen.dart';
-import 'package:notes_app/views/screens/home/widgets/notes_floating_action_button.dart';
+import 'package:notes_app/views/widgets/add_menu_fab.dart';
 import 'package:notes_app/views/screens/home/widgets/reminder_item_card.dart';
 import 'package:notes_app/views/screens/home/widgets/task_item_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -293,8 +293,8 @@ void main() {
     });
   });
 
-  group('Google-Style Expandable Speed Dial FAB Tests', () {
-    testWidgets('AddSpeedDialFab opens on tap and reveals option pills',
+  group('Add menu FAB Tests', () {
+    testWidgets('AddMenuFab opens on tap and reveals the add menu',
         (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.625;
@@ -311,7 +311,7 @@ void main() {
           builder: (context, child) => MaterialApp(
             theme: AppTheme.lightTheme,
             home: Scaffold(
-              floatingActionButton: AddSpeedDialFab(
+              floatingActionButton: AddMenuFab(
                 onNewNote: () => noteClicked = true,
                 onNewTask: () => taskClicked = true,
                 onNewReminder: () => reminderClicked = true,
@@ -322,21 +322,22 @@ void main() {
       );
       await tester.pump();
 
-      // Initially closed: button displays 'Add'
-      expect(find.text('Add'), findsOneWidget);
+      // Initially closed: the FAB is labelled 'Add' and the menu is hidden
+      expect(find.bySemanticsLabel('Add'), findsOneWidget);
+      expect(find.text('New note'), findsNothing);
 
       // Tap main FAB
-      await tester.tap(find.text('Add'));
+      await tester.tap(find.bySemanticsLabel('Add'));
       await tester.pumpAndSettle();
 
-      // Now open: displays 'Close', and speed dial pills are visible
-      expect(find.text('Close'), findsOneWidget);
-      expect(find.text('New Note'), findsOneWidget);
-      expect(find.text('New Task'), findsOneWidget);
-      expect(find.text('New Reminder'), findsOneWidget);
+      // Now open: the FAB is a close button and the menu rows are visible
+      expect(find.bySemanticsLabel('Close'), findsOneWidget);
+      expect(find.text('New note'), findsOneWidget);
+      expect(find.text('New task'), findsOneWidget);
+      expect(find.text('New reminder'), findsOneWidget);
 
-      // Tap New Task
-      await tester.tap(find.text('New Task'));
+      // Tap New task
+      await tester.tap(find.text('New task'));
       await tester.pumpAndSettle();
 
       expect(taskClicked, isTrue);

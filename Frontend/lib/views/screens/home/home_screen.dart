@@ -16,13 +16,13 @@ import 'package:notes_app/views/screens/home/widgets/reminder_form_modal.dart';
 import 'package:notes_app/views/screens/home/widgets/create_task_modal.dart';
 import 'package:notes_app/views/screens/home/widgets/note_item_card.dart';
 import 'package:notes_app/views/screens/home/widgets/notes_error_widget.dart';
-import 'package:notes_app/views/screens/home/widgets/notes_floating_action_button.dart';
 import 'package:notes_app/views/screens/home/widgets/notes_header_widget.dart';
 import 'package:notes_app/views/screens/home/widgets/notes_loading_widget.dart';
 import 'package:notes_app/views/screens/home/widgets/reminder_item_card.dart';
 import 'package:notes_app/views/screens/home/widgets/sync_failures_banner.dart';
 import 'package:notes_app/views/screens/home/widgets/task_item_card.dart';
 import 'package:notes_app/views/screens/note_details/note_details_screen.dart';
+import 'package:notes_app/views/widgets/add_menu_fab.dart';
 import 'package:notes_app/views/widgets/notification_permission_prompt.dart';
 import 'package:notes_app/views/widgets/undo_delete.dart';
 
@@ -202,9 +202,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       backgroundColor: palette.background,
+      // 20 from the right edge and 18 above the nav (Scaffold adds 16).
       floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: 12.h, right: 4.w),
-        child: AddSpeedDialFab(
+        padding: const EdgeInsets.only(bottom: 2, right: 4),
+        child: AddMenuFab(
           isOpen: _isSpeedDialOpen,
           onOpenChanged: (val) {
             setState(() {
@@ -382,7 +383,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             behavior: HitTestBehavior.opaque,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              color: Colors.black.withValues(alpha: 0.35),
+              color: palette.scrim,
             ),
           ),
         ),
