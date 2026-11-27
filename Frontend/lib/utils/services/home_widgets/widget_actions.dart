@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:ui' show DartPluginRegistrant;
 
@@ -195,6 +196,66 @@ class WidgetActionHandler {
   }
 }
 
+/// iOS: widget button taps recorded in the App Group by DaymarkWidgetIntent
+/// (ios/Shared/). The Dart callback usually applies them right away; when it
+/// couldn't run (the app's engine wasn't up), the app applies them on its
+/// next start or resume. Applying twice is harmless: actions are idempotent.
+class WidgetPendingActions {
+  final WidgetHost host;
+
+  WidgetPendingActions({required this.host});
+
+  Future<List<String>> _read() async {
+    final raw = await host.readString(DaymarkWidgets.pendingActionsKey);
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final json = jsonDecode(raw);
+      return json is List ? [for (final item in json) if (item is String) item] : const [];
+    } on FormatException {
+      return const [];
+    }
+  }
+
+  /// Applies every waiting action with [handler]; returns how many changed
+  /// something. Never throws.
+  Future<int> applyAll(WidgetActionHandler handler) async {
+    if (!host.isSupported) return 0;
+    try {
+      final links = await _read();
+      if (links.isEmpty) return 0;
+      var applied = 0;
+      for (final link in links) {
+        final outcome = await handler.handle(Uri.tryParse(link));
+        if (outcome == WidgetActionOutcome.applied) applied++;
+      }
+      await _removeWhere((link) => links.contains(link));
+      return applied;
+    } catch (error, stackTrace) {
+      log('Applying pending widget actions failed: $error', stackTrace: stackTrace);
+      return 0;
+    }
+  }
+
+  /// Drops [uri] once it has been applied.
+  Future<void> remove(Uri? uri) async {
+    if (uri == null || !host.isSupported) return;
+    try {
+      await _removeWhere((link) => Uri.tryParse(link) == uri);
+    } catch (error) {
+      log('Could not update the pending widget actions: $error');
+    }
+  }
+
+  Future<void> _removeWhere(bool Function(String link) test) async {
+    // Re-read: the widget may have recorded more taps meanwhile.
+    final remaining = (await _read()).where((link) => !test(link)).toList();
+    await host.saveString(
+      DaymarkWidgets.pendingActionsKey,
+      remaining.isEmpty ? null : jsonEncode(remaining),
+    );
+  }
+}
+
 /// Widget actions arriving while one is handled wait for it.
 Future<void> _queue = Future.value();
 
@@ -239,6 +300,8 @@ Future<void> _handleInBackground(Uri? uri) async {
       );
       final outcome = await handler.handle(uri);
       log('Widget action $uri: ${outcome.name}');
+      // iOS also queued it in case this callback couldn't run.
+      await WidgetPendingActions(host: HomeWidgetHost()).remove(uri);
     } finally {
       await graph.close();
     }

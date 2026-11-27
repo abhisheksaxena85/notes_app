@@ -168,6 +168,11 @@ class WidgetSnapshotService {
     await _running;
     try {
       await host.saveString(WidgetSnapshot.recentlyDoneKey, null);
+      // Taps on the signed-out user's widgets are not applied for anyone else.
+      await host.saveString(DaymarkWidgets.pendingActionsKey, null);
+      for (final key in DaymarkWidgets.optimisticKeys) {
+        await host.saveString(key, null);
+      }
       await _write(WidgetSnapshot.loggedOut(_now()));
     } catch (error, stackTrace) {
       log('Failed to clear the widgets: $error', stackTrace: stackTrace);

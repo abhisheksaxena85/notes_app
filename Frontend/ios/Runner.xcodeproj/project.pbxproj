@@ -10,12 +10,24 @@
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		4363615376675B3FC51EF9EA /* WidgetModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBE03817A6032E323537347E /* WidgetModels.swift */; };
+		5C274F1F39C535A12DBE02B1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EFF3D8973E241CDBE0C10D9D /* Assets.xcassets */; };
+		666993FFE42683C178D8CC69 /* DaymarkWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA58BA5F16A55682B43249DE /* DaymarkWidgetsBundle.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
+		971C8DE21A878754997F3D4D /* NextReminderWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = CED2DC24450232EAAA7FBFBF /* NextReminderWidget.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		9D5672E6D38A15DAD93130ED /* AddTaskIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2317A1D9C7BED0E7C8A7D92 /* AddTaskIntent.swift */; };
+		A12930F0AEDA7B40FCCB7575 /* WidgetStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = C70E5581CA865D441D5D8A1D /* WidgetStyle.swift */; };
+		B47E461BB516F3539F93995B /* DaymarkWidgetIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A26A50E4F5D84719EAB5EF6 /* DaymarkWidgetIntent.swift */; };
+		BE33A91F3C6803C9ED966525 /* DaymarkWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F40AFED627CDF691741FCE9B /* DaymarkWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C34168FDAB991CEBED14F14C /* DaymarkWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98D0BAC42678922B9D590D30 /* DaymarkWidgetShared.swift */; };
+		C4740D0094C4F2FDB28015E3 /* TasksWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AF0C3E1C60B8F74A70EB12F /* TasksWidget.swift */; };
+		CEA2E5BF53BC6EDDAFCA1E0B /* DaymarkWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98D0BAC42678922B9D590D30 /* DaymarkWidgetShared.swift */; };
+		E8D8C156B5B1DC195BF5AEE0 /* DaymarkWidgetIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A26A50E4F5D84719EAB5EF6 /* DaymarkWidgetIntent.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -26,9 +38,27 @@
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
 		};
+		53E762C1B8A24F426CAC9F19 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F99026D8A4DD9731439D9C4A;
+			remoteInfo = DaymarkWidgets;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		155D1A07EFA2AF66313AE217 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				BE33A91F3C6803C9ED966525 /* DaymarkWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -47,11 +77,16 @@
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		575916053FE7E30B57F66B94 /* DaymarkWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = DaymarkWidgets.entitlements; sourceTree = "<group>"; };
+		5A26A50E4F5D84719EAB5EF6 /* DaymarkWidgetIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DaymarkWidgetIntent.swift; sourceTree = "<group>"; };
+		5AF0C3E1C60B8F74A70EB12F /* TasksWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TasksWidget.swift; sourceTree = "<group>"; };
+		69E043DA2763123926CE55D0 /* Runner.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
+		88937FD7CE204EDE7C358592 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -59,9 +94,24 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		98D0BAC42678922B9D590D30 /* DaymarkWidgetShared.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DaymarkWidgetShared.swift; sourceTree = "<group>"; };
+		A2317A1D9C7BED0E7C8A7D92 /* AddTaskIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AddTaskIntent.swift; sourceTree = "<group>"; };
+		AA58BA5F16A55682B43249DE /* DaymarkWidgetsBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DaymarkWidgetsBundle.swift; sourceTree = "<group>"; };
+		BBE03817A6032E323537347E /* WidgetModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetModels.swift; sourceTree = "<group>"; };
+		C70E5581CA865D441D5D8A1D /* WidgetStyle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetStyle.swift; sourceTree = "<group>"; };
+		CED2DC24450232EAAA7FBFBF /* NextReminderWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NextReminderWidget.swift; sourceTree = "<group>"; };
+		EFF3D8973E241CDBE0C10D9D /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F40AFED627CDF691741FCE9B /* DaymarkWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; name = DaymarkWidgets.appex; path = DaymarkWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		11DB9D991F25ABB4FB75B4B1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EB1CF9000F007C117D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -73,12 +123,37 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1B968DEF4D86C75C34FAE22A /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				98D0BAC42678922B9D590D30 /* DaymarkWidgetShared.swift */,
+				5A26A50E4F5D84719EAB5EF6 /* DaymarkWidgetIntent.swift */,
+			);
+			name = Shared;
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXGroup;
 			children = (
 				331C807B294A618700263BE5 /* RunnerTests.swift */,
 			);
 			path = RunnerTests;
+			sourceTree = "<group>";
+		};
+		7638FB41991640AFE296412A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				88C35AF916F0C79AB3E47AF0 /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		88C35AF916F0C79AB3E47AF0 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = iOS;
 			sourceTree = "<group>";
 		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
@@ -100,6 +175,9 @@
 				97C146F01CF9000F007C117D /* Runner */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
+				1B968DEF4D86C75C34FAE22A /* Shared */,
+				7638FB41991640AFE296412A /* Frameworks */,
+				EFFB90F92DD3D79B0B564663 /* DaymarkWidgets */,
 			);
 			sourceTree = "<group>";
 		};
@@ -108,6 +186,7 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
+				F40AFED627CDF691741FCE9B /* DaymarkWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -124,8 +203,26 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				69E043DA2763123926CE55D0 /* Runner.entitlements */,
+				A2317A1D9C7BED0E7C8A7D92 /* AddTaskIntent.swift */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		EFFB90F92DD3D79B0B564663 /* DaymarkWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				AA58BA5F16A55682B43249DE /* DaymarkWidgetsBundle.swift */,
+				BBE03817A6032E323537347E /* WidgetModels.swift */,
+				C70E5581CA865D441D5D8A1D /* WidgetStyle.swift */,
+				5AF0C3E1C60B8F74A70EB12F /* TasksWidget.swift */,
+				CED2DC24450232EAAA7FBFBF /* NextReminderWidget.swift */,
+				88937FD7CE204EDE7C358592 /* Info.plist */,
+				575916053FE7E30B57F66B94 /* DaymarkWidgets.entitlements */,
+				EFF3D8973E241CDBE0C10D9D /* Assets.xcassets */,
+			);
+			name = DaymarkWidgets;
+			path = DaymarkWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -157,11 +254,13 @@
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
+				155D1A07EFA2AF66313AE217 /* Embed Foundation Extensions */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				F8CDDB5DCE94BD31B22339F0 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -170,6 +269,23 @@
 			productName = Runner;
 			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
 			productType = "com.apple.product-type.application";
+		};
+		F99026D8A4DD9731439D9C4A /* DaymarkWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7E170D67C474F2AB401E4FEE /* Build configuration list for PBXNativeTarget "DaymarkWidgets" */;
+			buildPhases = (
+				4E7384C00DD61D48E5804D07 /* Sources */,
+				11DB9D991F25ABB4FB75B4B1 /* Frameworks */,
+				E7A0A99C493CE612F131D902 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DaymarkWidgets;
+			productName = DaymarkWidgets;
+			productReference = F40AFED627CDF691741FCE9B /* DaymarkWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -209,6 +325,7 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
+				F99026D8A4DD9731439D9C4A /* DaymarkWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -229,6 +346,14 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E7A0A99C493CE612F131D902 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5C274F1F39C535A12DBE02B1 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -277,6 +402,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4E7384C00DD61D48E5804D07 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				666993FFE42683C178D8CC69 /* DaymarkWidgetsBundle.swift in Sources */,
+				4363615376675B3FC51EF9EA /* WidgetModels.swift in Sources */,
+				A12930F0AEDA7B40FCCB7575 /* WidgetStyle.swift in Sources */,
+				C4740D0094C4F2FDB28015E3 /* TasksWidget.swift in Sources */,
+				971C8DE21A878754997F3D4D /* NextReminderWidget.swift in Sources */,
+				CEA2E5BF53BC6EDDAFCA1E0B /* DaymarkWidgetShared.swift in Sources */,
+				E8D8C156B5B1DC195BF5AEE0 /* DaymarkWidgetIntent.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EA1CF9000F007C117D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -284,6 +423,9 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
+				9D5672E6D38A15DAD93130ED /* AddTaskIntent.swift in Sources */,
+				C34168FDAB991CEBED14F14C /* DaymarkWidgetShared.swift in Sources */,
+				B47E461BB516F3539F93995B /* DaymarkWidgetIntent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -294,6 +436,12 @@
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
+		};
+		F8CDDB5DCE94BD31B22339F0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = DaymarkWidgets;
+			target = F99026D8A4DD9731439D9C4A /* DaymarkWidgets */;
+			targetProxy = 53E762C1B8A24F426CAC9F19 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -376,6 +524,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = AZ4GYA78GD;
 				ENABLE_BITCODE = NO;
@@ -386,6 +535,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.devquorix.daymark;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DAYMARK_APP";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -436,6 +586,64 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
+			};
+			name = Profile;
+		};
+		4FBA1788D17B77D2CBAC0E48 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = "";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DaymarkWidgets/DaymarkWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = AZ4GYA78GD;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DaymarkWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.devquorix.daymark.DaymarkWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		8F094BD66A2293CA9F1D29CF /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = "";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DaymarkWidgets/DaymarkWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = AZ4GYA78GD;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DaymarkWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.devquorix.daymark.DaymarkWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Profile;
 		};
@@ -558,6 +766,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = AZ4GYA78GD;
 				ENABLE_BITCODE = NO;
@@ -568,6 +777,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.devquorix.daymark;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DAYMARK_APP";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -581,6 +791,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = AZ4GYA78GD;
 				ENABLE_BITCODE = NO;
@@ -591,11 +802,40 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.devquorix.daymark;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DAYMARK_APP";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
+		};
+		DDAE62E030A659B143B60979 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = "";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = DaymarkWidgets/DaymarkWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = AZ4GYA78GD;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DaymarkWidgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.devquorix.daymark.DaymarkWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
 		};
 /* End XCBuildConfiguration section */
 
@@ -606,6 +846,16 @@
 				331C8088294A63A400263BE5 /* Debug */,
 				331C8089294A63A400263BE5 /* Release */,
 				331C808A294A63A400263BE5 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7E170D67C474F2AB401E4FEE /* Build configuration list for PBXNativeTarget "DaymarkWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4FBA1788D17B77D2CBAC0E48 /* Release */,
+				DDAE62E030A659B143B60979 /* Debug */,
+				8F094BD66A2293CA9F1D29CF /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

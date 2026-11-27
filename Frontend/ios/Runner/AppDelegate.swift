@@ -2,6 +2,8 @@ import Flutter
 import UIKit
 // Needed for FlutterLocalNotificationsPlugin.setPluginRegistrantCallback.
 import flutter_local_notifications
+// W-02/W-06: widget buttons run Dart in a background engine.
+import home_widget
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -9,6 +11,13 @@ import flutter_local_notifications
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    // Interactive widgets (iOS 17): the engine home_widget starts for the
+    // Dart callback needs the plugins (database, secure storage, ...).
+    if #available(iOS 17, *) {
+      HomeWidgetBackgroundWorker.setPluginRegistrantCallback { registry in
+        GeneratedPluginRegistrant.register(with: registry)
+      }
+    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 

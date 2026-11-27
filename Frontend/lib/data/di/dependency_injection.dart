@@ -13,6 +13,7 @@ import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/connectivity_service.dart';
 import 'package:notes_app/utils/services/digest_scheduler.dart';
+import 'package:notes_app/utils/services/home_widgets/widget_actions.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_host.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_inbox.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_snapshot_service.dart';
@@ -62,6 +63,24 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<ConnectivityService>(
     () => ConnectivityService.device(),
     dispose: (service) => service.dispose(),
+  );
+
+  /// Widget buttons applied in the app (W-06): taps iOS queued while the
+  /// Dart callback couldn't run, and the iOS 15/16 links that open the app.
+  getIt.registerLazySingleton<WidgetActionHandler>(
+    () => WidgetActionHandler(
+      database: getIt<AppDatabase>(),
+      taskRepo: getIt<TaskRepo>(),
+      scheduler: getIt<ReminderScheduler>(),
+      reminderActions: getIt<ReminderActionHandler>(),
+      widgets: getIt<WidgetSnapshotService>(),
+      currentUserId: () => getIt<SessionService>().userId,
+      inbox: getIt<WidgetTaskInbox>(),
+      pushChanges: () => getIt<OfflineSyncService>().requestSync(),
+    ),
+  );
+  getIt.registerLazySingleton<WidgetPendingActions>(
+    () => WidgetPendingActions(host: HomeWidgetHost()),
   );
 
   /// Tasks added from the iOS "Add task in Daymark" intent (W-03).

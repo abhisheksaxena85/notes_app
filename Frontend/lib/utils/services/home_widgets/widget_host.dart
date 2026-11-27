@@ -17,6 +17,16 @@ class DaymarkWidgets {
   /// WidgetKit kinds.
   static const tasksIOS = 'DaymarkTasksWidget';
   static const reminderIOS = 'DaymarkNextReminderWidget';
+
+  /// iOS: widget button taps the app still has to apply (a JSON list of
+  /// `daymark://widget/...` links, written by DaymarkWidgetIntent).
+  static const pendingActionsKey = 'daymark_widget_pending_actions';
+
+  /// iOS: taps the widgets show at once until the app confirms them.
+  static const optimisticKeys = [
+    'daymark_widget_optimistic_done',
+    'daymark_widget_answered_reminders',
+  ];
 }
 
 /// The home_widget calls the app makes, behind an interface so tests can

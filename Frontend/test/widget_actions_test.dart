@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:notes_app/data/local/database/app_database.dart';
@@ -7,6 +9,7 @@ import 'package:notes_app/data/repository/reminder/reminder_repo.dart';
 import 'package:notes_app/data/repository/task/task_repo.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_actions.dart';
+import 'package:notes_app/utils/services/home_widgets/widget_host.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_snapshot.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_snapshot_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
@@ -259,6 +262,50 @@ void main() {
       );
       expect(await handler.handle(Uri.parse('daymark://widget/explode?id=3')), WidgetActionOutcome.ignored);
       expect(await handler.handle(null), WidgetActionOutcome.ignored);
+    });
+  });
+
+  group('WidgetPendingActions (iOS taps queued in the App Group)', () {
+    test('applies every queued tap once and empties the queue', () async {
+      sync.setUserId(userId);
+      final localId = await newTask('Queued');
+      final id = (await taskRow(localId)).serverId!;
+      final link = 'daymark://widget/toggle-task?id=$id&homeWidget';
+      // The same tap twice (the callback ran too) and one for a deleted task.
+      host.saved[DaymarkWidgets.pendingActionsKey] =
+          jsonEncode([link, link, 'daymark://widget/toggle-task?id=999999']);
+
+      final applied = await WidgetPendingActions(host: host).applyAll(handler);
+
+      expect(applied, 1);
+      expect((await taskRow(localId)).status, 'COMPLETED');
+      expect(host.saved[DaymarkWidgets.pendingActionsKey], isNull);
+    });
+
+    test('remove drops only the applied link', () async {
+      host.saved[DaymarkWidgets.pendingActionsKey] = jsonEncode([
+        'daymark://widget/toggle-task?id=1&homeWidget',
+        'daymark://widget/toggle-task?id=2&homeWidget',
+      ]);
+
+      await WidgetPendingActions(host: host)
+          .remove(Uri.parse('daymark://widget/toggle-task?id=1&homeWidget'));
+
+      expect(jsonDecode(host.saved[DaymarkWidgets.pendingActionsKey]!), [
+        'daymark://widget/toggle-task?id=2&homeWidget',
+      ]);
+    });
+
+    test('logout clears queued taps and the optimistic state', () async {
+      host.saved[DaymarkWidgets.pendingActionsKey] = jsonEncode(['daymark://widget/toggle-task?id=1']);
+      host.saved[DaymarkWidgets.optimisticKeys.first] = '{"1": 1}';
+      signedIn = 0;
+
+      await handler.widgets.showLoggedOut();
+
+      expect(host.saved[DaymarkWidgets.pendingActionsKey], isNull);
+      expect(host.saved[DaymarkWidgets.optimisticKeys.first], isNull);
+      expect(host.snapshot!['loggedIn'], isFalse);
     });
   });
 

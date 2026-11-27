@@ -97,11 +97,17 @@ Future<void> initialize() async {
       userChanges: session.changes,
       syncCompletions: getIt<OfflineSyncService>().completions,
     );
-  // W-03: tasks added through the iOS App Intent while the app was closed.
+  // W-03 / W-06: tasks added through the iOS App Intent and widget taps iOS
+  // queued while the app was closed.
   final inbox = getIt<WidgetTaskInbox>();
-  unawaited(inbox.importAll());
+  Future<void> catchUpWidgets() async {
+    await getIt<WidgetPendingActions>().applyAll(getIt<WidgetActionHandler>());
+    await inbox.importAll();
+  }
+
+  unawaited(catchUpWidgets());
   session.changes.listen((userId) {
-    if (userId != 0) unawaited(inbox.importAll());
+    if (userId != 0) unawaited(catchUpWidgets());
   });
   unawaited(_listenForWidgetLaunches());
   // Sync queued changes when the app returns to the foreground too, not only
@@ -115,9 +121,23 @@ Future<void> initialize() async {
       // REM-03: time zone changes and occurrences missed while closed.
       unawaited(scheduler.onAppResumed());
       unawaited(digests.reconcile());
-      unawaited(inbox.importAll().then((_) => widgets.onAppResumed()));
+      unawaited(catchUpWidgets().then((_) => widgets.onAppResumed()));
     },
   );
+}
+
+/// A widget tap that opened the app: a screen to show, or (iOS 15/16, where
+/// widget buttons can only open the app) an action to apply first.
+void _onWidgetLaunch(Uri? uri) {
+  if (WidgetAction.parse(uri) == null) {
+    routeWidgetLaunch(uri);
+    return;
+  }
+  unawaited(() async {
+    await getIt<WidgetActionHandler>().handle(uri);
+    await getIt<WidgetPendingActions>().remove(uri);
+  }());
+  routeWidgetLaunch(Uri.parse('daymark://workspace'));
 }
 
 /// W-01: widget taps that opened the app (cold start) or brought it to the
@@ -129,10 +149,10 @@ Future<void> _listenForWidgetLaunches() async {
     // W-02: ticking a task or answering a reminder on a widget.
     await HomeWidget.registerInteractivityCallback(widgetInteractivityCallback);
     HomeWidget.widgetClicked.listen(
-      routeWidgetLaunch,
+      _onWidgetLaunch,
       onError: (Object error) => log('Widget click failed: $error'),
     );
-    routeWidgetLaunch(await HomeWidget.initiallyLaunchedFromHomeWidget());
+    _onWidgetLaunch(await HomeWidget.initiallyLaunchedFromHomeWidget());
   } catch (error, stackTrace) {
     log('Widget launches are unavailable: $error', stackTrace: stackTrace);
   }
