@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FIX-02: flutter_local_notifications looks the notification icon up by
+     name at runtime (AndroidInitializationSettings('ic_stat_daymark') and the
+     icon of every notification), so nothing references it from code or XML.
+     Release builds shrink resources and used to drop it: initialize() then
+     threw PlatformException(invalid_icon), which broke the widget quick add,
+     widget ticks and notification actions (BackgroundGraph.open) and left
+     the app without notifications. Keep it. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_daymark" />

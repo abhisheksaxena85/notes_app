@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:notes_app/data/local/shared_preference/preference.dart';
@@ -16,34 +17,69 @@ import 'package:notes_app/views/widgets/quick_add_task_sheet.dart';
 
 /// W-03 (Android): the whole app QuickAddTaskActivity runs: only the
 /// quick-add sheet, over the home screen, on a transparent window. It uses
-/// the background dependency graph (no sync loop, no get_it) and finishes
-/// after saving or when the user taps outside.
+/// the light task graph (FIX-02: no notifications, no reminder scheduler, no
+/// sync loop, no get_it) and finishes after saving or when the user taps
+/// outside.
 void runQuickAddTaskApp() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const QuickAddTaskApp());
 }
 
 class QuickAddTaskApp extends StatefulWidget {
-  const QuickAddTaskApp({super.key});
+  const QuickAddTaskApp({
+    super.key,
+    this.openGraph = TaskGraph.open,
+    this.widgetHost,
+    this.onFinish,
+  });
+
+  /// Opens what saving a task needs (tests pass an in-memory one).
+  final Future<TaskGraph> Function() openGraph;
+
+  /// Where the widget snapshot goes (home_widget by default).
+  final WidgetHost? widgetHost;
+
+  /// Closes the pop-up (finishes the activity by default).
+  final VoidCallback? onFinish;
 
   @override
   State<QuickAddTaskApp> createState() => _QuickAddTaskAppState();
 }
 
 class _QuickAddTaskAppState extends State<QuickAddTaskApp> {
-  BackgroundGraph? _graph;
+  TaskGraph? _graph;
   Object? _error;
   ThemeMode _themeMode = ThemeMode.light;
+
+  /// QuickAddTaskActivity says when its window gains input focus.
+  static const _activity = MethodChannel('com.invospec.daymark/quick_add');
 
   @override
   void initState() {
     super.initState();
+    _activity.setMethodCallHandler(_onActivityCall);
     unawaited(_open());
+  }
+
+  @override
+  void dispose() {
+    _activity.setMethodCallHandler(null);
+    super.dispose();
+  }
+
+  /// FIX-02: with the app's process already running, the title is focused
+  /// before the window has input focus and Android drops that keyboard
+  /// request. Ask again once the window is focused.
+  Future<void> _onActivityCall(MethodCall call) async {
+    if (call.method != 'windowFocused') return;
+    final focused = FocusManager.instance.primaryFocus?.context;
+    if (focused?.findAncestorWidgetOfExactType<EditableText>() == null) return;
+    await SystemChannels.textInput.invokeMethod<void>('TextInput.show');
   }
 
   Future<void> _open() async {
     try {
-      final graph = await BackgroundGraph.open();
+      final graph = await widget.openGraph();
       if (!mounted) {
         unawaited(graph.close());
         return;
@@ -56,7 +92,9 @@ class _QuickAddTaskAppState extends State<QuickAddTaskApp> {
         _themeMode = dark ? ThemeMode.dark : ThemeMode.light;
       });
     } catch (error, stackTrace) {
+      // debugPrint too: log() never reaches logcat in release builds.
       log('Quick add could not start: $error', stackTrace: stackTrace);
+      debugPrint('Quick add could not start: $error\n$stackTrace');
       if (mounted) setState(() => _error = error);
     }
   }
@@ -66,7 +104,7 @@ class _QuickAddTaskAppState extends State<QuickAddTaskApp> {
     await saveQuickAddTask(draft, repo: graph.taskRepo, userId: graph.userId);
     await WidgetSnapshotService(
       database: graph.database,
-      host: HomeWidgetHost(),
+      host: widget.widgetHost ?? HomeWidgetHost(),
       currentUserId: () => graph.userId,
     ).refresh();
     // A short upload attempt; the app's sync sends it later otherwise.
@@ -80,7 +118,12 @@ class _QuickAddTaskAppState extends State<QuickAddTaskApp> {
 
   void _finish() {
     unawaited(_graph?.close());
-    unawaited(SystemNavigator.pop());
+    final onFinish = widget.onFinish;
+    if (onFinish != null) {
+      onFinish();
+    } else {
+      unawaited(SystemNavigator.pop());
+    }
   }
 
   @override
@@ -127,7 +170,7 @@ class _QuickAddTaskAppState extends State<QuickAddTaskApp> {
     );
   }
 
-  Widget _body(BuildContext context, BackgroundGraph? graph) {
+  Widget _body(BuildContext context, TaskGraph? graph) {
     final palette = context.daymark;
     if (_error != null || (graph != null && graph.userId == 0)) {
       return Padding(
@@ -142,9 +185,12 @@ class _QuickAddTaskAppState extends State<QuickAddTaskApp> {
             ),
             const SizedBox(height: 6),
             Text(
-              _error != null
-                  ? 'Open Daymark and try again.'
-                  : 'Open the app and sign in to add tasks from the widget.',
+              _error == null
+                  ? 'Open the app and sign in to add tasks from the widget.'
+                  // Debug builds show what failed; release keeps it friendly.
+                  : kDebugMode
+                      ? 'Quick add could not start: $_error'
+                      : 'Open Daymark and try again.',
               style: DaymarkText.preview.copyWith(color: palette.muted),
             ),
             const SizedBox(height: 16),

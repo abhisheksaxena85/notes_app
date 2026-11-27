@@ -36,14 +36,17 @@ Future<void> confirmLogout(BuildContext context) async {
 
 Future<void> logOutAndShowLogin(BuildContext context) async {
   // Taken before the await: this widget may be gone by the time it returns.
+  // Resetting the controllers rebuilds the Profile tab into its "Unable to
+  // load profile" state, which unmounts the Sign out button's context, so
+  // navigate with the navigator, not with that context.
   final container = ProviderScope.containerOf(context, listen: false);
+  final navigator = Navigator.of(context);
   await getIt<SessionService>().logout();
   for (final controller in sessionScopedControllers) {
     container.invalidate(controller);
   }
-  if (context.mounted) {
-    Navigator.pushAndRemoveUntil(
-      context,
+  if (navigator.mounted) {
+    navigator.pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const LoginScreen()),
       (route) => false,
     );
