@@ -3,7 +3,7 @@
 The source of truth for the redesign. The visual mockups live on the design canvas:
 https://claude.ai/artifact/5fNFpQwzriQRzZB2atnQut (only the project owner can open it). Everything needed to build it is written here, so the canvas is optional.
 
-**Look:** soft off-white and soft charcoal (never pure `#FFFFFF` / `#000000`), the Inter typeface, 1 px hairline borders instead of shadows, and **one accent colour** used only for primary buttons, the active tab, checkboxes, links and key icons.
+**Look:** soft off-white and soft charcoal (never pure `#FFFFFF` / `#000000`), the Inter typeface, cards with a 0.5 px soft border and a soft shadow (§3), and **one accent colour** used only for primary buttons, the active tab, checkboxes, links and key icons.
 
 **Accent:** **blue is the default.** Dark orange is also defined, and switching between them is a one-line change (`DaymarkAccent.current`).
 
@@ -21,7 +21,8 @@ https://claude.ai/artifact/5fNFpQwzriQRzZB2atnQut (only the project owner can op
 | `inkSecondary` | `#45474D` | `#C4C5C9` | Body previews, unselected chip text |
 | `muted` | `#6A6C72` | `#A0A2A8` | Meta text, inactive nav, placeholders (passes 4.5:1) |
 | `disabled` | `#B4B5B9` | `#5E6066` | Out-of-month days, disabled icons |
-| `line` | `#E3E3DF` | `#34363C` | Card borders (cards use `#E6E6E2` / `#323338`), dividers (`#ECECE8`) |
+| `line` | `#E3E3DF` | `#34363C` | Input and button borders; dividers (`#ECECE8`) |
+| `cardBorder` | `#E9E9E5` | `#33353A` | Card borders, 0.5 px (§3) |
 | `chipBorder` | `#DCDCD8` | `#3A3B41` | Unselected filter and category chips |
 | `accent` (blue) | `#2F6BDB` | `#6B9BF2` | Primary actions |
 | `accent` (dark orange) | `#B9501A` | `#E0793A` | Alternative accent |
@@ -56,9 +57,30 @@ The previous sage-green palette (`#5E7668` and friends) is retired. Status colou
 
 ## 3. Shape, spacing, elevation
 
-- **Radius:** card 16 · large card (month grid, profile card) 20 · input 14 · primary button 16 · FAB 18 · filter chip pill (height 34) 17 · category chip pill (height 32) 16 · tag chip 7–9 · icon tile 10–11 · sheet top corners 26 · avatar = circle.
-- **Spacing:** screen horizontal padding 20 (note editor 22). Content starts 8 below the safe area (about 52 from the top on a notched phone). Section gap 22. Gap between cards 8. Card padding 13–14. Bottom-nav height 74.
-- **Elevation:** cards have **no shadow**, only a 1 px border. Shadows are used in just two places: the FAB (`accent` at 30 % opacity, blur 20, y 8) and the add-menu pills (`black` 35 % in dark mode). Bottom sheets sit on the scrim with no shadow.
+- **Cards** (`DaymarkCard`, `lib/views/widgets/daymark_card.dart`) are used for every card: task, reminder and note cards, stat cards, the calendar month card and day list, the profile card and the settings groups. Each card is a `surface` fill with:
+  - **Border:** 0.5 px in `cardBorder` (`#E9E9E5` light, `#33353A` dark).
+  - **Shadow, light:** two soft layers, `ink` at 5 % (blur 14, y 4) plus `ink` at 3 % (blur 3, y 1).
+  - **Shadow, dark:** one layer, black at 28 % (blur 16, y 6). The hairline border stays.
+  - **Performance:** a single `DecoratedBox` with a const `BoxDecoration` per theme and radius, so long lists stay smooth. Cards add no clip layer. Only grouped cards whose rows are tappable edge to edge (the settings groups and the calendar day list) clip their content to the corners.
+- **No shadow** on chips, inputs, buttons, or the rows and tiles inside a card.
+- **Radius:**
+  - card 18 · large card (month card, profile card) 22
+  - input 14 · primary button 16 · FAB 18
+  - filter chip pill (height 34) 17 · category chip pill (height 32) 16 · tag chip 7–9
+  - icon tile 10–11 · sheet top corners 26 · avatar = circle
+- **Spacing:**
+  - Screen horizontal padding 20 (note editor 22). Content starts 8 below the safe area (about 52 from the top on a notched phone).
+  - Section gap 22. **Gap between cards 10**, stacked or side by side (stat cards).
+  - **Card padding 16.** Stat cards use 14 × 12. The month card uses 14 at the sides with 10 above the grid.
+  - **Title to meta line 6** inside item cards.
+  - Bottom-nav height 74.
+- **Elevation:** apart from cards, shadows are used in only three places:
+  - the FAB (`accent` at 30 % opacity, blur 20, y 8);
+  - the add-menu pills (`black` 35 % in dark mode);
+  - the selected Month / Week segment (a tiny shadow).
+
+  Bottom sheets and dialogs sit on the scrim with no shadow.
+- **Loading skeletons** use the real card (same border, shadow, radius and padding). Only the contents shimmer.
 - **Touch targets:** at least 44×44 for every tappable icon.
 - **Don't use** coloured left-edge strips on cards (the old status strip is removed), gradients, or emoji.
 
@@ -110,7 +132,7 @@ The icon keeps the blue check even if the accent is switched to orange.
 
 **Header (Workspace):** date line (`meta`, `muted`, e.g. "Friday, 27 November"), then the greeting "Good morning, {firstName}" (`title`). On the right, a 44 px avatar circle (`accentSoft` fill, initials in `accent`) that opens Profile. The greeting changes with the time of day: morning / afternoon / evening.
 
-**Stats row:** three equal cards (`surface`, border, radius 12): a number (16/600) over a label (12, `muted`). Labels: "tasks today", "reminders", "notes".
+**Stats row:** three equal cards (the shared card, padding 14 × 12, 10 apart): a number (16/600) over a label (12, `muted`). Labels: "tasks today", "reminders", "notes".
 
 **Search:** height 44, radius 14, `surfaceMuted` fill, no border, search icon in `muted`, placeholder "Search notes, tasks, reminders".
 
@@ -118,7 +140,7 @@ The icon keeps the blue check even if the accent is switched to orange.
 
 **Section header:** "Tasks" plus the count in `muted`, with "See all" in `accent` on the right.
 
-**Task card:** `surface`, border, radius 16, padding 13/14. Leading 22 px round checkbox:
+**Task card:** the shared card (§3: padding 16, radius 18, 10 between cards). Leading 24 px round checkbox:
 - pending: 1.6 px `accent` ring.
 - completed: `success` fill with a white check. The title switches to `muted` with strikethrough, and the meta line shows "Done" in `success`.
 - missed / rejected: 1.6 px `danger` ring plus a "Missed" / "Rejected" pill (`dangerSoft` fill, `danger` text, 12/600, radius 8).
@@ -131,7 +153,7 @@ The title is `bodyStrong`. The meta line has a clock icon and time · category �
 
 **FAB and add menu:** 56×56, radius 18, `accent` fill, plus icon in `onAccent`, 20 from the right edge and 18 above the nav. Tapping it opens the add menu: three rows stacked above the FAB, each a label pill (`#34353A` dark / `surface` light, 14/500, radius 12) plus a 48 px icon tile (radius 15) with an `accent` icon, for New note, New task and New reminder. The FAB icon turns into a close icon. Animate with a 200 ms scale and fade, staggered by 30 ms.
 
-**Calendar:** the "Calendar" title with a Month / Week segmented control on the right (`surfaceMuted` track, selected segment `surface` with a tiny shadow). The month card (`surface`, radius 20) has chevrons, the month name (15/600), weekday initials (11.5/500, `muted`) and a 7-column grid of 42 px cells:
+**Calendar:** the "Calendar" title with a Month / Week segmented control on the right (`surfaceMuted` track, selected segment `surface` with a tiny shadow). The month card (the shared card, radius 22) has chevrons, the month name (15/600), weekday initials (11.5/500, `muted`) and a 7-column grid of 42 px cells:
 - the day number sits in a 30 px circle; the selected day has an `accent` fill with `onAccent` text;
 - out-of-month days use `disabled`;
 - below the number, a count badge (height 13, min-width 16, 9.5/600, `accentSoft` with `accent` text; inverted on the selected day) shows notes + tasks + reminders.

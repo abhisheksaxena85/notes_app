@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/views/widgets/daymark_card.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
@@ -53,9 +54,9 @@ class ProfileLoadingWidget extends StatelessWidget {
           Row(
             children: [
               stat(0.5),
-              const SizedBox(width: 8),
+              const SizedBox(width: DaymarkCard.gap),
               stat(0.75),
-              const SizedBox(width: 8),
+              const SizedBox(width: DaymarkCard.gap),
               stat(0.65),
             ],
           ),

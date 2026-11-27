@@ -78,9 +78,9 @@ class BuildProfileWidget extends ConsumerWidget {
         Row(
           children: [
             Expanded(child: _stat(palette, noteCount, "Notes")),
-            const SizedBox(width: 8),
+            const SizedBox(width: DaymarkCard.gap),
             Expanded(child: _stat(palette, tasksDone, "Tasks done")),
-            const SizedBox(width: 8),
+            const SizedBox(width: DaymarkCard.gap),
             Expanded(child: _stat(palette, reminderCount, "Reminders")),
           ],
         ),
@@ -248,8 +248,7 @@ class ProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DaymarkCard(
-      radius: 20,
-      padding: const EdgeInsets.all(16),
+      radius: DaymarkCard.largeRadius,
       child: Row(
         children: [
           avatar,
@@ -302,6 +301,8 @@ class SettingsGroup extends StatelessWidget {
     final palette = context.daymark;
     return DaymarkCard(
       padding: EdgeInsets.zero,
+      // Rows are tappable edge to edge: keep their ink inside the corners.
+      clipContent: true,
       child: Column(
         children: [
           for (var i = 0; i < children.length; i++) ...[

@@ -56,9 +56,10 @@ Widget reminderItemCard({
   final lastOutcome = repeating ? _lastOutcomeLabel(reminder) : null;
 
   return Padding(
-    padding: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.only(bottom: DaymarkCard.gap),
     child: DaymarkCard(
-      padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
+      // 16 to the bell tile (10 + 6) and to the text (8 + 8).
+      padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
       onTap: onTap,
       onLongPress: onStatusSelected == null
           ? null
@@ -149,7 +150,7 @@ Widget reminderItemCard({
                       ],
                     ],
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 6),
                   Text.rich(
                     TextSpan(
                       style: metaStyle,

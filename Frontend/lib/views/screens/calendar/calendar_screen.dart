@@ -230,8 +230,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ),
               const SizedBox(height: 18),
               DaymarkCard(
-                radius: 20,
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                radius: DaymarkCard.largeRadius,
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
                 child: _mode == CalendarMode.month
                     ? _buildMonth(palette, countFor)
                     : _buildWeek(palette, countFor),
@@ -513,6 +513,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     ];
     return DaymarkCard(
       padding: EdgeInsets.zero,
+      // Rows are tappable edge to edge: keep their ink inside the corners.
+      clipContent: true,
       child: Column(
         children: [
           for (var i = 0; i < rows.length; i++) ...[

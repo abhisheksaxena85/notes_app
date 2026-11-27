@@ -29,10 +29,9 @@ Widget noteItemCard({
   final String dateText = _formatDate(note.updatedAt ?? note.createdAt);
 
   return Padding(
-    padding: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.only(bottom: DaymarkCard.gap),
     child: DaymarkCard(
       onTap: onTap,
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -61,7 +60,7 @@ Widget noteItemCard({
             style: DaymarkText.custom(15, FontWeight.w600).copyWith(color: palette.ink),
           ),
           if (content.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               content,
               maxLines: 2,

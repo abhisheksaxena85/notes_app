@@ -8,7 +8,7 @@ import 'package:notes_app/views/screens/home/widgets/item_status_sheet.dart';
 import 'package:notes_app/views/widgets/daymark_card.dart';
 import 'package:notes_app/views/widgets/status_pill.dart';
 
-/// A task on the Workspace (design/README.md §6). The 22 px checkbox is an
+/// A task on the Workspace (design/README.md §6). The 24 px checkbox is an
 /// `accent` ring when pending, a `success` fill when completed and a `danger`
 /// ring plus a Missed / Rejected pill when missed or rejected.
 Widget taskItemCard({
@@ -35,9 +35,11 @@ Widget taskItemCard({
   const dot = TextSpan(text: '\u00A0\u00A0·  ');
 
   return Padding(
-    padding: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.only(bottom: DaymarkCard.gap),
     child: DaymarkCard(
-      padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
+      // 16 to the checkbox ring (6 + the 44 px target's 10) and to the text
+      // (7 + 9).
+      padding: const EdgeInsets.fromLTRB(6, 7, 6, 7),
       onTap: onTap,
       onLongPress: onStatusSelected == null
           ? null
@@ -56,7 +58,7 @@ Widget taskItemCard({
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 22 px checkbox in a 44 px touch target.
+          // 24 px checkbox in a 44 px touch target.
           Semantics(
             checked: isCompleted,
             label: isCompleted ? 'Mark as not done' : 'Mark as done',
@@ -70,8 +72,8 @@ Widget taskItemCard({
                 child: Center(
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    width: 22,
-                    height: 22,
+                    width: 24,
+                    height: 24,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isCompleted ? palette.success : Colors.transparent,
@@ -84,7 +86,7 @@ Widget taskItemCard({
                     ),
                     child: isCompleted
                         ? Center(
-                            child: AppIcons.icon(AppIcons.check, size: 14, color: palette.onAccent),
+                            child: AppIcons.icon(AppIcons.check, size: 15, color: palette.onAccent),
                           )
                         : null,
                   ),

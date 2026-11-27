@@ -143,8 +143,8 @@ class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: p.cardBorder),
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: p.cardBorder, width: 0.5),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(

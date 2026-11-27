@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/views/widgets/daymark_card.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:notes_app/utils/date/display_format.dart';
@@ -105,14 +106,9 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.daymark;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: palette.cardBorder),
-      ),
+    // The shared card style, a little tighter than item cards.
+    return DaymarkCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [value, const SizedBox(height: 2), label],
@@ -154,9 +150,9 @@ class WorkspaceStats extends StatelessWidget {
     return Row(
       children: [
         stat(tasksToday, 'tasks today'),
-        const SizedBox(width: 8),
+        const SizedBox(width: DaymarkCard.gap),
         stat(reminders, 'reminders'),
-        const SizedBox(width: 8),
+        const SizedBox(width: DaymarkCard.gap),
         stat(notes, 'notes'),
       ],
     );

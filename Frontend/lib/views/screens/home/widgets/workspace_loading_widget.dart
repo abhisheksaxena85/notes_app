@@ -51,7 +51,7 @@ class WorkspaceLoadingWidget extends StatelessWidget {
                     label: SizedBox(height: 15, child: Center(child: SkeletonLine(widthFactor: width + 0.2, height: 10))),
                   ),
                 ),
-                if (width != 0.45) const SizedBox(width: 8),
+                if (width != 0.45) const SizedBox(width: DaymarkCard.gap),
               ],
             ],
           ),
@@ -107,14 +107,14 @@ class _TaskShape extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: DaymarkCard.gap),
+      // Same geometry as taskItemCard: 16 padding, 24 px checkbox.
       child: DaymarkCard(
-        padding: const EdgeInsets.fromLTRB(15, 15, 14, 15),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SkeletonCircle(size: 22),
-            const SizedBox(width: 12),
+            const SkeletonCircle(size: 24),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,9 +142,10 @@ class _ReminderShape extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: DaymarkCard.gap),
+      // Same geometry as reminderItemCard: the tile 16 from the left.
       child: DaymarkCard(
-        padding: const EdgeInsets.fromLTRB(10, 10, 14, 10),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
         child: Row(
           children: [
             const SkeletonBox(width: 36, height: 36, radius: 11),
@@ -174,7 +175,7 @@ class _NoteShape extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: DaymarkCard.gap),
       child: DaymarkCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
