@@ -122,6 +122,23 @@ Reminders fire as **local** OS notifications (`flutter_local_notifications`), ev
 - `ReminderActionHandler`: **Done / Not done / Snooze 10 min** from the notification. Saved locally first and synced later; with the app killed it runs in a background isolate (`notification_background.dart`).
 - `DigestScheduler`: the Daily reminder and Weekly summary settings in Profile → Notifications.
 
+## 🧩 Home-screen widgets
+
+Two widgets, on Android (Jetpack Glance) and iOS (WidgetKit). Both follow light/dark mode and read a snapshot the app keeps up to date; changes made on a widget are saved like any other change (local first, then synced).
+
+| Widget | Android | iOS | What it does |
+|---|---|---|---|
+| **Daymark Tasks** | 2x2 to 4x4 (default 4x2) | Medium, Large | Today's pending tasks (overdue and due today, then undated). Tick the circle to complete a task; **+** adds one; a row opens the task; "+N more" opens the Workspace. |
+| **Next reminder** | 2x2, 4x1 | Small, Medium, lock screen (rectangular, inline) | The next reminder with a countdown, rolling over by itself when it passes. **Done** (wide sizes) completes it; repeating ones move to the next occurrence. |
+
+**Adding them:** Android: long-press the home screen → Widgets → Daymark. iOS: long-press the home screen → Edit → Add Widget → Daymark; for the lock screen, long-press the lock screen → Customize → Lock Screen → add "Next reminder".
+
+**Quick add:** the Tasks widget's **+** opens a small pop-up over the home screen on Android, and the quick-add sheet in the app on iOS.
+
+**Siri and Shortcuts (iOS 16+):** say "Add task in Daymark" (or "New Daymark task"), or use the **Add task in Daymark** action in Shortcuts or on the Action button. It runs without opening the app: the task shows on the widget at once and is saved into Daymark the next time the app runs (right away if it is already running in the background).
+
+**Platform limits:** widgets can't take typing, so adding a task always opens the pop-up or the app; on iOS 15 and 16, widget buttons open the app (which then completes the task or reminder) instead of acting in place; Android widgets use the system font. iOS widgets need the App Group `group.com.devquorix.daymark` on both the Runner and DaymarkWidgets targets: see `ios/DaymarkWidgets/README.md` for the one-time Xcode setup. Code: `lib/utils/services/home_widgets/`, `android/app/src/main/kotlin/com/devquorix/daymark/widgets/`, `ios/DaymarkWidgets/`. Device checklist: `work_items/WIDGETS-QA.md`.
+
 ### Known OEM limitations
 Some Android brands (Samsung, Xiaomi, OnePlus, Huawei, Oppo/Vivo and others) stop apps in the background more aggressively than stock Android. If reminders arrive late or not at all on such a phone:
 - turn off battery optimisation for Daymark (Settings → Apps → Daymark → Battery → Unrestricted / "Don't optimise");
