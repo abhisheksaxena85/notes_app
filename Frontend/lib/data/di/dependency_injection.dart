@@ -13,6 +13,8 @@ import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/connectivity_service.dart';
 import 'package:notes_app/utils/services/digest_scheduler.dart';
+import 'package:notes_app/utils/services/home_widgets/widget_host.dart';
+import 'package:notes_app/utils/services/home_widgets/widget_snapshot_service.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
 import 'package:notes_app/utils/services/reminder_action_handler.dart';
@@ -114,7 +116,19 @@ Future<void> configureDependencies() async {
       profileRepo: getIt<ProfileRepo>(),
       tokenStore: getIt<TokenStore>(),
       cancelReminders: () => getIt<ReminderScheduler>().cancelAllReminders(),
+      clearWidgets: () => getIt<WidgetSnapshotService>().showLoggedOut(),
     ),
+  );
+
+  /// Home-screen widgets (W-01): snapshot of the signed-in user's tasks and
+  /// reminders. A no-op on web and desktop.
+  getIt.registerLazySingleton<WidgetSnapshotService>(
+    () => WidgetSnapshotService(
+      database: getIt<AppDatabase>(),
+      host: HomeWidgetHost(),
+      currentUserId: () => getIt<SessionService>().userId,
+    ),
+    dispose: (service) => service.dispose(),
   );
 
   /// Keeps scheduled reminder notifications equal to the database (REM-03).

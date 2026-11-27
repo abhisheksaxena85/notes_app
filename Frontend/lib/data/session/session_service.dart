@@ -27,6 +27,11 @@ class SessionService {
   /// which follows [changes], doesn't have to be built before the session.
   final Future<void> Function()? cancelReminders;
 
+  /// W-01: shows "Sign in to Daymark" on the home-screen widgets
+  /// (WidgetSnapshotService.showLoggedOut). A callback for the same reason
+  /// as [cancelReminders].
+  final Future<void> Function()? clearWidgets;
+
   // Synchronous, so providers already see the new user when login/logout
   // returns.
   final StreamController<int> _changes = StreamController<int>.broadcast(
@@ -44,6 +49,7 @@ class SessionService {
     required this.profileRepo,
     required this.tokenStore,
     this.cancelReminders,
+    this.clearWidgets,
   });
 
   /// The signed-in user, or 0 when signed out.
@@ -106,6 +112,7 @@ class SessionService {
     // Waits for a sync pass that is still uploading, so it can't write the
     // user's rows back after they were deleted.
     await syncService.stop();
+    await _clearWidgets();
     if (userId == 0) return;
     await cancelReminderNotifications(userId);
     if (wipeLocalData) {
@@ -140,6 +147,15 @@ class SessionService {
       await cancelReminders?.call();
     } catch (error, stackTrace) {
       log('Failed to cancel reminder notifications: $error', stackTrace: stackTrace);
+    }
+  }
+
+  /// Logout hook (W-01). Failures are logged; they must not stop the logout.
+  Future<void> _clearWidgets() async {
+    try {
+      await clearWidgets?.call();
+    } catch (error, stackTrace) {
+      log('Failed to clear the home-screen widgets: $error', stackTrace: stackTrace);
     }
   }
 

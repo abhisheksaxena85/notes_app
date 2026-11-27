@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
+import 'package:notes_app/data/repository/reminder/reminder_repo.dart';
+import 'package:notes_app/data/repository/task/task_repo.dart';
+import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:notes_app/utils/services/digest_scheduler.dart';
+import 'package:notes_app/utils/services/home_widgets/widget_links.dart';
 import 'package:notes_app/utils/services/reminder_action_handler.dart';
 import 'package:notes_app/views/screens/calendar/calendar_screen.dart';
 import 'package:notes_app/views/screens/home/home_screen.dart';
+import 'package:notes_app/views/screens/home/widgets/create_task_modal.dart';
+import 'package:notes_app/views/screens/home/widgets/reminder_form_modal.dart';
 import 'package:notes_app/views/screens/profile/profile_screen.dart';
 import 'package:notes_app/views/widgets/daymark_bottom_nav.dart';
 import 'package:notes_app/views/widgets/reminder_answer_sheet.dart';
@@ -25,14 +31,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     reminderPromptRequests.addListener(_showReminderPrompt);
-    // A notification tap that launched the app arrived before this screen.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _showReminderPrompt());
+    widgetLinkRequests.addListener(_openWidgetLink);
+    // A notification or widget tap that launched the app arrived before
+    // this screen.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showReminderPrompt();
+      _openWidgetLink();
+    });
   }
 
   @override
   void dispose() {
     reminderPromptRequests.removeListener(_showReminderPrompt);
+    widgetLinkRequests.removeListener(_openWidgetLink);
     super.dispose();
+  }
+
+  /// W-01: a home-screen widget tap opens the Workspace, and the task,
+  /// reminder or sheet it points at.
+  Future<void> _openWidgetLink() async {
+    final link = widgetLinkRequests.value;
+    if (link == null || !mounted) return;
+    widgetLinkRequests.value = null;
+    setState(() => _currentIndex = 0);
+    final userId = getIt<SessionService>().userId;
+    if (userId == 0) return;
+    switch (link) {
+      case WorkspaceLink():
+        return;
+      case QuickAddTaskLink():
+        await showCreateTaskModal(context);
+      case NewReminderLink():
+        await showReminderFormModal(context);
+      case OpenTaskLink(:final id):
+        final tasks = await getIt<TaskRepo>().getCachedTasks(userId);
+        final task = tasks.where((t) => t.taskId == id).firstOrNull;
+        if (!mounted) return;
+        if (task == null) return _showGone('task');
+        await showCreateTaskModal(context, initial: task);
+      case OpenReminderLink(:final id):
+        final reminders = await getIt<ReminderRepo>().getCachedReminders(userId);
+        final reminder = reminders.where((r) => r.reminderId == id).firstOrNull;
+        if (!mounted) return;
+        if (reminder == null) return _showGone('reminder');
+        await showReminderFormModal(context, initial: reminder);
+    }
+  }
+
+  void _showGone(String kind) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('That $kind no longer exists.')),
+    );
   }
 
   /// REM-04: a tapped reminder notification opens the Workspace and asks

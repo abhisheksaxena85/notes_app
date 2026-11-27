@@ -48,7 +48,12 @@ class OfflineSyncService {
     this.maxRetryDelay = const Duration(minutes: 5),
   }) : _processor = SyncQueueProcessor(client: client, database: database);
 
+  final StreamController<void> _completions = StreamController<void>.broadcast();
+
   int? get userId => _userId;
+
+  /// Fires after every sync pass (W-01: the home-screen widgets refresh).
+  Stream<void> get completions => _completions.stream;
 
   /// Starts listening for connectivity and syncs for [userId] right away.
   void start(int userId) {
@@ -156,6 +161,7 @@ class OfflineSyncService {
       _running = null;
     }
     if (_disposed) return;
+    _completions.add(null);
     if (pausedByTransientError) {
       _scheduleRetry();
     } else {
@@ -208,5 +214,6 @@ class OfflineSyncService {
     _resetBackoff();
     await _subscription?.cancel();
     await _running;
+    await _completions.close();
   }
 }

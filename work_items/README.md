@@ -79,6 +79,17 @@ Priority: **P0** = security hole or data loss, fix first · **P1** = broken beha
 | ☑ | [REM-08](REM-08-daily-weekly-settings.md) | Make the "Daily reminder" and "Weekly summary" settings work | P2 | REM-01, REM-02 |
 | ☐ | [REM-09](REM-09-qa-matrix.md) | Device QA matrix and sign-off | P1 | REM-01…REM-06 |
 
+### Feature: home-screen widgets ("Daymark Tasks" and "Next reminder")
+| ✓ | ID | Title | Priority | Depends on |
+|---|---|---|---|---|
+| ☑ | W-01 | Widget data layer: `WidgetSnapshotService`, update triggers, deep links | P2 | REM-03, REM-05 |
+| ☐ | W-02 | Interactive actions in a background isolate: tick a task, reminder Done | P2 | W-01, REM-04 |
+| ☐ | W-03 | Quick add task: `QuickAddTaskSheet`, Android pop-up activity, iOS App Intent + inbox | P2 | W-01 |
+| ☐ | W-04 | Android "Daymark Tasks" widget (Jetpack Glance) | P2 | W-02, W-03 |
+| ☐ | W-05 | Android "Next reminder" widget (Glance) with scheduled roll-over | P2 | W-02 |
+| ☐ | W-06 | iOS WidgetKit extension `DaymarkWidgets` (both widgets, App Group, intents) | P2 | W-02, W-03 |
+| ☐ | W-07 | Docs and the device QA checklist ([WIDGETS-QA](WIDGETS-QA.md)) | P2 | W-04…W-06 |
+
 ### Repo hygiene
 | ✓ | ID | Title | Priority | Depends on |
 |---|---|---|---|---|

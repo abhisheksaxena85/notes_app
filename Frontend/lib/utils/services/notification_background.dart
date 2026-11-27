@@ -13,6 +13,7 @@ import 'package:notes_app/data/network/dio_client/dio_client.dart';
 import 'package:notes_app/data/repository/reminder/reminder_repo.dart';
 import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
+import 'package:notes_app/utils/services/home_widgets/widget_background.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
 import 'package:notes_app/utils/services/reminder_action_handler.dart';
 import 'package:notes_app/utils/services/reminder_scheduler.dart';
@@ -37,6 +38,15 @@ Future<void> _handleInBackground(NotificationResponse response) async {
     try {
       final result = await graph.handler.handle(response.actionId, response.payload);
       log('Background reminder action ${response.actionId}: ${result.outcome.name}');
+      // W-01: answering from the notification updates the home-screen widgets.
+      if (result.outcome == ReminderActionOutcome.answered ||
+          result.outcome == ReminderActionOutcome.snoozed) {
+        await updateWidgetsFromBackground(
+          database: graph.database,
+          userId: graph.userId,
+          timezoneReady: true,
+        );
+      }
     } finally {
       await graph.close();
     }
@@ -49,11 +59,12 @@ Future<void> _handleInBackground(NotificationResponse response) async {
 /// The minimum the action handler needs: no connectivity listener, no sync
 /// loop or retry timers, no Riverpod. Built per action and closed after.
 class _BackgroundGraph {
+  final int userId;
   final AppDatabase database;
   final OfflineSyncService sync;
   final ReminderActionHandler handler;
 
-  _BackgroundGraph(this.database, this.sync, this.handler);
+  _BackgroundGraph(this.userId, this.database, this.sync, this.handler);
 
   static Future<_BackgroundGraph> open() async {
     // The main isolate may have changed the session since this isolate
@@ -96,7 +107,7 @@ class _BackgroundGraph {
         return sync.requestSync();
       },
     );
-    return _BackgroundGraph(database, sync, handler);
+    return _BackgroundGraph(userId, database, sync, handler);
   }
 
   Future<void> close() async {

@@ -9,7 +9,11 @@ import 'package:notes_app/data/local/shared_preference/preference.dart';
 import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/connectivity_service.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:notes_app/utils/services/digest_scheduler.dart';
+import 'package:notes_app/utils/services/home_widgets/widget_host.dart';
+import 'package:notes_app/utils/services/home_widgets/widget_links.dart';
+import 'package:notes_app/utils/services/home_widgets/widget_snapshot_service.dart';
 import 'package:notes_app/utils/services/notification_background.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
@@ -79,6 +83,13 @@ Future<void> initialize() async {
   // REM-08: digests that are on but missing, and fresh weekly counts.
   final digests = getIt<DigestScheduler>();
   unawaited(digests.reconcile());
+  // W-01: home-screen widgets follow the signed-in user's tasks and reminders.
+  final widgets = getIt<WidgetSnapshotService>()
+    ..start(
+      userChanges: session.changes,
+      syncCompletions: getIt<OfflineSyncService>().completions,
+    );
+  unawaited(_listenForWidgetLaunches());
   // Sync queued changes when the app returns to the foreground too, not only
   // when connectivity changes. The listener registers itself with the binding
   // and lives as long as the app.
@@ -90,8 +101,25 @@ Future<void> initialize() async {
       // REM-03: time zone changes and occurrences missed while closed.
       unawaited(scheduler.onAppResumed());
       unawaited(digests.reconcile());
+      unawaited(widgets.onAppResumed());
     },
   );
+}
+
+/// W-01: widget taps that opened the app (cold start) or brought it to the
+/// front (warm start) go to the dashboard, which opens the right screen.
+Future<void> _listenForWidgetLaunches() async {
+  if (!HomeWidgetHost().isSupported) return;
+  try {
+    await HomeWidget.setAppGroupId(DaymarkWidgets.appGroupId);
+    HomeWidget.widgetClicked.listen(
+      routeWidgetLaunch,
+      onError: (Object error) => log('Widget click failed: $error'),
+    );
+    routeWidgetLaunch(await HomeWidget.initiallyLaunchedFromHomeWidget());
+  } catch (error, stackTrace) {
+    log('Widget launches are unavailable: $error', stackTrace: stackTrace);
+  }
 }
 
 /// After a 401: drop the signed-out user's screens and state, then show the
