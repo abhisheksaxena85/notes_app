@@ -4,87 +4,63 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/themes/daymark_text.dart';
 
-SnackBar failedSnackBar(String message) {
+/// Snackbars are built without a BuildContext, so the colours are resolved
+/// when the content builds. The background, shape and close icon come from
+/// the theme's SnackBarThemeData.
+SnackBar _statusSnackBar(
+  String message, {
+  required IconData icon,
+  required Color Function(DaymarkPalette palette) iconColor,
+}) {
   return SnackBar(
-    content: Row(
-      children: [
-        const Icon(Icons.error_outline, color: AppColors.errorColor),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            message,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 2,
-            style: GoogleFonts.roboto(
-              color: AppColors.errorColor,
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
+    content: Builder(
+      builder: (context) {
+        final palette = context.daymark;
+        return Row(
+          children: [
+            Icon(icon, size: 20, color: iconColor(palette)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+                style: DaymarkText.custom(14, FontWeight.w500).copyWith(
+                  color: palette.background,
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     ),
     duration: const Duration(seconds: 4),
-    backgroundColor: AppColors.redBg,
     showCloseIcon: true,
-    closeIconColor: AppColors.neutral100,
   );
 }
 
-SnackBar successSnackBar(String message) {
-  return SnackBar(
-    content: Row(
-      children: [
-        const Icon(Icons.check_circle, color: AppColors.successColor),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            message,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.roboto(
-              color: AppColors.successColor,
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    ),
-    duration: const Duration(seconds: 4),
-    backgroundColor: AppColors.greenBg,
-    showCloseIcon: true,
-    closeIconColor: AppColors.neutral100,
-  );
-}
+// Status icons on the inverted (ink) snackbar use the dark/light opposite
+// palette so they keep contrast.
+DaymarkPalette _inverse(DaymarkPalette palette) =>
+    palette.isDark ? DaymarkPalette.light : DaymarkPalette.dark;
 
-SnackBar waitingSnackbar(String message) {
-  return SnackBar(
-    content: Row(
-      children: [
-        const Icon(Icons.downloading, color: AppColors.warningColor),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            message,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.roboto(
-              color: AppColors.warningColor,
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    ),
-    duration: const Duration(seconds: 4),
-    backgroundColor: AppColors.yellowBg,
-    showCloseIcon: true,
-    closeIconColor: AppColors.neutral100,
-  );
-}
+SnackBar failedSnackBar(String message) => _statusSnackBar(
+      message,
+      icon: Icons.error_outline_rounded,
+      iconColor: (palette) => _inverse(palette).danger,
+    );
+
+SnackBar successSnackBar(String message) => _statusSnackBar(
+      message,
+      icon: Icons.check_circle_outline_rounded,
+      iconColor: (palette) => _inverse(palette).success,
+    );
+
+SnackBar waitingSnackbar(String message) => _statusSnackBar(
+      message,
+      icon: Icons.downloading_rounded,
+      iconColor: (palette) => _inverse(palette).accent,
+    );

@@ -213,7 +213,7 @@ void _showEditProfileSheet(
                           style: GoogleFonts.inter(
                             fontSize: 12.sp,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                            color: isSelected ? Colors.white : palette.ink,
+                            color: isSelected ? palette.onAccent : palette.ink,
                           ),
                         ),
                         selected: isSelected,
@@ -275,14 +275,14 @@ void _showEditProfileSheet(
                         ? SizedBox(
                             width: 20.r,
                             height: 20.r,
-                            child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(color: palette.onAccent, strokeWidth: 2),
                           )
                         : Text(
                             "Save Changes",
                             style: GoogleFonts.inter(
                               fontSize: 14.sp,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: palette.onAccent,
                             ),
                           ),
                   ),

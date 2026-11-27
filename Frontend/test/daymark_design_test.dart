@@ -36,28 +36,63 @@ void main() {
   });
 
   group('Daymark Design Tokens Tests', () {
-    test('Light theme tokens match Figma specification', () {
-      const light = DaymarkPalette.light;
-      expect(light.background, const Color(0xFFF6F7F5));
-      expect(light.surface, const Color(0xFFFFFFFF));
-      expect(light.ink, const Color(0xFF252A27));
-      expect(light.muted, const Color(0xFF858D87));
-      expect(light.accent, const Color(0xFF5E7668));
-      expect(light.accentSoft, const Color(0xFFEAF0EB));
-      expect(light.line, const Color(0xFFE8ECE8));
-      expect(light.danger, const Color(0xFFB95E58));
+    test('Light theme tokens match design/README.md', () {
+      final light = DaymarkPalette.light;
+      expect(light.background, const Color(0xFFF3F3F1));
+      expect(light.surface, const Color(0xFFFBFBFA));
+      expect(light.surfaceMuted, const Color(0xFFEAEAE7));
+      expect(light.iconTile, const Color(0xFFEFEFEC));
+      expect(light.ink, const Color(0xFF2A2B2F));
+      expect(light.inkSecondary, const Color(0xFF45474D));
+      expect(light.muted, const Color(0xFF6A6C72));
+      expect(light.disabled, const Color(0xFFB4B5B9));
+      expect(light.line, const Color(0xFFE3E3DF));
+      expect(light.chipBorder, const Color(0xFFDCDCD8));
+      expect(light.accent, const Color(0xFF2F6BDB));
+      expect(light.onAccent, const Color(0xFFFBFBFA));
+      expect(light.accentSoft, Color.lerp(light.surface, light.accent, 0.12));
+      expect(light.success, const Color(0xFF2F7A52));
+      expect(light.successSoft, const Color(0xFFE6F0EA));
+      expect(light.danger, const Color(0xFFB8433B));
+      expect(light.dangerSoft, const Color(0xFFF6E6E4));
+      expect(light.skeletonBase, const Color(0xFFE6E6E2));
+      expect(light.skeletonHighlight, const Color(0xFFF2F2EF));
     });
 
-    test('Dark theme tokens match Figma specification', () {
-      const dark = DaymarkPalette.dark;
-      expect(dark.background, const Color(0xFF151816));
-      expect(dark.surface, const Color(0xFF202522));
-      expect(dark.ink, const Color(0xFFF0F3F1));
-      expect(dark.muted, const Color(0xFF8A948C));
-      expect(dark.accent, const Color(0xFF739280));
-      expect(dark.accentSoft, const Color(0xFF26342B));
-      expect(dark.line, const Color(0xFF2D352F));
-      expect(dark.danger, const Color(0xFFD9726C));
+    test('Dark theme tokens match design/README.md', () {
+      final dark = DaymarkPalette.dark;
+      expect(dark.background, const Color(0xFF1C1D20));
+      expect(dark.surface, const Color(0xFF25262A));
+      expect(dark.surfaceMuted, const Color(0xFF2A2B2F));
+      expect(dark.iconTile, const Color(0xFF2E2F34));
+      expect(dark.ink, const Color(0xFFE8E8E5));
+      expect(dark.inkSecondary, const Color(0xFFC4C5C9));
+      expect(dark.muted, const Color(0xFFA0A2A8));
+      expect(dark.disabled, const Color(0xFF5E6066));
+      expect(dark.line, const Color(0xFF34363C));
+      expect(dark.chipBorder, const Color(0xFF3A3B41));
+      expect(dark.accent, const Color(0xFF6B9BF2));
+      expect(dark.onAccent, const Color(0xFF1C1D20));
+      expect(dark.accentSoft, Color.lerp(dark.surface, dark.accent, 0.20));
+      expect(dark.success, const Color(0xFF5FB386));
+      expect(dark.successSoft, const Color(0xFF22332A));
+      expect(dark.danger, const Color(0xFFE8897F));
+      expect(dark.dangerSoft, const Color(0xFF3A2826));
+      expect(dark.skeletonBase, const Color(0xFF2C2D31));
+      expect(dark.skeletonHighlight, const Color(0xFF38393E));
+    });
+
+    test('Blue is the default accent and dark orange is defined', () {
+      expect(DaymarkAccent.current, DaymarkAccent.blue);
+      expect(DaymarkAccent.darkOrange.light, const Color(0xFFB9501A));
+      expect(DaymarkAccent.darkOrange.dark, const Color(0xFFE0793A));
+    });
+
+    test('Themes use the palette', () {
+      expect(AppTheme.lightTheme.colorScheme.primary, DaymarkPalette.light.accent);
+      expect(AppTheme.lightTheme.scaffoldBackgroundColor, DaymarkPalette.light.background);
+      expect(AppTheme.darkTheme.colorScheme.primary, DaymarkPalette.dark.accent);
+      expect(AppTheme.darkTheme.scaffoldBackgroundColor, DaymarkPalette.dark.background);
     });
   });
 

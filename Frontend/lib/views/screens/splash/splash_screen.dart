@@ -241,9 +241,7 @@ class _SplashScreenState extends State<SplashScreen>
                             fontSize: 9.sp,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.8,
-                            color: palette.brightness == Brightness.dark
-                                ? const Color(0xFF525B54)
-                                : const Color(0xFFB0B6B1),
+                            color: palette.disabled,
                           ),
                         ),
                       ],

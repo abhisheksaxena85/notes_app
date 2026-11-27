@@ -12,6 +12,7 @@ import 'package:notes_app/data/network/dto/response/reminder/reminder_item.dart'
 import 'package:notes_app/data/network/dto/response/task/task_item.dart';
 import 'package:notes_app/data/repository/reminder/reminder_repo.dart';
 import 'package:notes_app/data/repository/task/task_repo.dart';
+import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
 import 'package:notes_app/views/screens/calendar/calendar_screen.dart';
 import 'package:notes_app/views/screens/home/widgets/notes_floating_action_button.dart';
@@ -170,7 +171,7 @@ void main() {
       // Verify Blue Strip Container
       final containers = tester.widgetList<Container>(find.byType(Container));
       final hasBlueStrip = containers.any(
-        (c) => c.color == const Color(0xFF166BBA),
+        (c) => c.color == DaymarkPalette.light.accent,
       );
       expect(hasBlueStrip, isTrue);
     });
@@ -212,7 +213,7 @@ void main() {
       // Verify Dark Green Strip Container
       final containers = tester.widgetList<Container>(find.byType(Container));
       final hasGreenStrip = containers.any(
-        (c) => c.color == const Color(0xFF0A5B2F),
+        (c) => c.color == DaymarkPalette.light.success,
       );
       expect(hasGreenStrip, isTrue);
     });
@@ -249,7 +250,7 @@ void main() {
       // Verify Red Strip Container
       final containers = tester.widgetList<Container>(find.byType(Container));
       final hasRedStrip = containers.any(
-        (c) => c.color == const Color(0xFFB95E58),
+        (c) => c.color == DaymarkPalette.light.danger,
       );
       expect(hasRedStrip, isTrue);
     });
@@ -286,7 +287,7 @@ void main() {
 
       final containers = tester.widgetList<Container>(find.byType(Container));
       final hasBlueStrip = containers.any(
-        (c) => c.color == const Color(0xFF166BBA),
+        (c) => c.color == DaymarkPalette.light.accent,
       );
       expect(hasBlueStrip, isTrue);
     });

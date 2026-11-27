@@ -23,100 +23,103 @@ Widget customTextInputField({
   double? height,
   FocusNode? focusNode,
 }) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      /// MARK: Text Field
-      SizedBox(
-        height: height ?? 40.h,
-        child: TextField(
-          focusNode: focusNode,
-          keyboardType: keyboardType,
-          minLines: 1,
-          maxLines: 100,
-          enabled: isEnabled,
-          scrollPadding: EdgeInsets.zero,
-          onChanged: onChanged,
-          maxLength: length,
+  return Builder(
+    builder: (context) {
+      final palette = context.daymark;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// MARK: Text Field
+          SizedBox(
+            height: height ?? 40.h,
+            child: TextField(
+              focusNode: focusNode,
+              keyboardType: keyboardType,
+              minLines: 1,
+              maxLines: 100,
+              enabled: isEnabled,
+              scrollPadding: EdgeInsets.zero,
+              onChanged: onChanged,
+              maxLength: length,
 
-          /// counter builder
-          buildCounter: (
-            context, {
-            required currentLength,
-            required isFocused,
-            required maxLength,
-          }) => null,
-          controller: controller,
+              /// counter builder
+              buildCounter: (
+                context, {
+                required currentLength,
+                required isFocused,
+                required maxLength,
+              }) => null,
+              controller: controller,
 
-          /// Input formatters
-          inputFormatters: inputFormatters,
+              /// Input formatters
+              inputFormatters: inputFormatters,
 
-          /// Input text style
-          style: GoogleFonts.sourceSans3(
-            fontSize: 14.sp,
-            color: isEnabled == false
-                ? AppColors.neutral70
-                : AppColors.neutral100,
-            fontWeight: FontWeight.w400,
-          ),
-          textAlign: TextAlign.start,
-          textAlignVertical: TextAlignVertical.center,
-          decoration: InputDecoration(
-            fillColor: backgroundColor,
-            filled: backgroundColor != null,
+              /// Input text style
+              style: GoogleFonts.sourceSans3(
+                fontSize: 14.sp,
+                color: isEnabled == false ? palette.muted : palette.ink,
+                fontWeight: FontWeight.w400,
+              ),
+              textAlign: TextAlign.start,
+              textAlignVertical: TextAlignVertical.center,
+              decoration: InputDecoration(
+                fillColor: backgroundColor,
+                filled: backgroundColor != null,
 
-            /// Suffix error icon only
-            suffixIcon: isError && inputFormatters.isNotEmpty
-                ? Icon(Icons.error, color: AppColors.errorColor, size: 20.sp)
-                : null,
+                /// Suffix error icon only
+                suffixIcon: isError && inputFormatters.isNotEmpty
+                    ? Icon(Icons.error, color: palette.danger, size: 20.sp)
+                    : null,
 
-            /// Content padding
-            contentPadding: EdgeInsets.symmetric(
-              vertical: 0.h,
-              horizontal: 12.w,
-            ),
+                /// Content padding
+                contentPadding: EdgeInsets.symmetric(
+                  vertical: 0.h,
+                  horizontal: 12.w,
+                ),
 
-            /// Label content
-            labelText: labelText,
-            labelStyle: GoogleFonts.sourceSans3(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w400,
-              color: isError ? AppColors.errorColor : null,
-            ),
+                /// Label content
+                labelText: labelText,
+                labelStyle: GoogleFonts.sourceSans3(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w400,
+                  color: isError ? palette.danger : null,
+                ),
 
-            /// Border styles
-            enabledBorder: outlineInputBorder(
-              isError ? AppColors.errorColor : AppColors.neutral60,
-              false,
-            ),
-            focusedBorder: outlineInputBorder(
-              isError ? AppColors.errorColor : AppColors.priBlue30,
-              true,
-            ),
-            disabledBorder: outlineInputBorder(
-              isError ? AppColors.errorColor : AppColors.neutral60,
-              false,
-            ),
-          ),
-        ),
-      ),
-
-      /// MARK: Error Text
-      if (isError) ...[
-        SizedBox(height: 4.h),
-        Container(
-          margin: EdgeInsets.only(left: 16.w),
-          child: Text(
-            errorText,
-            style: GoogleFonts.sourceSans3(
-              fontSize: 12.sp,
-              color: AppColors.errorColor,
-              fontWeight: FontWeight.w600,
+                /// Border styles
+                enabledBorder: outlineInputBorder(
+                  isError ? palette.danger : palette.line,
+                  false,
+                ),
+                focusedBorder: outlineInputBorder(
+                  isError ? palette.danger : palette.accent,
+                  true,
+                ),
+                disabledBorder: outlineInputBorder(
+                  isError ? palette.danger : palette.line,
+                  false,
+                ),
+              ),
             ),
           ),
-        ),
-      ],
-    ],
+
+          /// MARK: Error Text
+          if (isError) ...[
+            SizedBox(height: 4.h),
+            Container(
+              margin: EdgeInsets.only(left: 16.w),
+              child: Text(
+                errorText,
+                style: GoogleFonts.sourceSans3(
+                  fontSize: 12.sp,
+                  color: palette.danger,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ],
+      );
+    },
   );
 }
 

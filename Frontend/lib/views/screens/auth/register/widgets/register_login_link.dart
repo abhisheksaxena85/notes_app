@@ -3,9 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 
-Widget registerLoginLink({
-  required BuildContext context,
-}) {
+Widget registerLoginLink({required BuildContext context}) {
   return Row(
     mainAxisAlignment: MainAxisAlignment.center,
     crossAxisAlignment: CrossAxisAlignment.center,
@@ -13,7 +11,7 @@ Widget registerLoginLink({
       Text(
         "Already have an account?",
         style: GoogleFonts.sourceSans3(
-          color: AppColors.neutral80,
+          color: context.daymark.muted,
           fontSize: 14.sp,
           fontWeight: FontWeight.w500,
         ),

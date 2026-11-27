@@ -27,11 +27,11 @@ Widget reminderItemCard({
   // Left Status Strip Color
   Color stripColor;
   if (isCompleted) {
-    stripColor = const Color(0xFF0A5B2F); // Dark Green
+    stripColor = palette.success; // Dark Green
   } else if (isMissedOrRejected) {
-    stripColor = const Color(0xFFB95E58); // Danger Red
+    stripColor = palette.danger; // Danger Red
   } else {
-    stripColor = const Color(0xFF166BBA); // Primary Blue
+    stripColor = palette.accent; // Primary Blue
   }
 
   final String title =
@@ -112,16 +112,16 @@ Widget reminderItemCard({
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: isCompleted
-                                      ? const Color(0xFF0A5B2F)
+                                      ? palette.success
                                       : (isMissedOrRejected
-                                          ? const Color(0xFFB95E58).withValues(alpha: 0.15)
-                                          : const Color(0xFF166BBA).withValues(alpha: 0.12)),
+                                          ? palette.danger.withValues(alpha: 0.15)
+                                          : palette.accent.withValues(alpha: 0.12)),
                                   border: Border.all(
                                     color: isCompleted
-                                        ? const Color(0xFF0A5B2F)
+                                        ? palette.success
                                         : (isMissedOrRejected
-                                            ? const Color(0xFFB95E58)
-                                            : const Color(0xFF166BBA)),
+                                            ? palette.danger
+                                            : palette.accent),
                                     width: 1.5,
                                   ),
                                 ),
@@ -130,14 +130,14 @@ Widget reminderItemCard({
                                       ? Icon(
                                           Icons.check_rounded,
                                           size: 14.sp,
-                                          color: Colors.white,
+                                          color: palette.onAccent,
                                         )
                                       : AppIcons.icon(
                                           AppIcons.bell,
                                           size: 12.sp,
                                           color: isMissedOrRejected
-                                              ? const Color(0xFFB95E58)
-                                              : const Color(0xFF166BBA),
+                                              ? palette.danger
+                                              : palette.accent,
                                         ),
                                 ),
                               ),
@@ -254,7 +254,7 @@ Widget reminderItemCard({
                                     vertical: 2.h,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF4A2D94).withValues(alpha: 0.12),
+                                    color: palette.accent.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(6.r),
                                   ),
                                   child: Text(
@@ -262,7 +262,7 @@ Widget reminderItemCard({
                                     style: GoogleFonts.inter(
                                       fontSize: 9.sp,
                                       fontWeight: FontWeight.w700,
-                                      color: const Color(0xFF4A2D94),
+                                      color: palette.accent,
                                     ),
                                   ),
                                 ),
@@ -290,8 +290,8 @@ Widget reminderItemCard({
                                     fontSize: 10.sp,
                                     fontWeight: FontWeight.w600,
                                     color: reminder.lastOutcome == 'COMPLETED'
-                                        ? const Color(0xFF0A5B2F)
-                                        : const Color(0xFFB95E58),
+                                        ? palette.success
+                                        : palette.danger,
                                   ),
                                 ),
 
@@ -303,7 +303,7 @@ Widget reminderItemCard({
                                     vertical: 2.h,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFB95E58).withValues(alpha: 0.15),
+                                    color: palette.danger.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(6.r),
                                   ),
                                   child: Text(
@@ -311,7 +311,7 @@ Widget reminderItemCard({
                                     style: GoogleFonts.inter(
                                       fontSize: 9.sp,
                                       fontWeight: FontWeight.w800,
-                                      color: const Color(0xFFB95E58),
+                                      color: palette.danger,
                                     ),
                                   ),
                                 ),

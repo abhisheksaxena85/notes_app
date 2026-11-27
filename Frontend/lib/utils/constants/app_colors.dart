@@ -1,129 +1,201 @@
 import 'package:flutter/material.dart';
 
-/// Daymark Notes App Design Palette Tokens
+/// The single accent colour of the app (design/README.md §1). Blue is the
+/// default; switching to dark orange is a one-line change to [current].
+enum DaymarkAccent {
+  blue(light: Color(0xFF2F6BDB), dark: Color(0xFF6B9BF2)),
+  darkOrange(light: Color(0xFFB9501A), dark: Color(0xFFE0793A));
+
+  const DaymarkAccent({required this.light, required this.dark});
+
+  final Color light;
+  final Color dark;
+
+  /// The accent the whole app uses.
+  static const DaymarkAccent current = DaymarkAccent.blue;
+}
+
+/// Daymark colour tokens (design/README.md §1). Never use raw hex colours in
+/// widgets; read these through `context.daymark`.
 class DaymarkPalette {
-  final Color background;
-  final Color surface;
-  final Color ink;
-  final Color muted;
-  final Color accent;
-  final Color accentSoft;
-  final Color line;
-  final Color danger;
   final Brightness brightness;
 
-  const DaymarkPalette({
+  /// Scaffold.
+  final Color background;
+
+  /// Cards, sheets.
+  final Color surface;
+
+  /// Bottom-nav bar fill.
+  final Color navSurface;
+
+  /// Search field, segmented-control track.
+  final Color surfaceMuted;
+
+  /// Tag chips and the note type tile.
+  final Color tagFill;
+
+  /// 32 px neutral icon tiles in settings rows, close button.
+  final Color iconTile;
+
+  /// Primary text and icons.
+  final Color ink;
+
+  /// Body previews, unselected chip text.
+  final Color inkSecondary;
+
+  /// Meta text, inactive nav, placeholders.
+  final Color muted;
+
+  /// Out-of-month days, disabled icons.
+  final Color disabled;
+
+  /// Hairlines (input borders, nav top border).
+  final Color line;
+
+  /// Card borders.
+  final Color cardBorder;
+
+  /// Dividers inside grouped cards.
+  final Color divider;
+
+  /// Unselected filter and category chips.
+  final Color chipBorder;
+
+  final Color accent;
+
+  /// Text and icons on an [accent] fill.
+  final Color onAccent;
+
+  /// [accent] mixed over [surface] (12 % light, 20 % dark).
+  final Color accentSoft;
+
+  final Color success;
+  final Color successSoft;
+  final Color danger;
+  final Color dangerSoft;
+
+  /// Outline of destructive outlined buttons (delete, sign out).
+  final Color dangerBorder;
+
+  /// Behind bottom sheets and the add menu.
+  final Color scrim;
+
+  final Color skeletonBase;
+  final Color skeletonHighlight;
+
+  /// Disabled primary button fill and text.
+  final Color buttonDisabled;
+  final Color onButtonDisabled;
+
+  /// Label pills of the FAB add menu.
+  final Color menuPill;
+
+  DaymarkPalette._({
+    required this.brightness,
     required this.background,
     required this.surface,
+    required this.navSurface,
+    required this.surfaceMuted,
+    required this.tagFill,
+    required this.iconTile,
     required this.ink,
+    required this.inkSecondary,
     required this.muted,
-    required this.accent,
-    required this.accentSoft,
+    required this.disabled,
     required this.line,
+    required this.cardBorder,
+    required this.divider,
+    required this.chipBorder,
+    required this.accent,
+    required this.onAccent,
+    required double accentSoftMix,
+    required this.success,
+    required this.successSoft,
     required this.danger,
-    required this.brightness,
-  });
+    required this.dangerSoft,
+    required this.dangerBorder,
+    required this.scrim,
+    required this.skeletonBase,
+    required this.skeletonHighlight,
+    required this.buttonDisabled,
+    required this.onButtonDisabled,
+    required this.menuPill,
+  }) : accentSoft = Color.lerp(surface, accent, accentSoftMix)!;
 
-  static const DaymarkPalette light = DaymarkPalette(
-    background: Color(0xFFF6F7F5),
-    surface: Color(0xFFFFFFFF),
-    ink: Color(0xFF252A27),
-    muted: Color(0xFF858D87),
-    accent: Color(0xFF5E7668),
-    accentSoft: Color(0xFFEAF0EB),
-    line: Color(0xFFE8ECE8),
-    danger: Color(0xFFB95E58),
+  bool get isDark => brightness == Brightness.dark;
+
+  static final DaymarkPalette light = DaymarkPalette._(
     brightness: Brightness.light,
+    background: const Color(0xFFF3F3F1),
+    surface: const Color(0xFFFBFBFA),
+    navSurface: const Color(0xFFFBFBFA),
+    surfaceMuted: const Color(0xFFEAEAE7),
+    tagFill: const Color(0xFFEDEDEA),
+    iconTile: const Color(0xFFEFEFEC),
+    ink: const Color(0xFF2A2B2F),
+    inkSecondary: const Color(0xFF45474D),
+    muted: const Color(0xFF6A6C72),
+    disabled: const Color(0xFFB4B5B9),
+    line: const Color(0xFFE3E3DF),
+    cardBorder: const Color(0xFFE6E6E2),
+    divider: const Color(0xFFECECE8),
+    chipBorder: const Color(0xFFDCDCD8),
+    accent: DaymarkAccent.current.light,
+    onAccent: const Color(0xFFFBFBFA),
+    accentSoftMix: 0.12,
+    success: const Color(0xFF2F7A52),
+    successSoft: const Color(0xFFE6F0EA),
+    danger: const Color(0xFFB8433B),
+    dangerSoft: const Color(0xFFF6E6E4),
+    dangerBorder: const Color(0xFFE3D3D1),
+    scrim: const Color.fromRGBO(32, 33, 36, 0.38),
+    skeletonBase: const Color(0xFFE6E6E2),
+    skeletonHighlight: const Color(0xFFF2F2EF),
+    buttonDisabled: const Color(0xFFE3E3DF),
+    onButtonDisabled: const Color(0xFF8A8C91),
+    menuPill: const Color(0xFFFBFBFA),
   );
 
-  static const DaymarkPalette dark = DaymarkPalette(
-    background: Color(0xFF151816),
-    surface: Color(0xFF202522),
-    ink: Color(0xFFF0F3F1),
-    muted: Color(0xFF8A948C),
-    accent: Color(0xFF739280),
-    accentSoft: Color(0xFF26342B),
-    line: Color(0xFF2D352F),
-    danger: Color(0xFFD9726C),
+  static final DaymarkPalette dark = DaymarkPalette._(
     brightness: Brightness.dark,
+    background: const Color(0xFF1C1D20),
+    surface: const Color(0xFF25262A),
+    navSurface: const Color(0xFF222327),
+    surfaceMuted: const Color(0xFF2A2B2F),
+    tagFill: const Color(0xFF2A2B2F),
+    iconTile: const Color(0xFF2E2F34),
+    ink: const Color(0xFFE8E8E5),
+    inkSecondary: const Color(0xFFC4C5C9),
+    muted: const Color(0xFFA0A2A8),
+    disabled: const Color(0xFF5E6066),
+    line: const Color(0xFF34363C),
+    cardBorder: const Color(0xFF323338),
+    divider: const Color(0xFF34363C),
+    chipBorder: const Color(0xFF3A3B41),
+    accent: DaymarkAccent.current.dark,
+    onAccent: const Color(0xFF1C1D20),
+    accentSoftMix: 0.20,
+    success: const Color(0xFF5FB386),
+    successSoft: const Color(0xFF22332A),
+    danger: const Color(0xFFE8897F),
+    dangerSoft: const Color(0xFF3A2826),
+    dangerBorder: const Color(0xFF4A3330),
+    scrim: const Color.fromRGBO(0, 0, 0, 0.5),
+    skeletonBase: const Color(0xFF2C2D31),
+    skeletonHighlight: const Color(0xFF38393E),
+    buttonDisabled: const Color(0xFF2E2F34),
+    onButtonDisabled: const Color(0xFF5E6066),
+    menuPill: const Color(0xFF34353A),
   );
 }
 
 class AppColors {
-  /// Resolves the DaymarkPalette dynamically for the current BuildContext.
+  /// Resolves the DaymarkPalette for the current BuildContext's theme.
   static DaymarkPalette of(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return isDark ? DaymarkPalette.dark : DaymarkPalette.light;
   }
-
-  /// Default Light Palette
-  static const Color backgroundLight = Color(0xFFF6F7F5);
-  static const Color surfaceLight = Color(0xFFFFFFFF);
-  static const Color inkLight = Color(0xFF252A27);
-  static const Color mutedLight = Color(0xFF858D87);
-  static const Color accentLight = Color(0xFF5E7668);
-  static const Color accentSoftLight = Color(0xFFEAF0EB);
-  static const Color lineLight = Color(0xFFE8ECE8);
-  static const Color dangerLight = Color(0xFFB95E58);
-
-  /// Dark Palette
-  static const Color backgroundDark = Color(0xFF151816);
-  static const Color surfaceDark = Color(0xFF202522);
-  static const Color inkDark = Color(0xFFF0F3F1);
-  static const Color mutedDark = Color(0xFF8A948C);
-  static const Color accentDark = Color(0xFF739280);
-  static const Color accentSoftDark = Color(0xFF26342B);
-  static const Color lineDark = Color(0xFF2D352F);
-  static const Color dangerDark = Color(0xFFD9726C);
-
-  /// Default System Colors
-  static Color white = Colors.white;
-  static Color black = Colors.black;
-  static Color red = Colors.red;
-  static Color blue = Colors.blue;
-  static Color green = Colors.green;
-  static Color yellow = Colors.yellow;
-
-  /// Legacy compatibility colors mapped to Daymark tokens
-  static Color bgColor = backgroundLight;
-  static Color whiteColor = surfaceLight;
-  static Color secondaryTextColor = mutedLight;
-  static Color brandColor = accentLight;
-  static Color iconColor = mutedLight;
-  static Color iconTextColor = inkLight;
-
-  // Neutral Color
-  static const Color neutral100 = Color(0xff000000);
-  static const Color neutral90 = Color(0xff3D3D3D);
-  static const Color neutral80 = Color(0xff575757);
-  static const Color neutral70 = Color(0xff6C6C6C);
-  static const Color neutral60 = Color(0xffA9A9A9);
-  static const Color neutral50 = Color(0xffBDBDBD);
-  static const Color neutral40 = Color(0xffCDCDCD);
-  static const Color neutral30 = Color(0xffDDDDDD);
-  static const Color neutral20 = Color(0xffEAEAEA);
-  static const Color neutral10 = Color(0xffF4F4F4);
-  static const Color neutral05 = Color(0xffFBFBFB);
-
-  // State Colors
-  static const Color errorColor = dangerLight;
-  static const Color successColor = Color(0xff0A5B2F);
-  static const Color redBg = Color(0xFFFCF4F6);
-  static const Color redBgLight = Color(0xFFFFE7E6);
-  static const Color greenBg = Color(0xFFE9F2DA);
-  static const Color greenBgLight = Color(0xFFE0F3E9);
-  static const Color yellowBg = Color(0xFFFEFBF4);
-  static const Color yellowBgLight = Color(0xFFFFF7E4);
-  static const Color yellowBgDark = Color(0xFFF5EDD9);
-  static const Color warningColor = Color(0xFFEAA300);
-
-  // Peri Color
-  static const Color priBlue00 = Color(0xffE6EDF5);
-  static const Color priBlue10 = Color(0xffA8D4FD);
-  static const Color priBlue20 = Color(0xff166BBA);
-  static const Color priBlue30 = Color(0xff135A9C);
-  static const Color priBlue40 = Color(0xff033666);
-  static const Color priPurple40 = Color(0xff4A2D94);
 }
 
 extension DaymarkContext on BuildContext {

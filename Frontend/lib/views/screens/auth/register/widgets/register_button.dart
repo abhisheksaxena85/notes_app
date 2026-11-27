@@ -25,7 +25,7 @@ Widget registerButton({
           return Text("Retry");
         },
         loading: () {
-          return CircularProgressIndicator(color: AppColors.black);
+          return CircularProgressIndicator(color: context.daymark.onAccent);
         },
       ),
     ),

@@ -139,8 +139,8 @@ class _AddSpeedDialFabState extends State<AddSpeedDialFab>
                   label: "New Reminder",
                   index: 2,
                   icon: Icons.notifications_active_outlined,
-                  iconColor: const Color(0xFF4A2D94),
-                  iconBg: const Color(0xFF4A2D94).withValues(alpha: 0.15),
+                  iconColor: palette.accent,
+                  iconBg: palette.accent.withValues(alpha: 0.15),
                   onTap: () {
                     _close();
                     widget.onNewReminder();
@@ -154,8 +154,8 @@ class _AddSpeedDialFabState extends State<AddSpeedDialFab>
                   label: "New Task",
                   index: 1,
                   icon: Icons.check_circle_outline_rounded,
-                  iconColor: const Color(0xFF166BBA),
-                  iconBg: const Color(0xFF166BBA).withValues(alpha: 0.15),
+                  iconColor: palette.accent,
+                  iconBg: palette.accent.withValues(alpha: 0.15),
                   onTap: () {
                     _close();
                     widget.onNewTask();

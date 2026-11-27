@@ -276,9 +276,9 @@ void showDataBackupSheet(BuildContext context, WidgetRef ref) {
                               }
                             }
                           },
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.ios_share_rounded,
-                            color: Colors.white,
+                            color: palette.onAccent,
                             size: 18,
                           ),
                           label: Text(
@@ -286,7 +286,7 @@ void showDataBackupSheet(BuildContext context, WidgetRef ref) {
                             style: GoogleFonts.inter(
                               fontSize: 14.sp,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: palette.onAccent,
                             ),
                           ),
                           style: ElevatedButton.styleFrom(
@@ -605,17 +605,17 @@ void showDataBackupSheet(BuildContext context, WidgetRef ref) {
                             ? SizedBox(
                                 width: 20.r,
                                 height: 20.r,
-                                child: const CircularProgressIndicator(
+                                child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: palette.onAccent,
                                 ),
                               )
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.file_upload_outlined,
-                                    color: Colors.white,
+                                    color: palette.onAccent,
                                     size: 18,
                                   ),
                                   SizedBox(width: 8.w),
@@ -624,7 +624,7 @@ void showDataBackupSheet(BuildContext context, WidgetRef ref) {
                                     style: GoogleFonts.inter(
                                       fontSize: 14.sp,
                                       fontWeight: FontWeight.w700,
-                                      color: Colors.white,
+                                      color: palette.onAccent,
                                     ),
                                   ),
                                 ],

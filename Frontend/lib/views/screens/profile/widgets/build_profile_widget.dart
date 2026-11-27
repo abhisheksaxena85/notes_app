@@ -536,8 +536,8 @@ class BuildProfileWidget extends ConsumerWidget {
                   child: Container(
                     width: 16.r,
                     height: 16.r,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: palette.onAccent,
                       shape: BoxShape.circle,
                     ),
                   ),

@@ -13,15 +13,15 @@ Future<String?> showItemStatusSheet(
   bool repeating = false,
 }) {
   final palette = context.daymark;
-  const statusOptions = [
-    (ItemStatus.pending, 'Pending', Icons.radio_button_unchecked_rounded, Color(0xFF166BBA)),
-    (ItemStatus.completed, 'Completed', Icons.check_circle_rounded, Color(0xFF0A5B2F)),
-    (ItemStatus.rejected, 'Rejected', Icons.cancel_outlined, Color(0xFFB95E58)),
+  final statusOptions = [
+    (ItemStatus.pending, 'Pending', Icons.radio_button_unchecked_rounded, palette.accent),
+    (ItemStatus.completed, 'Completed', Icons.check_circle_rounded, palette.success),
+    (ItemStatus.rejected, 'Rejected', Icons.cancel_outlined, palette.danger),
   ];
-  const repeatingOptions = [
-    (RepeatingChoice.doneToday, 'Done for today', Icons.check_circle_rounded, Color(0xFF0A5B2F)),
-    (RepeatingChoice.missedToday, 'Missed today', Icons.cancel_outlined, Color(0xFFB95E58)),
-    (RepeatingChoice.stop, 'Stop repeating', Icons.stop_circle_outlined, Color(0xFF6B6B6B)),
+  final repeatingOptions = [
+    (RepeatingChoice.doneToday, 'Done for today', Icons.check_circle_rounded, palette.success),
+    (RepeatingChoice.missedToday, 'Missed today', Icons.cancel_outlined, palette.danger),
+    (RepeatingChoice.stop, 'Stop repeating', Icons.stop_circle_outlined, palette.muted),
   ];
   final options = repeating ? repeatingOptions : statusOptions;
 

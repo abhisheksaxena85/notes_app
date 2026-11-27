@@ -22,11 +22,11 @@ Widget taskItemCard({
   // Left Status Strip Color
   Color stripColor;
   if (isCompleted) {
-    stripColor = const Color(0xFF0A5B2F); // Dark Green
+    stripColor = palette.success; // Dark Green
   } else if (isMissedOrRejected) {
-    stripColor = const Color(0xFFB95E58); // Danger Red
+    stripColor = palette.danger; // Danger Red
   } else {
-    stripColor = const Color(0xFF166BBA); // Primary Blue
+    stripColor = palette.accent; // Primary Blue
   }
 
   final String title = task.title.trim().isNotEmpty ? task.title : "Untitled Task";
@@ -99,13 +99,13 @@ Widget taskItemCard({
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: isCompleted
-                                      ? const Color(0xFF0A5B2F)
+                                      ? palette.success
                                       : Colors.transparent,
                                   border: Border.all(
                                     color: isCompleted
-                                        ? const Color(0xFF0A5B2F)
+                                        ? palette.success
                                         : (isMissedOrRejected
-                                            ? const Color(0xFFB95E58)
+                                            ? palette.danger
                                             : palette.muted.withValues(alpha: 0.6)),
                                     width: 1.8,
                                   ),
@@ -114,7 +114,7 @@ Widget taskItemCard({
                                     ? Icon(
                                         Icons.check_rounded,
                                         size: 14.sp,
-                                        color: Colors.white,
+                                        color: palette.onAccent,
                                       )
                                     : null,
                               ),
@@ -255,7 +255,7 @@ Widget taskItemCard({
                                     vertical: 2.h,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFB95E58).withValues(alpha: 0.15),
+                                    color: palette.danger.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(6.r),
                                   ),
                                   child: Text(
@@ -263,7 +263,7 @@ Widget taskItemCard({
                                     style: GoogleFonts.inter(
                                       fontSize: 9.sp,
                                       fontWeight: FontWeight.w800,
-                                      color: const Color(0xFFB95E58),
+                                      color: palette.danger,
                                     ),
                                   ),
                                 ),
@@ -276,7 +276,7 @@ Widget taskItemCard({
                                     vertical: 2.h,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFB95E58).withValues(alpha: 0.15),
+                                    color: palette.danger.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(6.r),
                                   ),
                                   child: Text(
@@ -284,7 +284,7 @@ Widget taskItemCard({
                                     style: GoogleFonts.inter(
                                       fontSize: 9.sp,
                                       fontWeight: FontWeight.w800,
-                                      color: const Color(0xFFB95E58),
+                                      color: palette.danger,
                                     ),
                                   ),
                                 ),

@@ -70,7 +70,7 @@ class _NoteDetailsScreenState extends ConsumerState<NoteDetailsScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: palette.danger,
-              foregroundColor: Colors.white,
+              foregroundColor: palette.onAccent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12.r),
               ),
