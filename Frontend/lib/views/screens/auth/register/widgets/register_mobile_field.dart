@@ -10,7 +10,7 @@ Widget registerMobileField({
 }) {
   return customTextInputField(
     controller: controller,
-    labelText: 'Mobile Number',
+    labelText: 'Mobile number',
     isError: isError,
     errorText: errorText,
     onChanged: onChanged,

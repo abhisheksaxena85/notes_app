@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/themes/daymark_text.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/views/screens/auth/login/login_screen.dart';
 
@@ -28,20 +27,15 @@ Future<void> confirmLogout(BuildContext context) async {
   showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
-      backgroundColor: palette.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
-      title: Text(
-        unsynced == 0 ? "Sign Out" : "Unsynced changes",
-        style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: palette.ink),
-      ),
-      content: Text(
-        message,
-        style: GoogleFonts.inter(fontSize: 13.sp, color: palette.muted),
-      ),
+      title: Text(unsynced == 0 ? "Sign out?" : "Unsynced changes"),
+      content: Text(message, style: DaymarkText.preview.copyWith(color: palette.inkSecondary)),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: Text("Cancel", style: GoogleFonts.inter(color: palette.muted)),
+          child: Text(
+            "Cancel",
+            style: DaymarkText.custom(14, FontWeight.w600).copyWith(color: palette.muted),
+          ),
         ),
         TextButton(
           onPressed: () {
@@ -49,8 +43,8 @@ Future<void> confirmLogout(BuildContext context) async {
             logOutAndShowLogin(context);
           },
           child: Text(
-            unsynced == 0 ? "Sign Out" : "Sign Out Anyway",
-            style: GoogleFonts.inter(color: palette.danger, fontWeight: FontWeight.w700),
+            unsynced == 0 ? "Sign out" : "Sign out anyway",
+            style: DaymarkText.custom(14, FontWeight.w600).copyWith(color: palette.danger),
           ),
         ),
       ],

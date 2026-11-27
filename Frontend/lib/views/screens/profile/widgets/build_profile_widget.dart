@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/data/network/dto/response/profile/profile_response_dto.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
+import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
+import 'package:notes_app/utils/themes/daymark_text.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
+import 'package:notes_app/views/screens/home/widgets/workspace_header.dart';
 import 'package:notes_app/views/screens/profile/widgets/sheets/account_sheet.dart';
 import 'package:notes_app/views/screens/profile/widgets/sheets/notifications_sheet.dart';
 import 'package:notes_app/views/screens/profile/widgets/sheets/data_backup_sheet.dart';
 import 'package:notes_app/views/screens/profile/widgets/sheets/help_sheet.dart';
 import 'package:notes_app/views/screens/profile/widgets/sheets/info_dialog.dart';
 import 'package:notes_app/views/screens/profile/widgets/sheets/logout_sheet.dart';
+import 'package:notes_app/views/widgets/daymark_card.dart';
+import 'package:notes_app/views/widgets/icon_tile.dart';
+import 'package:notes_app/views/widgets/primary_button.dart';
+import 'package:notes_app/views/widgets/section_header.dart';
+import 'package:notes_app/views/widgets/sheet_scaffold.dart';
 
 class BuildProfileWidget extends ConsumerWidget {
   final ProfileData profileData;
@@ -24,8 +30,11 @@ class BuildProfileWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = context.daymark;
-    final homeState = ref.watch(homeController);
-    final noteCount = homeState.value?.notesData?.data?.length ?? 0;
+    final noteCount = ref.watch(homeController).value?.notesData?.data?.length ?? 0;
+    final tasks = ref.watch(taskController).value?.tasks ?? const [];
+    final tasksDone = tasks.where((t) => t.effectiveStatus() == 'COMPLETED').length;
+    final reminderCount = ref.watch(reminderController).value?.reminders.length ?? 0;
+    final syncFailures = ref.watch(syncStatusController).value?.length ?? 0;
     final themeMode = ref.watch(themeModeProvider);
     final isDark = themeMode == ThemeMode.dark;
 
@@ -36,515 +45,316 @@ class BuildProfileWidget extends ConsumerWidget {
         (profileData.email != null && profileData.email!.isNotEmpty)
         ? profileData.email!
         : "user@daymark.app";
-    final firstLetter =
-        userName.isNotEmpty ? userName[0].toUpperCase() : "D";
 
-    return SingleChildScrollView(
+    return ListView(
       physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
       ),
-      padding: EdgeInsets.symmetric(horizontal: 20.w).copyWith(
-        top: 14.h,
-        bottom: 90.h,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: YOUR SPACE / Profile
-          Text(
-            "YOUR SPACE",
-            style: GoogleFonts.inter(
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.3,
-              color: palette.muted,
-            ),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      children: [
+        Text("Profile", style: DaymarkText.title.copyWith(color: palette.ink)),
+        const SizedBox(height: 18),
+
+        // Profile card
+        ProfileCard(
+          avatar: UserAvatar(name: userName, size: 56),
+          name: Text(
+            userName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: DaymarkText.custom(17, FontWeight.w600).copyWith(color: palette.ink),
           ),
-          SizedBox(height: 6.h),
-          Text(
-            "Profile",
-            style: GoogleFonts.inter(
-              fontSize: 31.sp,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1.0,
-              color: palette.ink,
-            ),
+          email: Text(
+            userEmail,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: DaymarkText.custom(13, FontWeight.w400).copyWith(color: palette.muted),
           ),
-          SizedBox(height: 16.h),
-
-          // User Card matching Figma (350x136, rx 22)
-          Container(
-            decoration: BoxDecoration(
-              color: palette.surface,
-              borderRadius: BorderRadius.circular(22.r),
-              border: Border.all(color: palette.line),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 16.h),
-            child: Column(
-              children: [
-                // Top user row: Avatar + Name/Email + Verified badge
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Avatar circle
-                    Container(
-                      width: 52.r,
-                      height: 52.r,
-                      decoration: BoxDecoration(
-                        color: palette.accentSoft,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          firstLetter,
-                          style: GoogleFonts.inter(
-                            fontSize: 22.sp,
-                            fontWeight: FontWeight.w800,
-                            color: palette.accent,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 14.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            userName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
-                              fontSize: 18.sp,
-                              fontWeight: FontWeight.w800,
-                              color: palette.ink,
-                            ),
-                          ),
-                          SizedBox(height: 2.h),
-                          Text(
-                            userEmail,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w400,
-                              color: palette.muted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Verified Badge circle
-                    Container(
-                      width: 24.r,
-                      height: 24.r,
-                      decoration: BoxDecoration(
-                        color: palette.accentSoft,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: AppIcons.icon(
-                          AppIcons.check,
-                          size: 15.sp,
-                          color: palette.accent,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 14.h),
-
-                // Card Divider
-                Divider(color: palette.line, height: 1),
-                SizedBox(height: 12.h),
-
-                // Bottom stats row: Note count + DEMO/ACTIVE pill
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        AppIcons.icon(
-                          AppIcons.workspace,
-                          size: 15.sp,
-                          color: palette.muted,
-                        ),
-                        SizedBox(width: 8.w),
-                        Text(
-                          "$noteCount ${noteCount == 1 ? "note" : "notes"} saved on this device",
-                          style: GoogleFonts.inter(
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w500,
-                            color: palette.muted,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10.w,
-                        vertical: 3.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: palette.background,
-                        borderRadius: BorderRadius.circular(10.r),
-                      ),
-                      child: Text(
-                        "ACTIVE USER",
-                        style: GoogleFonts.inter(
-                          fontSize: 8.sp,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.6,
-                          color: palette.muted,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          action: ProfileEditButton(
+            onPressed: () => showAccountDetailsSheet(context, ref, profileData),
           ),
-          SizedBox(height: 24.h),
-
-          // PREFERENCES Section Header
-          Text(
-            "PREFERENCES",
-            style: GoogleFonts.inter(
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.2,
-              color: palette.muted,
-            ),
-          ),
-          SizedBox(height: 10.h),
-
-          // Preferences Group Container (radius 19, surface fill, line border)
-          Container(
-            decoration: BoxDecoration(
-              color: palette.surface,
-              borderRadius: BorderRadius.circular(19.r),
-              border: Border.all(color: palette.line),
-            ),
-            child: Column(
-              children: [
-                // Item 1: Account Details
-                _buildSettingsRow(
-                  iconPath: AppIcons.profile,
-                  title: "Account details",
-                  subtitle: "Your profile information & settings",
-                  palette: palette,
-                  onTap: () => showAccountDetailsSheet(context, ref, profileData),
-                ),
-                _buildDivider(palette),
-
-                // Item 2: Dark Theme (TOGGLE SWITCH)
-                _buildDarkThemeRow(
-                  isDark: isDark,
-                  palette: palette,
-                  onToggle: () {
-                    ref.read(themeModeProvider.notifier).toggleTheme();
-                  },
-                ),
-                _buildDivider(palette),
-
-                // Item 3: App Preferences
-                _buildSettingsRow(
-                  iconPath: AppIcons.preferences,
-                  title: "App preferences",
-                  subtitle: "Appearance, theme, and reading options",
-                  palette: palette,
-                  onTap: () => showInfoDialog(
-                    context,
-                    "App Preferences",
-                    "Dual light/dark themes are rendered dynamically from the Figma design tokens.\nTypography uses Google Fonts Inter.",
-                  ),
-                ),
-                // Item 4: Notifications (hidden where the OS has none: web,
-                // Windows, Linux)
-                if (getIt<NotificationService>().isSupported) ...[
-                  _buildDivider(palette),
-                  _buildSettingsRow(
-                    iconPath: AppIcons.reminder,
-                    title: "Notifications",
-                    subtitle: "Reminder alerts, daily reminder and weekly summary",
-                    palette: palette,
-                    onTap: () => showNotificationsSheet(context),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          SizedBox(height: 24.h),
-
-          // DATA & SUPPORT Section Header
-          Text(
-            "DATA & SUPPORT",
-            style: GoogleFonts.inter(
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.2,
-              color: palette.muted,
-            ),
-          ),
-          SizedBox(height: 10.h),
-
-          // Data Group Container
-          Container(
-            decoration: BoxDecoration(
-              color: palette.surface,
-              borderRadius: BorderRadius.circular(19.r),
-              border: Border.all(color: palette.line),
-            ),
-            child: Column(
-              children: [
-                _buildSettingsRow(
-                  iconPath: AppIcons.privacy,
-                  title: "Privacy & security",
-                  subtitle: "Understand how notes are stored",
-                  palette: palette,
-                  onTap: () => showInfoDialog(
-                    context,
-                    "Privacy & Security",
-                    "Your notes are synchronized with your personal MySQL account over HTTPS and cached locally in an encrypted Drift SQLite database.\n\nLogging out clears all user-scoped data from memory.",
-                  ),
-                ),
-                _buildDivider(palette),
-                _buildSettingsRow(
-                  iconPath: AppIcons.backup,
-                  title: "Data & backup",
-                  subtitle: "Export or import notes as CSV, TXT, or JSON",
-                  palette: palette,
-                  onTap: () => showDataBackupSheet(context, ref),
-                ),
-                _buildDivider(palette),
-                _buildSettingsRow(
-                  iconPath: AppIcons.help,
-                  title: "Help & support",
-                  subtitle: "FAQs and app documentation",
-                  palette: palette,
-                  onTap: () => showHelpSheet(context),
-                ),
-                _buildDivider(palette),
-                _buildSettingsRow(
-                  iconPath: AppIcons.info,
-                  title: "About Daymark",
-                  subtitle: "Version and design system",
-                  palette: palette,
-                  onTap: () => showInfoDialog(
-                    context,
-                    "About Daymark",
-                    "Daymark Notes App v1.0.0\nCrafted with clean typography, dual theme tokens, and calm interface ergonomics.",
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 24.h),
-
-          // Logout Action Button
-          SizedBox(
-            width: double.infinity,
-            height: 48.h,
-            child: OutlinedButton.icon(
-              onPressed: () => confirmLogout(context),
-              icon: AppIcons.icon(AppIcons.signOut, color: palette.danger, size: 18.sp),
-              label: Text(
-                "Sign Out",
-                style: GoogleFonts.inter(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w600,
-                  color: palette.danger,
-                ),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: palette.danger.withValues(alpha: 0.4)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16.r),
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: 24.h),
-
-          // Version Footer
-          Center(
-            child: Text(
-              "DAYMARK  ·  VERSION 1.0.0",
-              style: GoogleFonts.inter(
-                fontSize: 9.sp,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.1,
-                color: palette.muted,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDivider(DaymarkPalette palette) {
-    return Padding(
-      padding: EdgeInsets.only(left: 56.w, right: 16.w),
-      child: Divider(color: palette.line, height: 1),
-    );
-  }
-
-  Widget _buildSettingsRow({
-    required String iconPath,
-    required String title,
-    required String subtitle,
-    required DaymarkPalette palette,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18.r),
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-        child: Row(
+        ),
+        const SizedBox(height: 10),
+        Row(
           children: [
-            Container(
-              width: 34.r,
-              height: 34.r,
-              decoration: BoxDecoration(
-                color: palette.background,
-                shape: BoxShape.circle,
+            Expanded(child: _stat(palette, noteCount, "Notes")),
+            const SizedBox(width: 8),
+            Expanded(child: _stat(palette, tasksDone, "Tasks done")),
+            const SizedBox(width: 8),
+            Expanded(child: _stat(palette, reminderCount, "Reminders")),
+          ],
+        ),
+        const SizedBox(height: 22),
+
+        const OverlineLabel("Preferences"),
+        const SizedBox(height: 8),
+        SettingsGroup(
+          children: [
+            SettingsRow(
+              icon: isDark ? AppIcons.darkMode : AppIcons.lightMode,
+              title: "Appearance",
+              value: Text(isDark ? "Dark" : "Light", style: _valueStyle(palette)),
+              onTap: () => _showAppearanceSheet(context, ref, themeMode),
+            ),
+            // Hidden where the OS has no notifications (web, Windows, Linux)
+            if (getIt<NotificationService>().isSupported)
+              SettingsRow(
+                icon: AppIcons.reminder,
+                title: "Notifications",
+                value: ValueListenableBuilder<NotificationStatus>(
+                  valueListenable: getIt<NotificationPermissionService>().status,
+                  builder: (context, status, _) => Text(
+                    status.alertsOn ? "On" : "Off",
+                    style: _valueStyle(palette).copyWith(
+                      color: status.alertsOn ? palette.accent : palette.muted,
+                    ),
+                  ),
+                ),
+                onTap: () => showNotificationsSheet(context),
               ),
-              child: Center(
-                child: AppIcons.icon(
-                  iconPath,
-                  size: 16.sp,
-                  color: palette.ink,
+          ],
+        ),
+        const SizedBox(height: 22),
+
+        const OverlineLabel("Data & support"),
+        const SizedBox(height: 8),
+        SettingsGroup(
+          children: [
+            SettingsRow(
+              icon: AppIcons.backup,
+              title: "Data & backup",
+              value: Text(
+                syncFailures == 0 ? "Synced" : "$syncFailures not synced",
+                style: _valueStyle(palette).copyWith(
+                  color: syncFailures == 0 ? palette.muted : palette.danger,
                 ),
               ),
+              onTap: () => showDataBackupSheet(context, ref),
             ),
-            SizedBox(width: 14.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w700,
-                      color: palette.ink,
-                    ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w400,
-                      color: palette.muted,
-                    ),
-                  ),
-                ],
+            SettingsRow(
+              icon: AppIcons.privacy,
+              title: "Privacy & security",
+              onTap: () => showInfoDialog(
+                context,
+                "Privacy & Security",
+                "Your notes are synchronized with your personal MySQL account over HTTPS and cached locally in an encrypted Drift SQLite database.\n\nLogging out clears all user-scoped data from memory.",
               ),
             ),
-            AppIcons.icon(
-              AppIcons.forward,
-              size: 20.sp,
-              color: palette.muted,
+            SettingsRow(
+              icon: AppIcons.help,
+              title: "Help & FAQ",
+              onTap: () => showHelpSheet(context),
             ),
+            SettingsRow(
+              icon: AppIcons.info,
+              title: "About Daymark",
+              value: Text("v1.0.0", style: _valueStyle(palette)),
+              onTap: () => showInfoDialog(
+                context,
+                "About Daymark",
+                "Daymark Notes App v1.0.0\nCrafted with clean typography, dual theme tokens, and calm interface ergonomics.",
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        OutlineButton(
+          label: "Sign out",
+          icon: AppIcons.signOut,
+          color: palette.danger,
+          borderColor: palette.dangerBorder,
+          onPressed: () => confirmLogout(context),
+        ),
+      ],
+    );
+  }
+
+  static TextStyle _valueStyle(DaymarkPalette palette) =>
+      DaymarkText.custom(14, FontWeight.w400).copyWith(color: palette.muted);
+
+  Widget _stat(DaymarkPalette palette, int value, String label) => StatCard(
+        value: Text(
+          "$value",
+          style: DaymarkText.custom(16, FontWeight.w600).copyWith(color: palette.ink),
+        ),
+        label: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: DaymarkText.custom(12, FontWeight.w400).copyWith(color: palette.muted),
+        ),
+      );
+
+  /// Appearance: Light or Dark.
+  void _showAppearanceSheet(BuildContext context, WidgetRef ref, ThemeMode current) {
+    final palette = context.daymark;
+    showDaymarkSheet<void>(
+      context,
+      builder: (sheetContext) => SheetScaffold(
+        title: "Appearance",
+        child: Column(
+          children: [
+            for (final (mode, label, icon) in const [
+              (ThemeMode.light, "Light", AppIcons.lightMode),
+              (ThemeMode.dark, "Dark", AppIcons.darkMode),
+            ])
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  ref.read(themeModeProvider.notifier).setTheme(mode);
+                  Navigator.pop(sheetContext);
+                },
+                child: SizedBox(
+                  height: 52,
+                  child: Row(
+                    children: [
+                      IconTile(icon: icon),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: DaymarkText.custom(14.5, FontWeight.w500).copyWith(color: palette.ink),
+                        ),
+                      ),
+                      if (current == mode)
+                        AppIcons.icon(AppIcons.check, size: 18, color: palette.accent),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
+}
 
-  /// Custom Toggle Switch Row matching Figma exactly
-  Widget _buildDarkThemeRow({
-    required bool isDark,
-    required DaymarkPalette palette,
-    required VoidCallback onToggle,
-  }) {
-    return InkWell(
-      onTap: onToggle,
-      borderRadius: BorderRadius.circular(18.r),
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-        child: Row(
-          children: [
-            Container(
-              width: 34.r,
-              height: 34.r,
-              decoration: BoxDecoration(
-                color: palette.background,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: AppIcons.icon(
-                  AppIcons.darkMode,
-                  size: 16.sp,
-                  color: palette.ink,
-                ),
-              ),
+/// The profile card: avatar, name, email and an action button. Slots are
+/// widgets so the loading state can shimmer them.
+class ProfileCard extends StatelessWidget {
+  const ProfileCard({
+    super.key,
+    required this.avatar,
+    required this.name,
+    required this.email,
+    required this.action,
+  });
+
+  final Widget avatar;
+  final Widget name;
+  final Widget email;
+  final Widget action;
+
+  @override
+  Widget build(BuildContext context) {
+    return DaymarkCard(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          avatar,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [name, const SizedBox(height: 3), email],
             ),
-            SizedBox(width: 14.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Dark theme",
-                    style: GoogleFonts.inter(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w700,
-                      color: palette.ink,
-                    ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    "Use calm dark appearance",
-                    style: GoogleFonts.inter(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w400,
-                      color: palette.muted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Custom Figma Capsule Toggle Switch (40x22, rx 11)
-            GestureDetector(
-              onTap: onToggle,
-              behavior: HitTestBehavior.opaque,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeInOut,
-                width: 40.w,
-                height: 22.h,
-                padding: EdgeInsets.all(3.r),
-                decoration: BoxDecoration(
-                  color: isDark ? palette.accent : palette.line,
-                  borderRadius: BorderRadius.circular(11.r),
-                ),
-                child: AnimatedAlign(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeInOut,
-                  alignment: isDark ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    width: 16.r,
-                    height: 16.r,
-                    decoration: BoxDecoration(
-                      color: palette.onAccent,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          ),
+          const SizedBox(width: 10),
+          action,
+        ],
+      ),
+    );
+  }
+}
+
+/// The 40 px outlined edit button on the profile card.
+class ProfileEditButton extends StatelessWidget {
+  const ProfileEditButton({super.key, required this.onPressed});
+
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.daymark;
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: 'Account details',
+      icon: AppIcons.icon(AppIcons.edit, size: 18, color: palette.inkSecondary),
+      style: IconButton.styleFrom(
+        fixedSize: const Size(40, 40),
+        minimumSize: const Size(40, 40),
+        side: BorderSide(color: palette.line),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+}
+
+/// A grouped settings card with dividers between rows.
+class SettingsGroup extends StatelessWidget {
+  const SettingsGroup({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.daymark;
+    return DaymarkCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) Divider(height: 1, thickness: 1, indent: 58, color: palette.divider),
+            children[i],
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// A 52 px settings row: 32 px icon tile, label, value and chevron.
+class SettingsRow extends StatelessWidget {
+  const SettingsRow({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.value,
+    this.onTap,
+  });
+
+  final String icon;
+  final String title;
+  final Widget? value;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.daymark;
+    return InkWell(
+      onTap: onTap,
+      child: SizedBox(
+        height: 52,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Row(
+            children: [
+              IconTile(icon: icon),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: DaymarkText.custom(14.5, FontWeight.w500).copyWith(color: palette.ink),
+                ),
+              ),
+              if (value != null) ...[const SizedBox(width: 8), value!],
+              const SizedBox(width: 6),
+              AppIcons.icon(AppIcons.forward, size: 18, color: palette.muted),
+            ],
+          ),
         ),
       ),
     );

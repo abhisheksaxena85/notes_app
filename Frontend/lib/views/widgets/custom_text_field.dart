@@ -5,10 +5,13 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
+import 'package:notes_app/utils/themes/daymark_text.dart';
+import 'package:notes_app/views/widgets/labeled_field.dart';
 
+/// A labelled 48 px text field (login, register). [prefixIcon] is an
+/// [AppIcons] path; [obscureText] adds the show / hide toggle.
 Widget customTextInputField({
   required TextEditingController? controller,
   required String labelText,
@@ -22,111 +25,126 @@ Widget customTextInputField({
   bool? isEnabled,
   double? height,
   FocusNode? focusNode,
+  String? prefixIcon,
+  bool obscureText = false,
+  String? hintText,
 }) {
-  return Builder(
-    builder: (context) {
-      final palette = context.daymark;
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// MARK: Text Field
-          SizedBox(
-            height: height ?? 40.h,
-            child: TextField(
-              focusNode: focusNode,
-              keyboardType: keyboardType,
-              minLines: 1,
-              maxLines: 100,
-              enabled: isEnabled,
-              scrollPadding: EdgeInsets.zero,
-              onChanged: onChanged,
-              maxLength: length,
-
-              /// counter builder
-              buildCounter: (
-                context, {
-                required currentLength,
-                required isFocused,
-                required maxLength,
-              }) => null,
-              controller: controller,
-
-              /// Input formatters
-              inputFormatters: inputFormatters,
-
-              /// Input text style
-              style: GoogleFonts.sourceSans3(
-                fontSize: 14.sp,
-                color: isEnabled == false ? palette.muted : palette.ink,
-                fontWeight: FontWeight.w400,
-              ),
-              textAlign: TextAlign.start,
-              textAlignVertical: TextAlignVertical.center,
-              decoration: InputDecoration(
-                fillColor: backgroundColor,
-                filled: backgroundColor != null,
-
-                /// Suffix error icon only
-                suffixIcon: isError && inputFormatters.isNotEmpty
-                    ? Icon(Icons.error, color: palette.danger, size: 20.sp)
-                    : null,
-
-                /// Content padding
-                contentPadding: EdgeInsets.symmetric(
-                  vertical: 0.h,
-                  horizontal: 12.w,
-                ),
-
-                /// Label content
-                labelText: labelText,
-                labelStyle: GoogleFonts.sourceSans3(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w400,
-                  color: isError ? palette.danger : null,
-                ),
-
-                /// Border styles
-                enabledBorder: outlineInputBorder(
-                  isError ? palette.danger : palette.line,
-                  false,
-                ),
-                focusedBorder: outlineInputBorder(
-                  isError ? palette.danger : palette.accent,
-                  true,
-                ),
-                disabledBorder: outlineInputBorder(
-                  isError ? palette.danger : palette.line,
-                  false,
-                ),
-              ),
-            ),
-          ),
-
-          /// MARK: Error Text
-          if (isError) ...[
-            SizedBox(height: 4.h),
-            Container(
-              margin: EdgeInsets.only(left: 16.w),
-              child: Text(
-                errorText,
-                style: GoogleFonts.sourceSans3(
-                  fontSize: 12.sp,
-                  color: palette.danger,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ],
-      );
-    },
+  return DaymarkTextField(
+    controller: controller,
+    label: labelText,
+    errorText: isError ? errorText : null,
+    onChanged: onChanged,
+    maxLength: length,
+    inputFormatters: inputFormatters,
+    keyboardType: keyboardType,
+    backgroundColor: backgroundColor,
+    enabled: isEnabled,
+    focusNode: focusNode,
+    prefixIcon: prefixIcon,
+    obscureText: obscureText,
+    hintText: hintText,
   );
 }
 
-/// Widget to build the outer border of text field
-OutlineInputBorder outlineInputBorder(Color color, bool isFocused) {
-  return OutlineInputBorder(
-    borderSide: BorderSide(color: color, width: isFocused ? 1.4.w : 1.w),
-    borderRadius: BorderRadius.circular(4.r),
-  );
+class DaymarkTextField extends StatefulWidget {
+  const DaymarkTextField({
+    super.key,
+    required this.controller,
+    required this.label,
+    this.errorText,
+    this.onChanged,
+    this.maxLength,
+    this.inputFormatters = const [],
+    this.keyboardType = TextInputType.text,
+    this.backgroundColor,
+    this.enabled,
+    this.focusNode,
+    this.prefixIcon,
+    this.obscureText = false,
+    this.hintText,
+  });
+
+  final TextEditingController? controller;
+  final String label;
+
+  /// Shown below the field and turns the border `danger` when not empty.
+  final String? errorText;
+  final ValueChanged<String>? onChanged;
+  final int? maxLength;
+  final List<TextInputFormatter> inputFormatters;
+  final TextInputType keyboardType;
+  final Color? backgroundColor;
+  final bool? enabled;
+  final FocusNode? focusNode;
+  final String? prefixIcon;
+  final bool obscureText;
+  final String? hintText;
+
+  @override
+  State<DaymarkTextField> createState() => _DaymarkTextFieldState();
+}
+
+class _DaymarkTextFieldState extends State<DaymarkTextField> {
+  late bool _hidden = widget.obscureText;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.daymark;
+    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty;
+    OutlineInputBorder border(Color color, [double width = 1]) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: color, width: width),
+        );
+    return LabeledField(
+      label: widget.label,
+      errorText: widget.errorText,
+      child: SizedBox(
+        height: 48,
+        child: TextField(
+          controller: widget.controller,
+          focusNode: widget.focusNode,
+          enabled: widget.enabled,
+          keyboardType: widget.keyboardType,
+          obscureText: _hidden,
+          enableSuggestions: !widget.obscureText,
+          autocorrect: !widget.obscureText,
+          maxLength: widget.maxLength,
+          maxLines: 1,
+          inputFormatters: widget.inputFormatters,
+          onChanged: widget.onChanged,
+          buildCounter: (context, {required currentLength, required isFocused, required maxLength}) => null,
+          textAlignVertical: TextAlignVertical.center,
+          style: DaymarkText.custom(15, FontWeight.w400).copyWith(
+            color: widget.enabled == false ? palette.muted : palette.ink,
+          ),
+          decoration: InputDecoration(
+            hintText: widget.hintText,
+            fillColor: widget.backgroundColor ?? palette.background,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+            prefixIcon: widget.prefixIcon == null
+                ? null
+                : Padding(
+                    padding: const EdgeInsets.only(left: 14, right: 10),
+                    child: AppIcons.icon(widget.prefixIcon!, size: 18, color: palette.muted),
+                  ),
+            prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+            suffixIcon: widget.obscureText
+                ? IconButton(
+                    tooltip: _hidden ? 'Show password' : 'Hide password',
+                    onPressed: () => setState(() => _hidden = !_hidden),
+                    icon: AppIcons.icon(
+                      AppIcons.show,
+                      size: 18,
+                      color: _hidden ? palette.muted : palette.accent,
+                    ),
+                  )
+                : null,
+            enabledBorder: border(hasError ? palette.danger : palette.line),
+            focusedBorder: border(hasError ? palette.danger : palette.accent, 1.5),
+            disabledBorder: border(palette.line),
+          ),
+        ),
+      ),
+    );
+  }
 }

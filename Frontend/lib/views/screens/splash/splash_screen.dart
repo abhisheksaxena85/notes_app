@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:notes_app/utils/themes/daymark_text.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
@@ -148,7 +148,7 @@ class _SplashScreenState extends State<SplashScreen>
                     scale: _logoScale,
                     child: FadeTransition(
                       opacity: _logoFade,
-                      child: AppIcons.logo(size: 84.r),
+                      child: AppIcons.logo(size: 80),
                     ),
                   ),
                 ),
@@ -164,23 +164,14 @@ class _SplashScreenState extends State<SplashScreen>
                         Text(
                           'Daymark',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
-                            fontSize: 34.sp,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -1.2,
-                            color: palette.ink,
-                          ),
+                          style: DaymarkText.custom(30, FontWeight.w600, letterSpacing: -0.6)
+                              .copyWith(color: palette.ink),
                         ),
                         SizedBox(height: 6.h),
                         Text(
                           'Thoughtful daily notes',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w400,
-                            letterSpacing: 0.2,
-                            color: palette.muted,
-                          ),
+                          style: DaymarkText.preview.copyWith(color: palette.muted),
                         ),
                       ],
                     ),
@@ -223,23 +214,14 @@ class _SplashScreenState extends State<SplashScreen>
                         Text(
                           'A CALM SPACE FOR YOUR THOUGHTS',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.4,
-                            color: palette.muted,
-                          ),
+                          style: DaymarkText.overline.copyWith(color: palette.muted),
                         ),
                         SizedBox(height: 6.h),
                         Text(
                           'DAYMARK · VERSION 1.0.0',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.8,
-                            color: palette.disabled,
-                          ),
+                          style: DaymarkText.custom(11, FontWeight.w500, letterSpacing: 0.3)
+                              .copyWith(color: palette.disabled),
                         ),
                       ],
                     ),

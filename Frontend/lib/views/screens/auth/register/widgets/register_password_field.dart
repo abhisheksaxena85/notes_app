@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:notes_app/views/widgets/custom_text_field.dart';
 
 Widget registerPasswordField({
@@ -16,5 +17,7 @@ Widget registerPasswordField({
     length: 100,
     inputFormatters: [],
     keyboardType: TextInputType.visiblePassword,
+    prefixIcon: AppIcons.password,
+    obscureText: true,
   );
 }

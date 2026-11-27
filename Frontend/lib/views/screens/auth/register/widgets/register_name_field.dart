@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:notes_app/views/widgets/custom_text_field.dart';
 
 Widget registerNameField({
@@ -9,11 +10,12 @@ Widget registerNameField({
 }) {
   return customTextInputField(
     controller: controller,
-    labelText: 'Full Name',
+    labelText: 'Full name',
     isError: isError,
     errorText: errorText,
     onChanged: onChanged,
     length: 50,
+    prefixIcon: AppIcons.profile,
     inputFormatters: [],
     keyboardType: TextInputType.name,
   );

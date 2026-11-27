@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/themes/daymark_text.dart';
 
-Widget registerLoginLink({required BuildContext context}) {
+Widget registerLoginLink({
+  required BuildContext context,
+}) {
+  final palette = context.daymark;
   return Row(
     mainAxisAlignment: MainAxisAlignment.center,
-    crossAxisAlignment: CrossAxisAlignment.center,
     children: [
       Text(
         "Already have an account?",
-        style: GoogleFonts.sourceSans3(
-          color: context.daymark.muted,
-          fontSize: 14.sp,
-          fontWeight: FontWeight.w500,
-        ),
+        style: DaymarkText.custom(13.5, FontWeight.w400).copyWith(color: palette.muted),
       ),
-      SizedBox(width: 4.w),
-      ElevatedButton(
+      TextButton(
         onPressed: () {
           Navigator.pop(context);
         },
-        child: Text("Login"),
+        child: Text(
+          "Sign in",
+          style: DaymarkText.custom(13.5, FontWeight.w600).copyWith(color: palette.accent),
+        ),
       ),
     ],
   );
