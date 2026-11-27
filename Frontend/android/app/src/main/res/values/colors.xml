@@ -3,4 +3,14 @@
     <color name="ic_launcher_background">#2A2B2F</color>
     <!-- Native launch background: the theme background (design/README.md §1). -->
     <color name="launch_background">#F3F3F1</color>
+    <!-- Home-screen widgets (W-04, W-05): design/README.md §1. -->
+    <color name="widget_surface">#FBFBFA</color>
+    <color name="widget_ink">#2A2B2F</color>
+    <color name="widget_muted">#6A6C72</color>
+    <color name="widget_accent">#2F6BDB</color>
+    <color name="widget_accent_soft">#E3EAF6</color>
+    <color name="widget_on_accent">#FBFBFA</color>
+    <color name="widget_success">#2F7A52</color>
+    <color name="widget_danger">#B8433B</color>
+    <color name="widget_line">#E3E3DF</color>
 </resources>

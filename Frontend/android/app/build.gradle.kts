@@ -2,6 +2,8 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
+    // Glance home-screen widgets are Compose code (W-04, W-05).
+    id("org.jetbrains.kotlin.plugin.compose")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -53,6 +55,10 @@ android {
         multiDexEnabled = true
     }
 
+    buildFeatures {
+        compose = true
+    }
+
     signingConfigs {
         if (hasReleaseKeystore) {
             create("release") {
@@ -89,4 +95,7 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Home-screen widgets (W-04, W-05). Same versions as home_widget 0.10.
+    implementation("androidx.glance:glance-appwidget:1.2.0")
+    implementation("androidx.work:work-runtime-ktx:2.11.2")
 }

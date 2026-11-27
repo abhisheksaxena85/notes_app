@@ -35,6 +35,10 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- W-01: widget taps (home_widget) open daymark:// links here. -->
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.LAUNCH"/>
+            </intent-filter>
         </activity>
         <!-- W-03: quick add from the Tasks widget, a pop-up over the home
              screen with its own Flutter entrypoint (quickAddTaskMain). -->
@@ -49,6 +53,34 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize|stateAlwaysVisible"/>
+        <!-- W-04: "Daymark Tasks" home-screen widget (Jetpack Glance). -->
+        <receiver
+            android:name=".widgets.TasksWidgetReceiver"
+            android:label="@string/widget_tasks_label"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_tasks_info"/>
+        </receiver>
+        <!-- W-02: widget buttons run Dart in the background (home_widget).
+             Not exported: only this app's widgets may trigger it. -->
+        <receiver
+            android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
+            android:exported="false"/>
+        <!-- W-04/W-05: widget redraws at set times (a ticked row dropping
+             off, the next reminder), re-armed after a reboot or update. -->
+        <receiver
+            android:name="es.antonborri.home_widget.HomeWidgetScheduledUpdateReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"/>
+            </intent-filter>
+        </receiver>
         <!-- flutter_local_notifications: action buttons, scheduled
              notifications, and rescheduling after a reboot or app update. -->
         <receiver

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- W-04 "Daymark Tasks": default 4x2, resizable from 2x2 to 4x4.
+     Below Android 12 minWidth/minHeight are the default size and
+     minResize* the smallest. updatePeriodMillis refreshes "overdue" and the
+     date labels now and then; the app redraws it whenever data changes. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_tasks_description"
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:previewLayout="@layout/widget_tasks_preview"
+    android:previewImage="@drawable/widget_tasks_preview_image"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="110dp"
+    android:maxResizeWidth="330dp"
+    android:maxResizeHeight="330dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:updatePeriodMillis="1800000" />

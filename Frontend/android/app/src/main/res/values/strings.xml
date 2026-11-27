@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Home-screen widgets (W-04, W-05) -->
+    <string name="widget_tasks_label">Daymark Tasks</string>
+    <string name="widget_tasks_description">Today\'s tasks: tick them off or add one without opening Daymark.</string>
+    <string name="widget_reminder_label">Next reminder</string>
+    <string name="widget_reminder_description">Your next reminder with a countdown. Mark it done from the home screen.</string>
+</resources>

@@ -2,4 +2,14 @@
 <resources>
     <!-- Native launch background in dark mode. -->
     <color name="launch_background">#1C1D20</color>
+    <!-- Home-screen widgets (W-04, W-05): design/README.md §1. -->
+    <color name="widget_surface">#25262A</color>
+    <color name="widget_ink">#E8E8E5</color>
+    <color name="widget_muted">#A0A2A8</color>
+    <color name="widget_accent">#6B9BF2</color>
+    <color name="widget_accent_soft">#333D52</color>
+    <color name="widget_on_accent">#1C1D20</color>
+    <color name="widget_success">#5FB386</color>
+    <color name="widget_danger">#E8897F</color>
+    <color name="widget_line">#34363C</color>
 </resources>
