@@ -1,5 +1,7 @@
 # Daymark Notes App — Figma Design Kit & Canvas Replicator
 
+> **Superseded.** This kit documents the previous sage-green design. The current UI follows the v2 redesign spec in [`design/README.md`](../../design/README.md) (blue accent, Inter, hairline cards, new icon set and app icon). Keep this folder only for history.
+
 This directory contains the complete design replication of the **Daymark Notes App** Flutter codebase into Figma, including both **Light and Dark themes**, animated **Splash screens**, **Figma Variable Collections**, and **Prototyping flows**.
 
 - **Figma File URL**: [Daymark Notes App on Figma](https://www.figma.com/design/eifg2slPB4t1LBaEezrSWr/Daymark-Notes-App)
