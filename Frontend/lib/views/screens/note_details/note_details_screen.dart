@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -260,7 +261,7 @@ class _NoteDetailsScreenState extends ConsumerState<NoteDetailsScreen> {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: palette.muted, size: 20.sp),
+            AppIcons.icon(AppIcons.forward, color: palette.muted, size: 20.sp),
           ],
         ),
       ),

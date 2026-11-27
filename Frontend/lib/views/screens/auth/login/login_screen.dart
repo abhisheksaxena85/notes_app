@@ -30,7 +30,7 @@ class LoginScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Logo
-                AppIcons.splashLogo(context: context, size: 72.r),
+                AppIcons.logo(size: 72.r),
                 SizedBox(height: 16.h),
                 Text(
                   "Daymark",

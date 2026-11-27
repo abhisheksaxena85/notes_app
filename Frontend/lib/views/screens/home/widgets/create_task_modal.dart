@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -239,7 +240,7 @@ class _TaskFormModalState extends ConsumerState<TaskFormModal> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.close_rounded, color: palette.muted),
+                    icon: AppIcons.icon(AppIcons.close, color: palette.muted),
                   ),
                 ],
               ),
@@ -294,8 +295,8 @@ class _TaskFormModalState extends ConsumerState<TaskFormModal> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: _pickDate,
-                      icon: Icon(
-                        Icons.calendar_today_rounded,
+                      icon: AppIcons.icon(
+                        AppIcons.calendar,
                         size: 16.sp,
                         color: palette.accent,
                       ),
@@ -320,8 +321,8 @@ class _TaskFormModalState extends ConsumerState<TaskFormModal> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: _pickTime,
-                      icon: Icon(
-                        Icons.access_time_rounded,
+                      icon: AppIcons.icon(
+                        AppIcons.clock,
                         size: 16.sp,
                         color: palette.accent,
                       ),

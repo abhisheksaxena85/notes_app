@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
@@ -114,7 +115,7 @@ void showNotificationsSheet(BuildContext context) {
                         await digests.setDaily(true, time: picked);
                       }
                     },
-                    icon: Icon(Icons.access_time_rounded, size: 16.sp, color: palette.accent),
+                    icon: AppIcons.icon(AppIcons.clock, size: 16.sp, color: palette.accent),
                     label: Text(
                       "Change Time ($formattedTime)",
                       style: GoogleFonts.inter(
@@ -172,7 +173,7 @@ void showNotificationsSheet(BuildContext context) {
                       title: 'Test notification',
                       body: 'Reminders will look like this.',
                     ),
-                    icon: Icon(Icons.notifications_active_outlined, size: 16.sp, color: palette.accent),
+                    icon: AppIcons.icon(AppIcons.reminder, size: 16.sp, color: palette.accent),
                     label: Text(
                       "Test notification",
                       style: GoogleFonts.inter(

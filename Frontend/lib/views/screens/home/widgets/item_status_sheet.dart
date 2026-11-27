@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/data/network/dto/response/item_status.dart';
@@ -14,14 +15,14 @@ Future<String?> showItemStatusSheet(
 }) {
   final palette = context.daymark;
   final statusOptions = [
-    (ItemStatus.pending, 'Pending', Icons.radio_button_unchecked_rounded, palette.accent),
-    (ItemStatus.completed, 'Completed', Icons.check_circle_rounded, palette.success),
-    (ItemStatus.rejected, 'Rejected', Icons.cancel_outlined, palette.danger),
+    (ItemStatus.pending, 'Pending', AppIcons.clock, palette.accent),
+    (ItemStatus.completed, 'Completed', AppIcons.done, palette.success),
+    (ItemStatus.rejected, 'Rejected', AppIcons.close, palette.danger),
   ];
   final repeatingOptions = [
-    (RepeatingChoice.doneToday, 'Done for today', Icons.check_circle_rounded, palette.success),
-    (RepeatingChoice.missedToday, 'Missed today', Icons.cancel_outlined, palette.danger),
-    (RepeatingChoice.stop, 'Stop repeating', Icons.stop_circle_outlined, palette.muted),
+    (RepeatingChoice.doneToday, 'Done for today', AppIcons.done, palette.success),
+    (RepeatingChoice.missedToday, 'Missed today', AppIcons.close, palette.danger),
+    (RepeatingChoice.stop, 'Stop repeating', AppIcons.repeat, palette.muted),
   ];
   final options = repeating ? repeatingOptions : statusOptions;
 
@@ -39,7 +40,7 @@ Future<String?> showItemStatusSheet(
           children: [
             for (final (value, label, icon, color) in options)
               ListTile(
-                leading: Icon(icon, color: color),
+                leading: AppIcons.icon(icon, color: color),
                 title: Text(
                   label,
                   style: GoogleFonts.inter(
@@ -49,7 +50,7 @@ Future<String?> showItemStatusSheet(
                   ),
                 ),
                 trailing: value == currentStatus
-                    ? Icon(Icons.check_rounded, color: palette.accent)
+                    ? AppIcons.icon(AppIcons.check, color: palette.accent)
                     : null,
                 onTap: () => Navigator.of(sheetContext).pop(value),
               ),

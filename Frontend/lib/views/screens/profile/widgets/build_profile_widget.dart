@@ -150,8 +150,8 @@ class BuildProfileWidget extends ConsumerWidget {
                         shape: BoxShape.circle,
                       ),
                       child: Center(
-                        child: Icon(
-                          Icons.check_rounded,
+                        child: AppIcons.icon(
+                          AppIcons.check,
                           size: 15.sp,
                           color: palette.accent,
                         ),
@@ -172,7 +172,7 @@ class BuildProfileWidget extends ConsumerWidget {
                     Row(
                       children: [
                         AppIcons.icon(
-                          AppIcons.navNotes,
+                          AppIcons.workspace,
                           size: 15.sp,
                           color: palette.muted,
                         ),
@@ -236,7 +236,7 @@ class BuildProfileWidget extends ConsumerWidget {
               children: [
                 // Item 1: Account Details
                 _buildSettingsRow(
-                  iconPath: AppIcons.navProfile,
+                  iconPath: AppIcons.profile,
                   title: "Account details",
                   subtitle: "Your profile information & settings",
                   palette: palette,
@@ -256,7 +256,7 @@ class BuildProfileWidget extends ConsumerWidget {
 
                 // Item 3: App Preferences
                 _buildSettingsRow(
-                  iconPath: AppIcons.sliders,
+                  iconPath: AppIcons.preferences,
                   title: "App preferences",
                   subtitle: "Appearance, theme, and reading options",
                   palette: palette,
@@ -271,7 +271,7 @@ class BuildProfileWidget extends ConsumerWidget {
                 if (getIt<NotificationService>().isSupported) ...[
                   _buildDivider(palette),
                   _buildSettingsRow(
-                    iconPath: AppIcons.bell,
+                    iconPath: AppIcons.reminder,
                     title: "Notifications",
                     subtitle: "Reminder alerts, daily reminder and weekly summary",
                     palette: palette,
@@ -305,7 +305,7 @@ class BuildProfileWidget extends ConsumerWidget {
             child: Column(
               children: [
                 _buildSettingsRow(
-                  iconPath: AppIcons.shield,
+                  iconPath: AppIcons.privacy,
                   title: "Privacy & security",
                   subtitle: "Understand how notes are stored",
                   palette: palette,
@@ -317,7 +317,7 @@ class BuildProfileWidget extends ConsumerWidget {
                 ),
                 _buildDivider(palette),
                 _buildSettingsRow(
-                  iconPath: AppIcons.cloud,
+                  iconPath: AppIcons.backup,
                   title: "Data & backup",
                   subtitle: "Export or import notes as CSV, TXT, or JSON",
                   palette: palette,
@@ -354,7 +354,7 @@ class BuildProfileWidget extends ConsumerWidget {
             height: 48.h,
             child: OutlinedButton.icon(
               onPressed: () => confirmLogout(context),
-              icon: Icon(Icons.logout_rounded, color: palette.danger, size: 18.sp),
+              icon: AppIcons.icon(AppIcons.signOut, color: palette.danger, size: 18.sp),
               label: Text(
                 "Sign Out",
                 style: GoogleFonts.inter(
@@ -451,8 +451,8 @@ class BuildProfileWidget extends ConsumerWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
+            AppIcons.icon(
+              AppIcons.forward,
               size: 20.sp,
               color: palette.muted,
             ),
@@ -484,7 +484,7 @@ class BuildProfileWidget extends ConsumerWidget {
               ),
               child: Center(
                 child: AppIcons.icon(
-                  AppIcons.moon,
+                  AppIcons.darkMode,
                   size: 16.sp,
                   color: palette.ink,
                 ),

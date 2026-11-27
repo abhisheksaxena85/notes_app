@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
@@ -138,7 +139,7 @@ class _AddSpeedDialFabState extends State<AddSpeedDialFab>
                 _buildSpeedDialItem(
                   label: "New Reminder",
                   index: 2,
-                  icon: Icons.notifications_active_outlined,
+                  icon: AppIcons.reminder,
                   iconColor: palette.accent,
                   iconBg: palette.accent.withValues(alpha: 0.15),
                   onTap: () {
@@ -153,7 +154,7 @@ class _AddSpeedDialFabState extends State<AddSpeedDialFab>
                 _buildSpeedDialItem(
                   label: "New Task",
                   index: 1,
-                  icon: Icons.check_circle_outline_rounded,
+                  icon: AppIcons.task,
                   iconColor: palette.accent,
                   iconBg: palette.accent.withValues(alpha: 0.15),
                   onTap: () {
@@ -168,7 +169,7 @@ class _AddSpeedDialFabState extends State<AddSpeedDialFab>
                 _buildSpeedDialItem(
                   label: "New Note",
                   index: 0,
-                  icon: Icons.edit_note_rounded,
+                  icon: AppIcons.note,
                   iconColor: palette.accent,
                   iconBg: palette.accentSoft,
                   onTap: () {
@@ -213,8 +214,8 @@ class _AddSpeedDialFabState extends State<AddSpeedDialFab>
                       builder: (context, child) {
                         return Transform.rotate(
                           angle: _rotateAnimation.value,
-                          child: Icon(
-                            Icons.add_rounded,
+                          child: AppIcons.icon(
+                            AppIcons.plus,
                             color: fabFg,
                             size: 22.sp,
                           ),
@@ -243,7 +244,7 @@ class _AddSpeedDialFabState extends State<AddSpeedDialFab>
   Widget _buildSpeedDialItem({
     required String label,
     required int index,
-    required IconData icon,
+    required String icon,
     required Color iconColor,
     required Color iconBg,
     required VoidCallback onTap,
@@ -282,7 +283,7 @@ class _AddSpeedDialFabState extends State<AddSpeedDialFab>
                     color: iconBg,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: AppIcons.icon(
                     icon,
                     size: 18.sp,
                     color: iconColor,

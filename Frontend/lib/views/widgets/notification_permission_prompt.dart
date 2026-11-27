@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
@@ -52,7 +53,7 @@ Future<bool?> showNotificationPrePrompt(BuildContext context) {
               width: 44.r,
               height: 44.r,
               decoration: BoxDecoration(color: palette.accentSoft, shape: BoxShape.circle),
-              child: Icon(Icons.notifications_active_outlined, color: palette.accent, size: 22.sp),
+              child: AppIcons.icon(AppIcons.reminder, color: palette.accent, size: 22.sp),
             ),
             SizedBox(height: 14.h),
             Text(
@@ -213,11 +214,9 @@ class NotificationStatusRow extends StatelessWidget {
             padding: EdgeInsets.symmetric(vertical: 6.h),
             child: Row(
               children: [
-                Icon(
-                  status.alertsOn ? Icons.notifications_active_outlined : Icons.notifications_off_outlined,
-                  size: 20.sp,
-                  color: color,
-                ),
+                status.alertsOn
+                    ? AppIcons.icon(AppIcons.reminder, size: 20.sp, color: color)
+                    : Icon(Icons.notifications_off_outlined, size: 20.sp, color: color),
                 SizedBox(width: 10.w),
                 Expanded(
                   child: Column(
@@ -240,7 +239,7 @@ class NotificationStatusRow extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (!ok) Icon(Icons.chevron_right_rounded, color: palette.muted),
+                if (!ok) AppIcons.icon(AppIcons.forward, color: palette.muted),
               ],
             ),
           ),
@@ -316,7 +315,7 @@ class _NotificationsOffBannerState extends State<NotificationsOffBanner> {
                     IconButton(
                       tooltip: 'Dismiss',
                       onPressed: () => setState(() => _dismissed = true),
-                      icon: Icon(Icons.close_rounded, size: 18.sp, color: palette.muted),
+                      icon: AppIcons.icon(AppIcons.close, size: 18.sp, color: palette.muted),
                     ),
                   ],
                 ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
@@ -165,8 +166,8 @@ class _BuildNoteFormWidgetState extends State<BuildNoteFormWidget> {
                     borderRadius: BorderRadius.circular(14.r),
                   ),
                   child: Center(
-                    child: Icon(
-                      Icons.add_rounded,
+                    child: AppIcons.icon(
+                      AppIcons.plus,
                       size: 20.sp,
                       color: palette.accent,
                     ),
@@ -206,8 +207,8 @@ class _BuildNoteFormWidgetState extends State<BuildNoteFormWidget> {
                           ),
                         ),
                         SizedBox(width: 4.w),
-                        Icon(
-                          Icons.close_rounded,
+                        AppIcons.icon(
+                          AppIcons.close,
                           size: 13.sp,
                           color: palette.accent,
                         ),

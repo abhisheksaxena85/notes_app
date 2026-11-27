@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -60,7 +61,7 @@ void showAccountDetailsSheet(
                     Navigator.pop(ctx);
                     _showEditProfileSheet(context, ref, profileData);
                   },
-                  icon: Icon(Icons.edit_rounded, size: 16.sp, color: palette.accent),
+                  icon: AppIcons.icon(AppIcons.edit, size: 16.sp, color: palette.accent),
                   label: Text(
                     "Edit",
                     style: GoogleFonts.inter(

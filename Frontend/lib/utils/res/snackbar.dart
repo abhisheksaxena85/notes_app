@@ -4,6 +4,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/themes/daymark_text.dart';
 
@@ -12,7 +13,7 @@ import 'package:notes_app/utils/themes/daymark_text.dart';
 /// the theme's SnackBarThemeData.
 SnackBar _statusSnackBar(
   String message, {
-  required IconData icon,
+  required String icon,
   required Color Function(DaymarkPalette palette) iconColor,
 }) {
   return SnackBar(
@@ -21,7 +22,7 @@ SnackBar _statusSnackBar(
         final palette = context.daymark;
         return Row(
           children: [
-            Icon(icon, size: 20, color: iconColor(palette)),
+            AppIcons.icon(icon, size: 20, color: iconColor(palette)),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -49,18 +50,18 @@ DaymarkPalette _inverse(DaymarkPalette palette) =>
 
 SnackBar failedSnackBar(String message) => _statusSnackBar(
       message,
-      icon: Icons.error_outline_rounded,
+      icon: AppIcons.info,
       iconColor: (palette) => _inverse(palette).danger,
     );
 
 SnackBar successSnackBar(String message) => _statusSnackBar(
       message,
-      icon: Icons.check_circle_outline_rounded,
+      icon: AppIcons.done,
       iconColor: (palette) => _inverse(palette).success,
     );
 
 SnackBar waitingSnackbar(String message) => _statusSnackBar(
       message,
-      icon: Icons.downloading_rounded,
+      icon: AppIcons.sync,
       iconColor: (palette) => _inverse(palette).accent,
     );

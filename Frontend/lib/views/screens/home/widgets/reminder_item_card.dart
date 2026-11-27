@@ -127,13 +127,13 @@ Widget reminderItemCard({
                                 ),
                                 child: Center(
                                   child: isCompleted
-                                      ? Icon(
-                                          Icons.check_rounded,
+                                      ? AppIcons.icon(
+                                          AppIcons.check,
                                           size: 14.sp,
                                           color: palette.onAccent,
                                         )
                                       : AppIcons.icon(
-                                          AppIcons.bell,
+                                          AppIcons.reminder,
                                           size: 12.sp,
                                           color: isMissedOrRejected
                                               ? palette.danger
@@ -174,8 +174,8 @@ Widget reminderItemCard({
                                 behavior: HitTestBehavior.opaque,
                                 child: Padding(
                                   padding: EdgeInsets.all(4.r),
-                                  child: Icon(
-                                    Icons.delete_outline_rounded,
+                                  child: AppIcons.icon(
+                                    AppIcons.delete,
                                     size: 18.sp,
                                     color: palette.muted,
                                   ),
@@ -273,13 +273,9 @@ Widget reminderItemCard({
                                   message: alerts.alertsOn
                                       ? 'Notification scheduled'
                                       : 'Notifications are off',
-                                  child: Icon(
-                                    alerts.alertsOn
-                                        ? Icons.notifications_active
-                                        : Icons.notifications_off_outlined,
-                                    size: 13.sp,
-                                    color: alerts.alertsOn ? palette.accent : palette.muted,
-                                  ),
+                                  child: alerts.alertsOn
+                                      ? AppIcons.icon(AppIcons.reminder, size: 13.sp, color: palette.accent)
+                                      : Icon(Icons.notifications_off_outlined, size: 13.sp, color: palette.muted),
                                 ),
 
                               // REM-05: how the last occurrence went

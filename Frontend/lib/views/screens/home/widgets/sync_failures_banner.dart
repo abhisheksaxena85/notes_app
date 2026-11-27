@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -257,12 +258,12 @@ class _SyncFailureTile extends StatelessWidget {
         children: [
           IconButton(
             tooltip: 'Retry',
-            icon: Icon(Icons.refresh_rounded, color: palette.accent),
+            icon: AppIcons.icon(AppIcons.sync, color: palette.accent),
             onPressed: onRetry,
           ),
           IconButton(
             tooltip: 'Discard',
-            icon: Icon(Icons.delete_outline_rounded, color: palette.danger),
+            icon: AppIcons.icon(AppIcons.delete, color: palette.danger),
             onPressed: onDiscard,
           ),
         ],

@@ -85,7 +85,7 @@ Widget noteItemCard({
                     child: Padding(
                       padding: EdgeInsets.all(4.r),
                       child: AppIcons.icon(
-                        AppIcons.moreDots,
+                        AppIcons.more,
                         size: 14.sp,
                         color: palette.muted,
                       ),
@@ -180,7 +180,7 @@ Widget noteItemCard({
                     ],
                   ),
                   AppIcons.icon(
-                    AppIcons.arrowUpRight,
+                    AppIcons.open,
                     size: 14.sp,
                     color: palette.muted,
                   ),

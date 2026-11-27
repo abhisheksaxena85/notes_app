@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
@@ -54,7 +55,7 @@ Widget notesErrorWidget({
               SizedBox(height: 20.h),
               ElevatedButton.icon(
                 onPressed: onRetry,
-                icon: Icon(Icons.refresh_rounded, size: 18.sp),
+                icon: AppIcons.icon(AppIcons.sync, size: 18.sp),
                 label: Text(
                   "Try Again",
                   style: GoogleFonts.inter(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -247,13 +248,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             Row(
                               children: [
                                 _buildMonthNavBtn(
-                                  Icons.chevron_left_rounded,
+                                  AppIcons.back,
                                   _previousMonth,
                                   palette,
                                 ),
                                 SizedBox(width: 8.w),
                                 _buildMonthNavBtn(
-                                  Icons.chevron_right_rounded,
+                                  AppIcons.forward,
                                   _nextMonth,
                                   palette,
                                 ),
@@ -549,7 +550,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   Widget _buildMonthNavBtn(
-    IconData icon,
+    String icon,
     VoidCallback onTap,
     DaymarkPalette palette,
   ) {
@@ -565,7 +566,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           border: Border.all(color: palette.line),
         ),
         child: Center(
-          child: Icon(
+          child: AppIcons.icon(
             icon,
             size: 18.sp,
             color: palette.ink,

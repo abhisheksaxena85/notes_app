@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -65,7 +66,7 @@ Future<void> promptForReminder(
 Future<String?> showReminderAnswerSheet(BuildContext context, String title) {
   final palette = context.daymark;
   final isDark = palette.brightness == Brightness.dark;
-  Widget button(BuildContext sheetContext, String action, String label, IconData icon, Color color) {
+  Widget button(BuildContext sheetContext, String action, String label, String icon, Color color) {
     return Padding(
       padding: EdgeInsets.only(bottom: 8.h),
       child: SizedBox(
@@ -73,7 +74,7 @@ Future<String?> showReminderAnswerSheet(BuildContext context, String title) {
         height: 46.h,
         child: OutlinedButton.icon(
           onPressed: () => Navigator.of(sheetContext).pop(action),
-          icon: Icon(icon, color: color, size: 18.sp),
+          icon: AppIcons.icon(icon, color: color, size: 18.sp),
           label: Text(
             label,
             style: GoogleFonts.inter(fontSize: 14.sp, fontWeight: FontWeight.w700, color: palette.ink),
@@ -107,10 +108,10 @@ Future<String?> showReminderAnswerSheet(BuildContext context, String title) {
               style: GoogleFonts.inter(fontSize: 18.sp, fontWeight: FontWeight.w800, color: palette.ink),
             ),
             SizedBox(height: 16.h),
-            button(sheetContext, ReminderActions.done, 'Done', Icons.check_circle_rounded, palette.success),
-            button(sheetContext, ReminderActions.notDone, 'Not done', Icons.cancel_outlined,
+            button(sheetContext, ReminderActions.done, 'Done', AppIcons.done, palette.success),
+            button(sheetContext, ReminderActions.notDone, 'Not done', AppIcons.close,
                 palette.danger),
-            button(sheetContext, ReminderActions.snooze, 'Snooze 10 min', Icons.snooze_rounded,
+            button(sheetContext, ReminderActions.snooze, 'Snooze 10 min', AppIcons.snooze,
                 palette.accent),
           ],
         ),

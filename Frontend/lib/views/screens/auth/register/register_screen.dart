@@ -36,14 +36,14 @@ class RegisterScreen extends ConsumerWidget {
                 alignment: Alignment.centerLeft,
                 child: IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: Icon(
-                    Icons.arrow_back_ios_new_rounded,
+                  icon: AppIcons.icon(
+                    AppIcons.back,
                     color: palette.ink,
                     size: 20.sp,
                   ),
                 ),
               ),
-              AppIcons.splashLogo(context: context, size: 64.r),
+              AppIcons.logo(size: 64.r),
               SizedBox(height: 12.h),
               Text(
                 "Create Account",

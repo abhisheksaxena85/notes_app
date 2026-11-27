@@ -111,8 +111,8 @@ Widget taskItemCard({
                                   ),
                                 ),
                                 child: isCompleted
-                                    ? Icon(
-                                        Icons.check_rounded,
+                                    ? AppIcons.icon(
+                                        AppIcons.check,
                                         size: 14.sp,
                                         color: palette.onAccent,
                                       )
@@ -151,8 +151,8 @@ Widget taskItemCard({
                                 behavior: HitTestBehavior.opaque,
                                 child: Padding(
                                   padding: EdgeInsets.all(4.r),
-                                  child: Icon(
-                                    Icons.delete_outline_rounded,
+                                  child: AppIcons.icon(
+                                    AppIcons.delete,
                                     size: 18.sp,
                                     color: palette.muted,
                                   ),

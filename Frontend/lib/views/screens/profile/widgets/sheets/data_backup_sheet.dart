@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -276,8 +277,8 @@ void showDataBackupSheet(BuildContext context, WidgetRef ref) {
                               }
                             }
                           },
-                          icon: Icon(
-                            Icons.ios_share_rounded,
+                          icon: AppIcons.icon(
+                            AppIcons.export,
                             color: palette.onAccent,
                             size: 18,
                           ),
@@ -370,8 +371,8 @@ void showDataBackupSheet(BuildContext context, WidgetRef ref) {
                               });
                             }
                           },
-                          icon: Icon(
-                            Icons.paste_rounded,
+                          icon: AppIcons.icon(
+                            AppIcons.import,
                             size: 14.sp,
                             color: palette.accent,
                           ),
@@ -514,8 +515,8 @@ void showDataBackupSheet(BuildContext context, WidgetRef ref) {
                       SizedBox(height: 6.h),
                       Row(
                         children: [
-                          Icon(
-                            Icons.info_outline_rounded,
+                          AppIcons.icon(
+                            AppIcons.info,
                             size: 13.sp,
                             color: palette.accent,
                           ),
@@ -613,8 +614,8 @@ void showDataBackupSheet(BuildContext context, WidgetRef ref) {
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
-                                    Icons.file_upload_outlined,
+                                  AppIcons.icon(
+                                    AppIcons.import,
                                     color: palette.onAccent,
                                     size: 18,
                                   ),

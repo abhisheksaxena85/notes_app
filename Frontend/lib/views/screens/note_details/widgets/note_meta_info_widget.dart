@@ -50,7 +50,7 @@ Widget noteMetaInfoWidget({
               Row(
                 children: [
                   AppIcons.icon(
-                    AppIcons.arrowUpRight,
+                    AppIcons.open,
                     size: 13.sp,
                     color: palette.muted,
                   ),

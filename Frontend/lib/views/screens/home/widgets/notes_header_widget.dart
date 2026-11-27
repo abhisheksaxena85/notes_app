@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
@@ -70,8 +71,8 @@ Widget notesHeaderWidget({
                   onPressed: onRefresh,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
-                  icon: Icon(
-                    Icons.refresh_rounded,
+                  icon: AppIcons.icon(
+                    AppIcons.sync,
                     color: palette.muted,
                     size: 18.sp,
                   ),

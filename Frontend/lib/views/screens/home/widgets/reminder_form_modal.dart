@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:notes_app/utils/constants/app_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -319,11 +320,11 @@ class _ReminderFormModalState extends ConsumerState<ReminderFormModal> {
                         IconButton(
                           tooltip: 'Delete',
                           onPressed: _isSaving ? null : _deleteReminder,
-                          icon: Icon(Icons.delete_outline_rounded, color: palette.danger),
+                          icon: AppIcons.icon(AppIcons.delete, color: palette.danger),
                         ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: Icon(Icons.close_rounded, color: palette.muted),
+                        icon: AppIcons.icon(AppIcons.close, color: palette.muted),
                       ),
                     ],
                   ),
@@ -358,8 +359,8 @@ class _ReminderFormModalState extends ConsumerState<ReminderFormModal> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: _pickDate,
-                      icon: Icon(
-                        Icons.calendar_today_rounded,
+                      icon: AppIcons.icon(
+                        AppIcons.calendar,
                         size: 16.sp,
                         color: palette.accent,
                       ),
@@ -384,8 +385,8 @@ class _ReminderFormModalState extends ConsumerState<ReminderFormModal> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: _pickTime,
-                      icon: Icon(
-                        Icons.access_time_rounded,
+                      icon: AppIcons.icon(
+                        AppIcons.clock,
                         size: 16.sp,
                         color: palette.accent,
                       ),

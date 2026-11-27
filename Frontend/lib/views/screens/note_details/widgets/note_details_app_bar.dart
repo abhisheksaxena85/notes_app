@@ -51,8 +51,8 @@ Widget noteDetailsAppBar({
                       border: Border.all(color: palette.line),
                     ),
                     child: Center(
-                      child: Icon(
-                        Icons.close_rounded,
+                      child: AppIcons.icon(
+                        AppIcons.close,
                         size: 20.sp,
                         color: palette.ink,
                       ),
@@ -78,8 +78,8 @@ Widget noteDetailsAppBar({
                   IconButton(
                     onPressed: onExport,
                     tooltip: 'Export Note',
-                    icon: Icon(
-                      Icons.file_download_outlined,
+                    icon: AppIcons.icon(
+                      AppIcons.export,
                       color: palette.ink,
                       size: 22.sp,
                     ),
@@ -90,8 +90,8 @@ Widget noteDetailsAppBar({
                   IconButton(
                     onPressed: onDelete,
                     tooltip: 'Delete Note',
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
+                    icon: AppIcons.icon(
+                      AppIcons.delete,
                       color: palette.danger,
                       size: 22.sp,
                     ),

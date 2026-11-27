@@ -148,10 +148,7 @@ class _SplashScreenState extends State<SplashScreen>
                     scale: _logoScale,
                     child: FadeTransition(
                       opacity: _logoFade,
-                      child: AppIcons.splashLogo(
-                        context: context,
-                        size: 84.r,
-                      ),
+                      child: AppIcons.logo(size: 84.r),
                     ),
                   ),
                 ),

@@ -90,19 +90,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               _buildNavItem(
                 index: 0,
-                iconPath: AppIcons.navNotes,
+                iconPath: AppIcons.workspace,
                 label: "Workspace",
                 palette: palette,
               ),
               _buildNavItem(
                 index: 1,
-                iconPath: AppIcons.navCalendar,
+                iconPath: AppIcons.calendar,
                 label: "Calendar",
                 palette: palette,
               ),
               _buildNavItem(
                 index: 2,
-                iconPath: AppIcons.navProfile,
+                iconPath: AppIcons.profile,
                 label: "Profile",
                 palette: palette,
               ),

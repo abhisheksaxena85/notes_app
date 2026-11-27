@@ -308,8 +308,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             _searchQuery = "";
                           });
                         },
-                        child: Icon(
-                          Icons.close_rounded,
+                        child: AppIcons.icon(
+                          AppIcons.close,
                           size: 18.sp,
                           color: palette.muted,
                         ),
@@ -607,12 +607,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           border: Border.all(color: palette.line),
                         ),
                         child: Center(
-                          child: Icon(
+                          child: AppIcons.icon(
                             _selectedFilter == "Tasks"
-                                ? Icons.check_circle_outline_rounded
+                                ? AppIcons.task
                                 : (_selectedFilter == "Reminders"
-                                    ? Icons.notifications_active_outlined
-                                    : Icons.edit_note_rounded),
+                                    ? AppIcons.reminder
+                                    : AppIcons.note),
                             size: 32.sp,
                             color: palette.accent,
                           ),

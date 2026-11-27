@@ -1,86 +1,131 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:notes_app/utils/constants/app_colors.dart';
 
+/// The Daymark icon set (design/README.md §4): 24 px grid, 1.6 stroke, drawn
+/// in currentColor so [AppIcons.icon] can tint them.
+///
+/// Sizes: 20 in the nav and top bars, 18 in cards and fields, 14 inline with
+/// meta text, 22–24 in the FAB.
 class AppIcons {
-  static const String splashEmblem = 'assets/icons/splash_emblem.svg';
-  static const String navNotes = 'assets/icons/nav_notes.svg';
-  static const String navCalendar = 'assets/icons/nav_calendar.svg';
-  static const String navProfile = 'assets/icons/nav_profile.svg';
-  static const String search = 'assets/icons/search.svg';
-  static const String pin = 'assets/icons/pin.svg';
-  static const String clock = 'assets/icons/clock.svg';
-  static const String arrowUpRight = 'assets/icons/arrow_up_right.svg';
-  static const String moreDots = 'assets/icons/more_dots.svg';
-  static const String moon = 'assets/icons/moon.svg';
-  static const String sliders = 'assets/icons/sliders.svg';
-  static const String bell = 'assets/icons/bell.svg';
-  static const String shield = 'assets/icons/shield.svg';
-  static const String cloud = 'assets/icons/cloud.svg';
-  static const String help = 'assets/icons/help.svg';
-  static const String info = 'assets/icons/info.svg';
-  static const String checkCircle = 'assets/icons/check_circle.svg';
+  const AppIcons._();
 
+  static const String _dir = 'assets/icons';
+
+  // Navigation and item types
+  static const String workspace = '$_dir/ic_workspace.svg';
+  static const String calendar = '$_dir/ic_calendar.svg';
+  static const String profile = '$_dir/ic_profile.svg';
+  static const String note = '$_dir/ic_note.svg';
+  static const String task = '$_dir/ic_task.svg';
+  static const String reminder = '$_dir/ic_reminder.svg';
+
+  // Actions
+  static const String plus = '$_dir/ic_plus.svg';
+  static const String close = '$_dir/ic_close.svg';
+  static const String check = '$_dir/ic_check.svg';
+  static const String done = '$_dir/ic_done.svg';
+  static const String edit = '$_dir/ic_edit.svg';
+  static const String delete = '$_dir/ic_delete.svg';
+  static const String search = '$_dir/ic_search.svg';
+  static const String filter = '$_dir/ic_filter.svg';
+  static const String pin = '$_dir/ic_pin.svg';
+  static const String open = '$_dir/ic_open.svg';
+  static const String more = '$_dir/ic_more.svg';
+  static const String snooze = '$_dir/ic_snooze.svg';
+  static const String sync = '$_dir/ic_sync.svg';
+  static const String export = '$_dir/ic_export.svg';
+  static const String import = '$_dir/ic_import.svg';
+  static const String signOut = '$_dir/ic_sign_out.svg';
+
+  // Attributes
+  static const String clock = '$_dir/ic_clock.svg';
+  static const String repeat = '$_dir/ic_repeat.svg';
+  static const String priority = '$_dir/ic_priority.svg';
+  static const String tag = '$_dir/ic_tag.svg';
+  static const String category = '$_dir/ic_category.svg';
+
+  // Settings
+  static const String darkMode = '$_dir/ic_dark_mode.svg';
+  static const String lightMode = '$_dir/ic_light_mode.svg';
+  static const String preferences = '$_dir/ic_preferences.svg';
+  static const String privacy = '$_dir/ic_privacy.svg';
+  static const String backup = '$_dir/ic_backup.svg';
+  static const String help = '$_dir/ic_help.svg';
+  static const String info = '$_dir/ic_info.svg';
+  static const String email = '$_dir/ic_email.svg';
+  static const String password = '$_dir/ic_password.svg';
+  static const String show = '$_dir/ic_show.svg';
+
+  // Arrows
+  static const String back = '$_dir/ic_back.svg';
+  static const String forward = '$_dir/ic_forward.svg';
+  static const String expand = '$_dir/ic_expand.svg';
+
+  /// The app icon tile, used on the splash and login screens. Not tinted.
+  static const String logoMark = '$_dir/logo_mark.svg';
+
+  /// A tinted icon. Without [color] or [size] it follows the ambient
+  /// [IconTheme], like a Material [Icon].
   static Widget icon(
     String assetPath, {
     Color? color,
     double? size,
     double? width,
     double? height,
+    String? semanticLabel,
   }) {
-    return SvgPicture.asset(
+    return DaymarkIcon(
       assetPath,
-      width: width ?? size ?? 20,
-      height: height ?? size ?? 20,
-      colorFilter: color != null
-          ? ColorFilter.mode(color, BlendMode.srcIn)
-          : null,
+      color: color,
+      size: size,
+      width: width,
+      height: height,
+      semanticLabel: semanticLabel,
     );
   }
 
-  /// Exact Figma Splash Logo Emblem Card
-  static Widget splashLogo({
-    required BuildContext context,
-    double size = 84,
-  }) {
-    final palette = context.daymark;
-    return Container(
+  /// [logoMark] at [size] (56 on login, larger on splash).
+  static Widget logo({double size = 56}) {
+    return SvgPicture.asset(
+      logoMark,
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: palette.line, width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(
-              alpha: palette.brightness == Brightness.dark ? 0.35 : 0.06,
-            ),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Center(
-        child: SizedBox(
-          width: 40 * (size / 84),
-          height: 44 * (size / 84),
-          child: SvgPicture.string(
-            '''<svg viewBox="0 0 40 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="40" height="44" rx="7" fill="${_toHex(palette.accentSoft)}" stroke="${_toHex(palette.accent)}" stroke-width="1.8"/>
-              <line x1="9" y1="0" x2="9" y2="44" stroke="${_toHex(palette.accent)}" stroke-width="1.5"/>
-              <path d="M22 0V16L26.5 12.5L31 16V0" fill="${_toHex(palette.accent)}"/>
-              <line x1="14" y1="24" x2="33" y2="24" stroke="${_toHex(palette.accent)}" stroke-width="1.5" stroke-linecap="round"/>
-              <line x1="14" y1="32" x2="28" y2="32" stroke="${_toHex(palette.accent)}" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>''',
-          ),
-        ),
-      ),
+      excludeFromSemantics: true,
     );
   }
+}
 
-  static String _toHex(Color color) {
-    final hexString = color.toARGB32().toRadixString(16).padLeft(8, '0');
-    return '#${hexString.substring(2)}';
+/// An SVG icon from [AppIcons] tinted like a Material [Icon].
+class DaymarkIcon extends StatelessWidget {
+  const DaymarkIcon(
+    this.assetPath, {
+    super.key,
+    this.color,
+    this.size,
+    this.width,
+    this.height,
+    this.semanticLabel,
+  });
+
+  final String assetPath;
+  final Color? color;
+  final double? size;
+  final double? width;
+  final double? height;
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = IconTheme.of(context);
+    final side = size ?? theme.size ?? 20;
+    final tint = color ?? theme.color ?? Theme.of(context).colorScheme.onSurface;
+    return SvgPicture.asset(
+      assetPath,
+      width: width ?? side,
+      height: height ?? side,
+      semanticsLabel: semanticLabel,
+      excludeFromSemantics: semanticLabel == null,
+      colorFilter: ColorFilter.mode(tint, BlendMode.srcIn),
+    );
   }
 }
