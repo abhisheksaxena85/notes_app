@@ -129,6 +129,38 @@ void main() {
       expect(ids['Synced'], 501);
     });
 
+    test('a task ticked on the widget stays, done, for a minute; it does not count', () async {
+      final ticked = await task('Ticked', date: '2026-11-27', time: '18:00', status: 'COMPLETED');
+      final old = await task('Ticked long ago', status: 'COMPLETED');
+      await task('Done in the app', status: 'COMPLETED');
+      await task('Pending');
+      final recentlyDone = {
+        -ticked: now.subtract(const Duration(seconds: 2)),
+        -old: now.subtract(const Duration(minutes: 5)),
+      };
+
+      final snapshot = WidgetSnapshot.build(
+        tasks: await database.getTasksForUser(userId),
+        reminders: const [],
+        now: now,
+        recentlyDone: recentlyDone,
+      );
+
+      expect(snapshot.tasks.map((t) => t.title), ['Ticked', 'Pending']);
+      expect(snapshot.tasks.first.doneAt, recentlyDone[-ticked]);
+      expect(snapshot.tasks.first.overdue, isFalse);
+      expect(snapshot.taskCount, 1);
+    });
+
+    test('recently-done entries round-trip and expire', () {
+      final at = DateTime.fromMillisecondsSinceEpoch(now.millisecondsSinceEpoch, isUtc: true);
+      final raw = WidgetSnapshot.encodeRecentlyDone({-3: at, 9: at.subtract(const Duration(hours: 1))});
+
+      expect(WidgetSnapshot.decodeRecentlyDone(raw, now), {-3: at});
+      expect(WidgetSnapshot.decodeRecentlyDone('garbage', now), isEmpty);
+      expect(WidgetSnapshot.decodeRecentlyDone(null, now), isEmpty);
+    });
+
     test('at most 12 items, with the full count', () async {
       for (var i = 0; i < 15; i++) {
         await task('Task $i');
@@ -231,6 +263,7 @@ void main() {
           'dueAt': tz.TZDateTime(newYork, 2026, 11, 27, 18).millisecondsSinceEpoch,
           'hasTime': true,
           'overdue': false,
+          'doneAt': null,
         },
       ],
     });

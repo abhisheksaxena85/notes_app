@@ -133,9 +133,30 @@ class WidgetSnapshotService {
     if (userId == 0) return WidgetSnapshot.loggedOut(now);
     final tasks = await database.getTasksForUser(userId);
     final reminders = await database.getRemindersForUser(userId);
+    final recentlyDone = WidgetSnapshot.decodeRecentlyDone(
+      await host.readString(WidgetSnapshot.recentlyDoneKey),
+      now,
+    );
     // Signed out while reading: don't show the old user's items.
     if (currentUserId() != userId) return WidgetSnapshot.loggedOut(now);
-    return WidgetSnapshot.build(tasks: tasks, reminders: reminders, now: now);
+    return WidgetSnapshot.build(
+      tasks: tasks,
+      reminders: reminders,
+      now: now,
+      recentlyDone: recentlyDone,
+    );
+  }
+
+  /// W-02: [taskId] was ticked on the widget. Keeps it on the widget, done,
+  /// for a moment (see [WidgetSnapshot.recentlyDoneWindow]).
+  Future<void> markTickedOnWidget(int taskId) async {
+    if (!host.isSupported) return;
+    final now = _now();
+    final entries = WidgetSnapshot.decodeRecentlyDone(
+      await host.readString(WidgetSnapshot.recentlyDoneKey),
+      now,
+    )..[taskId] = now.toUtc();
+    await host.saveString(WidgetSnapshot.recentlyDoneKey, WidgetSnapshot.encodeRecentlyDone(entries));
   }
 
   /// Logout hook: the widgets show "Sign in to Daymark" and nothing of the
@@ -146,6 +167,7 @@ class WidgetSnapshotService {
     _stopWatching();
     await _running;
     try {
+      await host.saveString(WidgetSnapshot.recentlyDoneKey, null);
       await _write(WidgetSnapshot.loggedOut(_now()));
     } catch (error, stackTrace) {
       log('Failed to clear the widgets: $error', stackTrace: stackTrace);

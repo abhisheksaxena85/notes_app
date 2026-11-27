@@ -21,7 +21,8 @@ import 'package:timezone/timezone.dart' as tz;
 ///   "tasks": {
 ///     "count": 7,                     // every task in the list, not only items
 ///     "items": [{"id": -4, "title": "Call Sam", "dueAt": 1764252000000,
-///                "hasTime": true, "overdue": false}]   // dueAt null = undated
+///                "hasTime": true, "overdue": false,
+///                "doneAt": null}]   // dueAt null = undated
 ///   },
 ///   "reminders": [{"id": 12, "title": "Stretch", "fireAt": 1764262800000,
 ///                  "occurrence": "2026-11-27T18:00:00", "repeat": "DAILY",
@@ -39,6 +40,13 @@ class WidgetSnapshot {
 
   /// Enough rows for the large Tasks widget (6) twice over.
   static const maxTasks = 12;
+
+  /// The home_widget key of tasks ticked on the widget (W-02), as
+  /// `{"<id>": epochMillis}`. They stay in the snapshot, done, for
+  /// [recentlyDoneWindow] so the widget can show the tick before the row
+  /// drops off.
+  static const recentlyDoneKey = 'daymark_widget_recent_done';
+  static const recentlyDoneWindow = Duration(minutes: 1);
 
   /// Upcoming reminder occurrences: the next one, the following one, and
   /// spares so the widget can roll over while the app isn't running.
@@ -72,32 +80,48 @@ class WidgetSnapshot {
   /// stored occurrence has passed (not caught up yet) continues with its next
   /// occurrence (REM-05). A repeating series contributes each of its
   /// occurrences, so the widget still has the right "next" after one passes.
+  ///
+  /// [recentlyDone] (task id → when it was ticked on the widget): those
+  /// tasks, once completed, stay listed with `doneAt` for
+  /// [recentlyDoneWindow]. They don't count as pending.
   factory WidgetSnapshot.build({
     required List<CachedTask> tasks,
     required List<CachedReminder> reminders,
     required tz.TZDateTime now,
+    Map<int, DateTime> recentlyDone = const {},
   }) {
-    final listed = _listedTasks(tasks, now);
+    final listed = _listedTasks(tasks, now, recentlyDone);
     return WidgetSnapshot(
       loggedIn: true,
       generatedAt: now,
-      taskCount: listed.length,
+      taskCount: listed.where((t) => t.doneAt == null).length,
       tasks: listed.take(maxTasks).toList(),
       reminders: upcomingReminders(reminders, now, limit: maxReminders),
     );
   }
 
-  static List<WidgetTask> _listedTasks(List<CachedTask> rows, tz.TZDateTime now) {
+  static List<WidgetTask> _listedTasks(
+    List<CachedTask> rows,
+    tz.TZDateTime now,
+    Map<int, DateTime> recentlyDone,
+  ) {
     final today = wallClock(now.year, now.month, now.day);
     final tomorrow = wallClock(now.year, now.month, now.day + 1);
     final dated = <(DateTime, WidgetTask)>[];
     final undated = <(int, WidgetTask)>[];
     for (final row in rows) {
-      if (row.isDeleted || row.isCompleted || row.status != 'PENDING') continue;
+      if (row.isDeleted) continue;
       final id = row.serverId ?? -row.id;
+      DateTime? doneAt;
+      if (row.isCompleted || row.status != 'PENDING') {
+        final ticked = recentlyDone[id] ?? recentlyDone[-row.id];
+        final recent = ticked != null && now.difference(ticked) < recentlyDoneWindow;
+        if (row.status != 'COMPLETED' || !recent) continue;
+        doneAt = ticked;
+      }
       final day = _parseDate(row.dueDate);
       if (day == null) {
-        undated.add((row.id, WidgetTask(id: id, title: row.title)));
+        undated.add((row.id, WidgetTask(id: id, title: row.title, doneAt: doneAt)));
         continue;
       }
       if (!day.isBefore(tomorrow)) continue; // a later day
@@ -107,10 +131,17 @@ class WidgetSnapshot {
           ? wallClock(day.year, day.month, day.day, 23, 59, 59)
           : wallClock(day.year, day.month, day.day, time.$1, time.$2);
       final dueAt = toTz(due, now.location);
-      final overdue = day.isBefore(today) || (time != null && !dueAt.isAfter(now));
+      final overdue = doneAt == null && (day.isBefore(today) || (time != null && !dueAt.isAfter(now)));
       dated.add((
         due,
-        WidgetTask(id: id, title: row.title, dueAt: dueAt, hasTime: time != null, overdue: overdue),
+        WidgetTask(
+          id: id,
+          title: row.title,
+          dueAt: dueAt,
+          hasTime: time != null,
+          overdue: overdue,
+          doneAt: doneAt,
+        ),
       ));
     }
     dated.sort((a, b) => a.$1.compareTo(b.$1));
@@ -214,6 +245,30 @@ class WidgetSnapshot {
   };
 
   String encode() => jsonEncode(toJson());
+
+  /// Reads [recentlyDoneKey]'s value; drops entries older than
+  /// [recentlyDoneWindow] and anything unreadable.
+  static Map<int, DateTime> decodeRecentlyDone(String? raw, DateTime now) {
+    if (raw == null || raw.isEmpty) return {};
+    try {
+      final json = jsonDecode(raw);
+      if (json is! Map) return {};
+      final result = <int, DateTime>{};
+      for (final MapEntry(:key, :value) in json.entries) {
+        final id = int.tryParse('$key');
+        if (id == null || value is! int) continue;
+        final at = DateTime.fromMillisecondsSinceEpoch(value, isUtc: true);
+        if (now.difference(at) < recentlyDoneWindow) result[id] = at;
+      }
+      return result;
+    } on FormatException {
+      return {};
+    }
+  }
+
+  static String encodeRecentlyDone(Map<int, DateTime> entries) => jsonEncode({
+    for (final MapEntry(:key, :value) in entries.entries) '$key': value.millisecondsSinceEpoch,
+  });
 }
 
 @immutable
@@ -229,12 +284,17 @@ class WidgetTask {
   final bool hasTime;
   final bool overdue;
 
+  /// When it was ticked on the widget, for a task kept (done) for a moment
+  /// after; null for a pending task.
+  final DateTime? doneAt;
+
   const WidgetTask({
     required this.id,
     required this.title,
     this.dueAt,
     this.hasTime = false,
     this.overdue = false,
+    this.doneAt,
   });
 
   Map<String, Object?> toJson() => {
@@ -243,6 +303,7 @@ class WidgetTask {
     'dueAt': dueAt?.millisecondsSinceEpoch,
     'hasTime': hasTime,
     'overdue': overdue,
+    'doneAt': doneAt?.millisecondsSinceEpoch,
   };
 }
 

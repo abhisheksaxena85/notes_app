@@ -11,6 +11,7 @@ import 'package:notes_app/data/sync/offline_sync_service.dart';
 import 'package:notes_app/utils/services/connectivity_service.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:notes_app/utils/services/digest_scheduler.dart';
+import 'package:notes_app/utils/services/home_widgets/widget_actions.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_host.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_links.dart';
 import 'package:notes_app/utils/services/home_widgets/widget_snapshot_service.dart';
@@ -112,6 +113,8 @@ Future<void> _listenForWidgetLaunches() async {
   if (!HomeWidgetHost().isSupported) return;
   try {
     await HomeWidget.setAppGroupId(DaymarkWidgets.appGroupId);
+    // W-02: ticking a task or answering a reminder on a widget.
+    await HomeWidget.registerInteractivityCallback(widgetInteractivityCallback);
     HomeWidget.widgetClicked.listen(
       routeWidgetLaunch,
       onError: (Object error) => log('Widget click failed: $error'),
