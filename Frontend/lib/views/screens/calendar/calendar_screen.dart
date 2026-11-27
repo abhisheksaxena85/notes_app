@@ -9,6 +9,7 @@ import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/data/network/dto/response/item_status.dart';
 import 'package:notes_app/views/screens/home/widgets/item_status_sheet.dart';
 import 'package:notes_app/views/screens/home/widgets/create_task_modal.dart';
+import 'package:notes_app/views/screens/home/widgets/item_delete.dart';
 import 'package:notes_app/views/screens/home/widgets/reminder_form_modal.dart';
 import 'package:notes_app/views/screens/note_details/note_details_screen.dart';
 import 'package:notes_app/utils/date/date_keys.dart';
@@ -610,8 +611,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       onLongPress: task.taskId == null
           ? null
           : () async {
-              final selected = await showItemStatusSheet(context, currentStatus: task.status);
-              if (selected != null) {
+              final selected = await showItemStatusSheet(
+                context,
+                currentStatus: task.status,
+                canDelete: true,
+              );
+              if (!mounted) return;
+              if (selected == deleteItemChoice) {
+                await confirmAndDeleteTask(context, ref, task);
+              } else if (selected != null) {
                 ref.read(taskController.notifier).setTaskStatus(task.taskId!, selected);
               }
             },
@@ -658,8 +666,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 context,
                 currentStatus: reminder.status,
                 repeating: repeating && reminder.status == 'PENDING',
+                canDelete: true,
               );
-              if (selected != null) apply(selected);
+              if (!mounted) return;
+              if (selected == deleteItemChoice) {
+                await confirmAndDeleteReminder(context, ref, reminder);
+              } else if (selected != null) {
+                apply(selected);
+              }
             },
     );
   }

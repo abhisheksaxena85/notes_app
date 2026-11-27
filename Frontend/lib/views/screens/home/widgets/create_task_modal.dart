@@ -8,6 +8,8 @@ import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/date/display_format.dart';
 import 'package:notes_app/utils/themes/daymark_text.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
+import 'package:notes_app/views/screens/home/widgets/item_delete.dart';
+import 'package:notes_app/views/widgets/confirm_dialog.dart';
 import 'package:notes_app/views/widgets/daymark_chip.dart';
 import 'package:notes_app/views/widgets/labeled_field.dart';
 import 'package:notes_app/views/widgets/primary_button.dart';
@@ -15,10 +17,13 @@ import 'package:notes_app/views/widgets/segmented_control.dart';
 import 'package:notes_app/views/widgets/sheet_scaffold.dart';
 
 /// The task form, to create a task or (with [initial], FE-06) edit one.
-/// Returns true when something was saved.
+/// Returns true when something was saved or deleted.
 Future<bool?> showCreateTaskModal(BuildContext context, {TaskItem? initial}) {
   return showDaymarkSheet<bool>(
     context,
+    // FIX-01: a drag would close it without the "Discard changes?" check;
+    // back, a tap outside and the close button all ask.
+    enableDrag: false,
     builder: (ctx) => TaskFormModal(initial: initial),
   );
 }
@@ -47,10 +52,45 @@ class _TaskFormModalState extends ConsumerState<TaskFormModal> {
 
   bool get _isEdit => widget.initial != null;
 
+  /// FIX-01: the form's values when it opened, to tell if anything changed.
+  late final Object _openedWith;
+  Object get _values => (
+        _titleController.text.trim(),
+        _descController.text.trim(),
+        _selectedDueDate,
+        _selectedDueTime,
+        _selectedCategory,
+        _selectedPriority,
+      );
+  bool get _hasChanges => _values != _openedWith;
+  bool _wasChanged = false;
+
+  /// Typing doesn't rebuild the form; rebuild when "changed" flips so the
+  /// back / tap-outside guard is current.
+  void _onTextChanged() {
+    if (_hasChanges != _wasChanged) setState(() => _wasChanged = _hasChanges);
+  }
+
+  Future<void> _onPopBlocked() async {
+    if (!await confirmDiscardChanges(context)) return;
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  Future<void> _deleteTask() async {
+    final deleted = await confirmAndDeleteTask(context, ref, widget.initial!);
+    if (deleted && mounted) Navigator.pop(context, true);
+  }
+
   @override
   void initState() {
     super.initState();
-    final initial = widget.initial;
+    _load(widget.initial);
+    _openedWith = _values;
+    _titleController.addListener(_onTextChanged);
+    _descController.addListener(_onTextChanged);
+  }
+
+  void _load(TaskItem? initial) {
     if (initial == null) return;
     _titleController.text = initial.title;
     _descController.text = initial.description ?? '';
@@ -200,8 +240,17 @@ class _TaskFormModalState extends ConsumerState<TaskFormModal> {
     final palette = context.daymark;
     final fieldStyle = DaymarkText.custom(15, FontWeight.w400).copyWith(color: palette.ink);
 
-    return SheetScaffold(
+    final sheet = SheetScaffold(
       title: _isEdit ? "Edit task" : "New task",
+      actions: [
+        if (_isEdit && widget.initial!.taskId != null)
+          IconButton(
+            tooltip: 'Delete',
+            onPressed: _isSaving ? null : _deleteTask,
+            icon: AppIcons.icon(AppIcons.delete, size: 20, color: palette.danger),
+            constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+          ),
+      ],
       footer: PrimaryButton(
         label: _isEdit ? "Save changes" : "Create task",
         loading: _isSaving,
@@ -287,6 +336,13 @@ class _TaskFormModalState extends ConsumerState<TaskFormModal> {
           ),
         ],
       ),
+    );
+    return PopScope(
+      canPop: !_hasChanges,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onPopBlocked();
+      },
+      child: sheet,
     );
   }
 }

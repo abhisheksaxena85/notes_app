@@ -14,6 +14,7 @@ import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/viewmodel/home/home_viewmodel.dart';
 import 'package:notes_app/views/screens/home/widgets/reminder_form_modal.dart';
 import 'package:notes_app/views/screens/home/widgets/create_task_modal.dart';
+import 'package:notes_app/views/screens/home/widgets/item_delete.dart';
 import 'package:notes_app/views/screens/home/widgets/note_item_card.dart';
 import 'package:notes_app/views/screens/home/widgets/notes_error_widget.dart';
 import 'package:notes_app/views/screens/home/widgets/workspace_header.dart';
@@ -27,7 +28,6 @@ import 'package:notes_app/views/widgets/daymark_chip.dart';
 import 'package:notes_app/views/widgets/icon_tile.dart';
 import 'package:notes_app/views/widgets/section_header.dart';
 import 'package:notes_app/views/widgets/notification_permission_prompt.dart';
-import 'package:notes_app/views/widgets/undo_delete.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key, this.onOpenProfile});
@@ -46,48 +46,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isSpeedDialOpen = false;
 
   final List<String> _filters = ["All", "Notes", "Tasks", "Reminders"];
-
-  /// FE-06: items deleted with an "Undo" snackbar still open (or already
-  /// deleted), hidden until the delete lands. Keyed by clientId, which stays
-  /// the same when a local item gets its server id during the undo window.
-  final Set<String> _hiddenTasks = {};
-  final Set<String> _hiddenReminders = {};
-
-  static String _taskKey(TaskItem t) => t.clientId ?? 'id:${t.taskId}';
-  static String _reminderKey(ReminderItem r) =>
-      r.clientId ?? 'id:${r.reminderId}';
-
-  void _deleteTask(TaskItem task) {
-    final id = task.taskId;
-    if (id == null) return;
-    final key = _taskKey(task);
-    final tasks = ref.read(taskController.notifier);
-    deleteWithUndo(
-      messenger: ScaffoldMessenger.of(context),
-      message: 'Task deleted',
-      hide: () => setState(() => _hiddenTasks.add(key)),
-      restore: () {
-        if (mounted) setState(() => _hiddenTasks.remove(key));
-      },
-      delete: () => tasks.deleteTask(id),
-    );
-  }
-
-  void _deleteReminder(ReminderItem reminder) {
-    final id = reminder.reminderId;
-    if (id == null) return;
-    final key = _reminderKey(reminder);
-    final reminders = ref.read(reminderController.notifier);
-    deleteWithUndo(
-      messenger: ScaffoldMessenger.of(context),
-      message: 'Reminder deleted',
-      hide: () => setState(() => _hiddenReminders.add(key)),
-      restore: () {
-        if (mounted) setState(() => _hiddenReminders.remove(key));
-      },
-      delete: () => reminders.deleteReminder(id),
-    );
-  }
 
   @override
   void dispose() {
@@ -135,9 +93,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   List<TaskItem> _filterTasks(List<TaskItem> rawTasks) {
-    var list = rawTasks
-        .where((t) => !_hiddenTasks.contains(_taskKey(t)))
-        .toList();
+    var list = List<TaskItem>.from(rawTasks);
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.trim().toLowerCase();
       list = list.where((t) {
@@ -159,9 +115,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   List<ReminderItem> _filterReminders(List<ReminderItem> rawReminders) {
-    var list = rawReminders
-        .where((r) => !_hiddenReminders.contains(_reminderKey(r)))
-        .toList();
+    var list = List<ReminderItem>.from(rawReminders);
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.trim().toLowerCase();
       list = list.where((r) {
@@ -208,14 +162,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final displayedTasks = _filterTasks(allTasks);
     final displayedReminders = _filterReminders(allReminders);
 
-    final visibleTasks = allTasks.where(
-      (t) => !_hiddenTasks.contains(_taskKey(t)),
-    );
-    final visibleReminders = allReminders.where(
-      (r) => !_hiddenReminders.contains(_reminderKey(r)),
-    );
     final today = DateTime.now();
-    final tasksToday = visibleTasks.where((t) {
+    final tasksToday = allTasks.where((t) {
       final due = DisplayFormat.day(t.dueDate);
       return due != null && DisplayFormat.sameDay(due, today);
     }).length;
@@ -293,7 +241,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               const SizedBox(height: 18),
                               WorkspaceStats(
                                 tasksToday: tasksToday,
-                                reminders: visibleReminders.length,
+                                reminders: allReminders.length,
                                 notes: allNotes.length,
                               ),
                               const SizedBox(height: 14),
@@ -458,7 +406,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onTap: task.taskId == null
                 ? null
                 : () => showCreateTaskModal(context, initial: task),
-            onDelete: () => _deleteTask(task),
+            onDelete: task.taskId == null
+                ? null
+                : () => confirmAndDeleteTask(context, ref, task),
             onStatusSelected: (status) {
               if (task.taskId != null) {
                 ref
@@ -487,7 +437,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   : () => showReminderFormModal(context, initial: reminder),
               onStatusChange: (newStatus) =>
                   _applyReminderChoice(reminder, newStatus),
-              onDelete: () => _deleteReminder(reminder),
+              onDelete: reminder.reminderId == null
+                  ? null
+                  : () => confirmAndDeleteReminder(context, ref, reminder),
               onStatusSelected: (status) =>
                   _applyReminderChoice(reminder, status),
             ),

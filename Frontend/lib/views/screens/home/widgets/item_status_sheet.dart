@@ -5,13 +5,19 @@ import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/themes/daymark_text.dart';
 import 'package:notes_app/views/widgets/sheet_scaffold.dart';
 
+/// Returned by [showItemStatusSheet] when "Delete" is picked.
+const String deleteItemChoice = 'DELETE';
+
 /// Long-press status picker for task and reminder cards. MISSED is derived
 /// from the due time, so it is not offered as a manual choice. For a
-/// [repeating] reminder it offers [RepeatingChoice]s instead.
+/// [repeating] reminder it offers [RepeatingChoice]s instead. With
+/// [canDelete] it ends with a Delete row ([deleteItemChoice]); the caller
+/// confirms before deleting.
 Future<String?> showItemStatusSheet(
   BuildContext context, {
   required String currentStatus,
   bool repeating = false,
+  bool canDelete = false,
 }) {
   final palette = context.daymark;
   final statusOptions = [
@@ -24,7 +30,10 @@ Future<String?> showItemStatusSheet(
     (RepeatingChoice.missedToday, 'Missed today', AppIcons.close, palette.danger),
     (RepeatingChoice.stop, 'Stop repeating', AppIcons.repeat, palette.muted),
   ];
-  final options = repeating ? repeatingOptions : statusOptions;
+  final options = [
+    ...(repeating ? repeatingOptions : statusOptions),
+    if (canDelete) (deleteItemChoice, 'Delete', AppIcons.delete, palette.danger),
+  ];
 
   return showDaymarkSheet<String>(
     context,
@@ -46,7 +55,9 @@ Future<String?> showItemStatusSheet(
                     Expanded(
                       child: Text(
                         label,
-                        style: DaymarkText.custom(14.5, FontWeight.w500).copyWith(color: palette.ink),
+                        style: DaymarkText.custom(14.5, FontWeight.w500).copyWith(
+                          color: value == deleteItemChoice ? palette.danger : palette.ink,
+                        ),
                       ),
                     ),
                     if (value == currentStatus)

@@ -23,7 +23,8 @@ Widget noteDetailsAppBar({
       child: Row(
         children: [
           IconButton(
-            onPressed: () => Navigator.pop(context),
+            // maybePop: unsaved edits ask "Discard changes?" first (FIX-01).
+            onPressed: () => Navigator.maybePop(context),
             tooltip: 'Back',
             icon: AppIcons.icon(AppIcons.back, size: 20, color: palette.ink),
             constraints: const BoxConstraints.tightFor(width: 44, height: 44),

@@ -11,6 +11,8 @@ import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/utils/date/display_format.dart';
 import 'package:notes_app/utils/themes/daymark_text.dart';
+import 'package:notes_app/views/screens/home/widgets/item_delete.dart';
+import 'package:notes_app/views/widgets/confirm_dialog.dart';
 import 'package:notes_app/views/widgets/daymark_chip.dart';
 import 'package:notes_app/views/widgets/labeled_field.dart';
 import 'package:notes_app/views/widgets/notification_permission_prompt.dart';
@@ -26,6 +28,9 @@ Future<bool?> showReminderFormModal(
 }) {
   return showDaymarkSheet<bool>(
     context,
+    // FIX-01: a drag would close it without the "Discard changes?" check;
+    // back, a tap outside and the close button all ask.
+    enableDrag: false,
     builder: (ctx) => ReminderFormModal(initial: initial),
   );
 }
@@ -84,6 +89,29 @@ class _ReminderFormModalState extends ConsumerState<ReminderFormModal> {
   /// The date and time the reminder had when the form opened (edit mode).
   DateTime? _initialAt;
 
+  /// FIX-01: the form's values when it opened, to tell if anything changed.
+  late final Object _openedWith;
+  Object get _values => (
+        _titleController.text.trim(),
+        _selectedDate,
+        _selectedTime,
+        _selectedRepeat,
+        _selectedCategory,
+      );
+  bool get _hasChanges => _values != _openedWith;
+  bool _wasChanged = false;
+
+  /// Typing doesn't rebuild the form; rebuild when "changed" flips so the
+  /// back / tap-outside guard is current.
+  void _onTextChanged() {
+    if (_hasChanges != _wasChanged) setState(() => _wasChanged = _hasChanges);
+  }
+
+  Future<void> _onPopBlocked() async {
+    if (!await confirmDiscardChanges(context)) return;
+    if (mounted) Navigator.of(context).pop();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -109,6 +137,8 @@ class _ReminderFormModalState extends ConsumerState<ReminderFormModal> {
         _selectedRepeat = initial.repeatInterval;
       }
     }
+    _openedWith = _values;
+    _titleController.addListener(_onTextChanged);
   }
 
   @override
@@ -241,33 +271,8 @@ class _ReminderFormModalState extends ConsumerState<ReminderFormModal> {
   }
 
   Future<void> _deleteReminder() async {
-    final initial = widget.initial!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete reminder?'),
-        content: Text("'${initial.title}' will be deleted."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    try {
-      await ref.read(reminderController.notifier).deleteReminder(initial.reminderId!);
-      if (mounted) Navigator.pop(context, true);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(userMessage(e))));
-      }
-    }
+    final deleted = await confirmAndDeleteReminder(context, ref, widget.initial!);
+    if (deleted && mounted) Navigator.pop(context, true);
   }
 
   @override
@@ -275,7 +280,7 @@ class _ReminderFormModalState extends ConsumerState<ReminderFormModal> {
     final palette = context.daymark;
     final time = DisplayFormat.time(_selectedTime.hour, _selectedTime.minute);
 
-    return SheetScaffold(
+    final sheet = SheetScaffold(
       title: _isEdit ? "Edit reminder" : "New reminder",
       actions: [
         if (_isEdit)
@@ -381,6 +386,13 @@ class _ReminderFormModalState extends ConsumerState<ReminderFormModal> {
           ),
         ],
       ),
+    );
+    return PopScope(
+      canPop: !_hasChanges,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onPopBlocked();
+      },
+      child: sheet,
     );
   }
 }

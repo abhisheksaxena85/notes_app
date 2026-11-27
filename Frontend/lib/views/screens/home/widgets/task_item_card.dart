@@ -45,8 +45,13 @@ Widget taskItemCard({
               final selected = await showItemStatusSheet(
                 context,
                 currentStatus: task.status,
+                canDelete: onDelete != null,
               );
-              if (selected != null) onStatusSelected(selected);
+              if (selected == deleteItemChoice) {
+                onDelete?.call();
+              } else if (selected != null) {
+                onStatusSelected(selected);
+              }
             },
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

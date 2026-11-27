@@ -10,6 +10,7 @@ import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/utils/themes/daymark_text.dart';
 import 'package:notes_app/views/screens/profile/widgets/sheets/logout_sheet.dart';
+import 'package:notes_app/views/widgets/confirm_dialog.dart';
 import 'package:notes_app/views/widgets/daymark_chip.dart';
 import 'package:notes_app/views/widgets/labeled_field.dart';
 import 'package:notes_app/views/widgets/primary_button.dart';
@@ -170,51 +171,30 @@ void _showEditProfileSheet(
   );
 }
 
-void _confirmDeleteAccount(BuildContext context, WidgetRef ref) {
-  final palette = context.daymark;
-  showDialog(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text("Delete account?"),
-      content: Text(
-        "Are you sure you want to permanently delete your account and all associated notes? This action cannot be undone.",
-        style: DaymarkText.preview.copyWith(color: palette.inkSecondary),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: Text(
-            "Cancel",
-            style: DaymarkText.custom(14, FontWeight.w600).copyWith(color: palette.muted),
-          ),
-        ),
-        TextButton(
-          onPressed: () async {
-            Navigator.pop(ctx);
-            final userId = ref.read(sessionUserIdProvider);
-            try {
-              await getIt<ProfileRepo>().deleteUser(userId);
-              // The account is gone, so its unsynced changes can't be
-              // kept: sign out and wipe without asking.
-              if (context.mounted) {
-                await logOutAndShowLogin(context);
-              }
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  failedSnackBar(userMessage(e)),
-                );
-              }
-            }
-          },
-          child: Text(
-            "Delete permanently",
-            style: DaymarkText.custom(14, FontWeight.w600).copyWith(color: palette.danger),
-          ),
-        ),
-      ],
-    ),
+Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
+  final confirmed = await showConfirmDialog(
+    context,
+    title: "Delete account?",
+    message: "Your account and all its notes, tasks and reminders will be "
+        "permanently deleted. This can't be undone.",
+    confirmLabel: "Delete permanently",
   );
+  if (!confirmed || !context.mounted) return;
+  final userId = ref.read(sessionUserIdProvider);
+  try {
+    await getIt<ProfileRepo>().deleteUser(userId);
+    // The account is gone, so its unsynced changes can't be kept: sign out
+    // and wipe without asking.
+    if (context.mounted) {
+      await logOutAndShowLogin(context);
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        failedSnackBar(userMessage(e)),
+      );
+    }
+  }
 }
 
 Widget _buildDetailRow(String label, String value, DaymarkPalette palette) {

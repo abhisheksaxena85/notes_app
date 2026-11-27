@@ -11,6 +11,7 @@ import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/viewmodel/note_details/note_details_state.dart';
+import 'package:notes_app/views/widgets/confirm_dialog.dart';
 
 /// FE-06: one instance per open note (family keyed by [noteId], auto-disposed
 /// when the screen closes), so opening note B never shows note A first.
@@ -198,9 +199,9 @@ class NoteDetailsViewmodel extends AsyncNotifier<NoteDetailsState> {
       log("Deleting note $noteId...");
       await _noteRepo.deleteNote(getUserId(), noteId);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          successSnackBar("Note deleted."),
-        );
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(deletedSnackBar('note'));
         Navigator.pop(context, true);
       }
     } catch (e) {

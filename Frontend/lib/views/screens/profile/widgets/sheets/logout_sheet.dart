@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/data/session/session_service.dart';
-import 'package:notes_app/utils/constants/app_colors.dart';
-import 'package:notes_app/utils/themes/daymark_text.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/views/screens/auth/login/login_screen.dart';
+import 'package:notes_app/views/widgets/confirm_dialog.dart';
 
 /// Logging out: the confirmation and the sign-out itself.
 Future<void> confirmLogout(BuildContext context) async {
-  final palette = context.daymark;
   // Signing out wipes this user's data from the device, including changes
   // that haven't reached the server yet: say so before they are lost.
   final unsynced = await getIt<SessionService>().unsyncedChangeCount();
@@ -24,32 +22,13 @@ Future<void> confirmLogout(BuildContext context) async {
         "Signing out deletes ${unsynced == 1 ? "it" : "them"} for good.\n\n"
         "To keep ${unsynced == 1 ? "it" : "them"}, cancel, go online and wait for the sync to finish.";
   }
-  showDialog(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(unsynced == 0 ? "Sign out?" : "Unsynced changes"),
-      content: Text(message, style: DaymarkText.preview.copyWith(color: palette.inkSecondary)),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: Text(
-            "Cancel",
-            style: DaymarkText.custom(14, FontWeight.w600).copyWith(color: palette.muted),
-          ),
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(ctx);
-            logOutAndShowLogin(context);
-          },
-          child: Text(
-            unsynced == 0 ? "Sign out" : "Sign out anyway",
-            style: DaymarkText.custom(14, FontWeight.w600).copyWith(color: palette.danger),
-          ),
-        ),
-      ],
-    ),
+  final confirmed = await showConfirmDialog(
+    context,
+    title: unsynced == 0 ? "Sign out?" : "Unsynced changes",
+    message: message,
+    confirmLabel: unsynced == 0 ? "Sign out" : "Sign out anyway",
   );
+  if (confirmed && context.mounted) await logOutAndShowLogin(context);
 }
 
 /// Ends the session, wipes the user's local data and resets every

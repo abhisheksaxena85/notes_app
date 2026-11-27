@@ -14,6 +14,7 @@ import 'package:notes_app/views/screens/note_details/widgets/note_details_app_ba
 import 'package:notes_app/views/screens/note_details/widgets/note_details_error_widget.dart';
 import 'package:notes_app/views/screens/note_details/widgets/note_details_loading_widget.dart';
 import 'package:notes_app/utils/themes/daymark_text.dart';
+import 'package:notes_app/views/widgets/confirm_dialog.dart';
 import 'package:notes_app/views/widgets/sheet_scaffold.dart';
 
 class NoteDetailsScreen extends ConsumerStatefulWidget {
@@ -26,40 +27,15 @@ class NoteDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _NoteDetailsScreenState extends ConsumerState<NoteDetailsScreen> {
-  void _showDeleteConfirmationDialog(
+  /// FIX-01: the shared confirmation, then the delete (which closes the
+  /// editor).
+  Future<void> _showDeleteConfirmationDialog(
     BuildContext context,
     NoteDetailsViewmodel notifier,
-  ) {
-    final palette = context.daymark;
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text("Delete note?"),
-        content: const Text(
-          "Are you sure you want to delete this note? This action cannot be undone.",
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(
-              "Cancel",
-              style: DaymarkText.custom(14, FontWeight.w600).copyWith(color: palette.muted),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              notifier.deleteNote(context);
-            },
-            child: Text(
-              "Delete",
-              style: DaymarkText.custom(14, FontWeight.w600).copyWith(color: palette.danger),
-            ),
-          ),
-        ],
-      ),
-    );
+  ) async {
+    final title = notifier.titleController.text;
+    if (!await confirmDelete(context, kind: 'note', itemTitle: title)) return;
+    if (context.mounted) await notifier.deleteNote(context);
   }
 
   /// "More" in the top bar: export or delete the note.

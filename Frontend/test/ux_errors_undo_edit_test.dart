@@ -24,12 +24,11 @@ import 'package:notes_app/viewmodel/task/task_state.dart';
 import 'package:notes_app/viewmodel/task/task_viewmodel.dart';
 import 'package:notes_app/views/screens/home/widgets/create_task_modal.dart';
 import 'package:notes_app/views/screens/note_details/note_details_screen.dart';
-import 'package:notes_app/views/widgets/undo_delete.dart';
 
 import 'support/fake_server.dart';
 
-/// FE-06: friendly errors, a fresh note screen per note, undo on delete,
-/// task editing and file export.
+/// FE-06: friendly errors, a fresh note screen per note, task editing and
+/// file export. (Delete confirmation: confirm_dialog_test.dart.)
 void main() {
   setUp(() async {
     await getIt.reset();
@@ -107,80 +106,6 @@ void main() {
 
       expect(find.textContaining('took too long'), findsOneWidget);
       expect(find.textContaining('DioException'), findsNothing);
-      expect(find.textContaining('Exception'), findsNothing);
-    });
-  });
-
-  group('deleteWithUndo', () {
-    Future<_UndoProbe> pumpProbe(WidgetTester tester, {Object? failWith}) async {
-      final probe = _UndoProbe(failWith: failWith);
-      await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-          body: Builder(
-            builder: (context) => Column(children: [
-              for (final name in ['a', 'b'])
-                TextButton(
-                  onPressed: () => deleteWithUndo(
-                    messenger: ScaffoldMessenger.of(context),
-                    message: 'Deleted $name',
-                    hide: () => probe.hidden.add(name),
-                    restore: () => probe.hidden.remove(name),
-                    delete: () => probe.delete(name),
-                  ),
-                  child: Text('delete $name'),
-                ),
-            ]),
-          ),
-        ),
-      ));
-      return probe;
-    }
-
-    testWidgets('Undo puts the item back and deletes nothing', (tester) async {
-      final probe = await pumpProbe(tester);
-      await tester.tap(find.text('delete a'));
-      await tester.pump();
-      expect(probe.hidden, {'a'});
-      await tester.pumpAndSettle(const Duration(milliseconds: 100));
-
-      await tester.tap(find.text('Undo'));
-      await tester.pumpAndSettle();
-      expect(probe.hidden, isEmpty);
-      expect(probe.deleted, isEmpty);
-    });
-
-    testWidgets('without Undo the delete runs when the snackbar times out', (tester) async {
-      final probe = await pumpProbe(tester);
-      await tester.tap(find.text('delete a'));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 2));
-      expect(probe.deleted, isEmpty, reason: 'still inside the undo window');
-
-      await tester.pump(undoWindow);
-      await tester.pumpAndSettle();
-      expect(probe.deleted, ['a']);
-      expect(probe.hidden, {'a'}, reason: 'stays hidden after the delete');
-    });
-
-    testWidgets('a second delete commits the first right away', (tester) async {
-      final probe = await pumpProbe(tester);
-      await tester.tap(find.text('delete a'));
-      await tester.pumpAndSettle(const Duration(milliseconds: 100));
-      await tester.tap(find.text('delete b'));
-      await tester.pumpAndSettle(const Duration(milliseconds: 100));
-      expect(probe.deleted, ['a']);
-      expect(find.text('Deleted b'), findsOneWidget);
-    });
-
-    testWidgets('a failed delete restores the item with a friendly message', (tester) async {
-      final probe = await pumpProbe(tester, failWith: FakeServer.offline());
-      await tester.tap(find.text('delete a'));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1)); // entrance animation
-      await tester.pump(undoWindow);
-      await tester.pumpAndSettle();
-      expect(probe.hidden, isEmpty);
-      expect(find.textContaining('No internet connection'), findsOneWidget);
       expect(find.textContaining('Exception'), findsNothing);
     });
   });
@@ -320,19 +245,6 @@ class _FakeNoteRepo implements NoteRepo {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _UndoProbe {
-  _UndoProbe({this.failWith});
-
-  final Object? failWith;
-  final Set<String> hidden = {};
-  final List<String> deleted = [];
-
-  Future<void> delete(String name) async {
-    if (failWith != null) throw failWith!;
-    deleted.add(name);
-  }
 }
 
 class _UnusedTaskRepo implements TaskRepo {

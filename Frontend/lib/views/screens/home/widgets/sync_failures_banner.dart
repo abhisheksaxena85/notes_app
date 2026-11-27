@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/data/local/database/sync_queue_models.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
+import 'package:notes_app/views/widgets/confirm_dialog.dart';
 
 /// "N items couldn't sync" with a way to retry or discard them. Hidden when
 /// every queued change was accepted.
@@ -155,51 +156,17 @@ Future<void> showSyncFailuresSheet(BuildContext context) {
   );
 }
 
-Future<bool> _confirmDiscard(BuildContext context, SyncFailure failure) async {
-  final palette = context.daymark;
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      backgroundColor: palette.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20.r),
-        side: BorderSide(color: palette.line),
-      ),
-      title: Text(
-        'Discard this change?',
-        style: GoogleFonts.inter(
-          fontSize: 18.sp,
-          fontWeight: FontWeight.w700,
-          color: palette.ink,
-        ),
-      ),
-      content: Text(
-        failure.operation == 'create'
-            ? '"${failure.title}" was never saved to the server. Discarding '
-                'removes it from this device too.'
-            : 'Your change to "${failure.title}" will be dropped and the '
-                "server's version shown again after the next refresh.",
-        style: GoogleFonts.inter(fontSize: 13.sp, color: palette.muted, height: 1.4),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(dialogContext, false),
-          child: Text('Cancel', style: GoogleFonts.inter(color: palette.muted)),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(dialogContext, true),
-          child: Text(
-            'Discard',
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w700,
-              color: palette.danger,
-            ),
-          ),
-        ),
-      ],
-    ),
+Future<bool> _confirmDiscard(BuildContext context, SyncFailure failure) {
+  return showConfirmDialog(
+    context,
+    title: 'Discard this change?',
+    message: failure.operation == 'create'
+        ? '"${failure.title}" was never saved to the server. Discarding '
+            'removes it from this device too.'
+        : 'Your change to "${failure.title}" will be dropped and the '
+            "server's version shown again after the next refresh.",
+    confirmLabel: 'Discard',
   );
-  return confirmed ?? false;
 }
 
 class _SyncFailureTile extends StatelessWidget {

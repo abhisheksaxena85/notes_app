@@ -8,6 +8,7 @@ import 'package:notes_app/views/screens/note_details/widgets/note_content_field.
 import 'package:notes_app/views/screens/note_details/widgets/note_meta_info_widget.dart';
 import 'package:notes_app/views/screens/note_details/widgets/note_title_field.dart';
 import 'package:notes_app/utils/themes/daymark_text.dart';
+import 'package:notes_app/views/widgets/confirm_dialog.dart';
 import 'package:notes_app/views/widgets/dashed_border.dart';
 import 'package:notes_app/views/widgets/primary_button.dart';
 import 'package:notes_app/views/widgets/section_header.dart';
@@ -36,6 +37,29 @@ class _BuildNoteFormWidgetState extends State<BuildNoteFormWidget> {
   final List<String> _tags = [];
   bool _addingTag = false;
 
+  /// FIX-01: the note as it opened, to tell if anything changed.
+  late final Object _openedWith;
+  Object get _values => (
+        widget.notifier.titleController.text.trim(),
+        widget.notifier.contentController.text.trim(),
+        widget.state.selectedCategory,
+        widget.state.isPinned,
+        _tags.join(','),
+      );
+  bool get _hasChanges => _values != _openedWith;
+  bool _wasChanged = false;
+
+  /// Typing doesn't rebuild the form; rebuild when "changed" flips so the
+  /// back guard is current.
+  void _onTextChanged() {
+    if (_hasChanges != _wasChanged) setState(() => _wasChanged = _hasChanges);
+  }
+
+  Future<void> _onPopBlocked() async {
+    if (!await confirmDiscardChanges(context)) return;
+    if (mounted) Navigator.of(context).pop();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -52,10 +76,16 @@ class _BuildNoteFormWidgetState extends State<BuildNoteFormWidget> {
         !_tags.contains(widget.state.selectedCategory)) {
       _tags.add(widget.state.selectedCategory);
     }
+    _openedWith = _values;
+    widget.notifier.titleController.addListener(_onTextChanged);
+    widget.notifier.contentController.addListener(_onTextChanged);
   }
 
   @override
   void dispose() {
+    // The controllers belong to the view model and may outlive this widget.
+    widget.notifier.titleController.removeListener(_onTextChanged);
+    widget.notifier.contentController.removeListener(_onTextChanged);
     _tagController.dispose();
     _tagFocus.dispose();
     super.dispose();
@@ -91,7 +121,14 @@ class _BuildNoteFormWidgetState extends State<BuildNoteFormWidget> {
   Widget build(BuildContext context) {
     final palette = context.daymark;
 
-    return Column(
+    // Saving and deleting close the editor with Navigator.pop, which skips
+    // this guard; back (button, gesture, system) asks when something changed.
+    return PopScope(
+      canPop: !_hasChanges,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onPopBlocked();
+      },
+      child: Column(
       children: [
         Expanded(
           child: SingleChildScrollView(
@@ -188,6 +225,7 @@ class _BuildNoteFormWidgetState extends State<BuildNoteFormWidget> {
           ),
         ),
       ],
+      ),
     );
   }
 

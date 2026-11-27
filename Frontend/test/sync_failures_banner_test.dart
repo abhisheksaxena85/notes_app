@@ -95,7 +95,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Discard'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, 'Discard'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Discard'));
     await tester.pumpAndSettle();
     expect(viewmodel.actions, ['discard Huge note']);
 
