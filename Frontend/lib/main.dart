@@ -15,7 +15,10 @@ import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/utils/services/notification_service.dart';
 import 'package:notes_app/utils/services/reminder_action_handler.dart';
 import 'package:notes_app/utils/services/reminder_scheduler.dart';
+import 'package:notes_app/utils/res/snackbar.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
+import 'package:notes_app/viewmodel/controllers.dart';
+import 'package:notes_app/views/screens/auth/login/login_screen.dart';
 import 'package:notes_app/views/screens/splash/splash_screen.dart';
 import 'package:notes_app/views/widgets/connectivity_snackbar_listener.dart';
 import 'package:notes_app/views/widgets/reminder_answer_sheet.dart';
@@ -66,6 +69,9 @@ Future<void> initialize() async {
   // connectivity snackbars subscribe to it.
   getIt<ConnectivityService>().start();
   final session = getIt<SessionService>()..restore();
+  // SEC-02: the server rejected the session (401). SessionService has signed
+  // out once; show the login screen.
+  session.expirations.listen((_) => _showLoginAfterExpiry());
   // REM-03: scheduled notifications follow the signed-in user's reminders.
   final scheduler = getIt<ReminderScheduler>()
     ..start(userChanges: session.changes, permission: permissions.status);
@@ -86,6 +92,24 @@ Future<void> initialize() async {
       unawaited(digests.reconcile());
     },
   );
+}
+
+/// After a 401: drop the signed-out user's screens and state, then show the
+/// login screen with one message.
+void _showLoginAfterExpiry() {
+  final context = navigatorKey.currentContext;
+  if (context == null) return;
+  final container = ProviderScope.containerOf(context, listen: false);
+  for (final controller in sessionScopedControllers) {
+    container.invalidate(controller);
+  }
+  navigatorKey.currentState?.pushAndRemoveUntil(
+    MaterialPageRoute(builder: (context) => const LoginScreen()),
+    (route) => false,
+  );
+  scaffoldMessengerKey.currentState
+    ?..hideCurrentSnackBar()
+    ..showSnackBar(failedSnackBar('Your session has expired. Please log in again.'));
 }
 
 class MyApp extends ConsumerWidget {

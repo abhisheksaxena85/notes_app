@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:notes_app/data/local/database/app_database.dart';
+import 'package:notes_app/data/local/secure_storage/token_store.dart';
 import 'package:notes_app/data/local/shared_preference/preference.dart';
 import 'package:notes_app/data/network/api/api_client.dart';
 import 'package:notes_app/data/network/dio_client/dio_client.dart';
@@ -63,7 +64,11 @@ class _BackgroundGraph {
 
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     final database = AppDatabase();
-    final client = ApiClient(dioClient: DioClient.create());
+    // SEC-02: its own Dio with the auth interceptor, reading the token the
+    // app saved (a fresh TokenStore, so nothing cached from an older
+    // session). A 401 here only fails the upload: the change stays queued
+    // and the app signs the user out on its next request.
+    final client = ApiClient(dioClient: DioClient.create(tokenStore: TokenStore.platform()));
     // No connectivity service: nothing listens or retries in this isolate.
     final sync = OfflineSyncService(client: client, database: database);
     final repo = ReminderRepo(client: client, database: database, syncService: sync);

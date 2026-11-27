@@ -6,6 +6,7 @@ import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/data/network/dto/request/register/register_request_dto.dart';
 import 'package:notes_app/data/network/dto/response/register/register_response_dto.dart';
 import 'package:notes_app/data/repository/auth/register/register_repo.dart';
+import 'package:notes_app/data/local/secure_storage/token_store.dart';
 import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
@@ -154,7 +155,10 @@ class RegisterViewmodel extends AsyncNotifier<RegisterState> {
           throw StateError('The server returned no user id.');
         }
         // The new account is signed in straight away.
-        await getIt<SessionService>().login(userId);
+        await getIt<SessionService>().login(
+          userId,
+          token: AuthToken.fromResponse(response.data?.accessToken, response.data?.expiresAt),
+        );
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             successSnackBar(response.message ?? "User created successfully!"),

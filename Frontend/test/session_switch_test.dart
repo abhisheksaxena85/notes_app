@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/data/local/database/app_database.dart';
+import 'package:notes_app/data/local/secure_storage/token_store.dart';
 import 'package:notes_app/data/local/shared_preference/preference.dart';
 import 'package:notes_app/data/local/shared_preference/preference_keys.dart';
 import 'package:notes_app/data/network/api/api_client.dart';
@@ -19,6 +20,7 @@ import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_server.dart';
+import 'support/in_memory_secure_store.dart';
 
 class _RecordingSessionService extends SessionService {
   _RecordingSessionService({
@@ -26,6 +28,7 @@ class _RecordingSessionService extends SessionService {
     required super.database,
     required super.syncService,
     required super.profileRepo,
+    required super.tokenStore,
   });
 
   final List<int> cancelledFor = [];
@@ -79,6 +82,7 @@ void main() {
       database: database,
       syncService: sync,
       profileRepo: getIt<ProfileRepo>(),
+      tokenStore: TokenStore(InMemorySecureStore()),
     );
     getIt.registerSingleton<SessionService>(session);
     session.restore();
@@ -177,6 +181,7 @@ void main() {
       database: database,
       syncService: sync,
       profileRepo: getIt<ProfileRepo>(),
+      tokenStore: TokenStore(InMemorySecureStore()),
     )..restore();
 
     expect(restarted.userId, userA);

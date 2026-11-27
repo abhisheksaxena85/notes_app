@@ -5,7 +5,8 @@ import 'package:dio/dio.dart';
 
 /// How the sync loop should react to a failed upload.
 enum SyncErrorKind {
-  /// No response, timeout, 5xx, 408 or 429: the same request may work later.
+  /// No response, timeout, 5xx, 401, 408 or 429: the same request may work
+  /// later (401: after the user signs in again, SEC-02).
   /// Stop this entity's queue and retry with backoff.
   transient,
 
@@ -39,7 +40,8 @@ class SyncRejectedException implements Exception {
 
 SyncErrorKind classifyStatus(int? statusCode) {
   if (statusCode == null) return SyncErrorKind.transient;
-  if (statusCode == 408 || statusCode == 429) return SyncErrorKind.transient;
+  // 401 is the session, not the item: keep it queued for the next sign-in.
+  if (statusCode == 401 || statusCode == 408 || statusCode == 429) return SyncErrorKind.transient;
   if (statusCode >= 500) return SyncErrorKind.transient;
   if (statusCode >= 400) return SyncErrorKind.permanent;
   return SyncErrorKind.transient;

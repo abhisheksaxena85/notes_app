@@ -22,9 +22,14 @@ Map<String, dynamic> _$LoginResponseDtoToJson(LoginResponseDto instance) =>
       'data': instance.data,
     };
 
-Data _$DataFromJson(Map<String, dynamic> json) =>
-    Data(userId: (json['userId'] as num?)?.toInt());
+Data _$DataFromJson(Map<String, dynamic> json) => Data(
+  userId: (json['userId'] as num?)?.toInt(),
+  accessToken: json['accessToken'] as String?,
+  expiresAt: json['expiresAt'] as String?,
+);
 
 Map<String, dynamic> _$DataToJson(Data instance) => <String, dynamic>{
   'userId': instance.userId,
+  'accessToken': instance.accessToken,
+  'expiresAt': instance.expiresAt,
 };

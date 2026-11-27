@@ -23,8 +23,15 @@ Map<String, dynamic> _$RegisterResponseDtoToJson(
   'data': instance.data,
 };
 
-RegisterData _$RegisterDataFromJson(Map<String, dynamic> json) =>
-    RegisterData(userId: (json['userId'] as num?)?.toInt());
+RegisterData _$RegisterDataFromJson(Map<String, dynamic> json) => RegisterData(
+  userId: (json['userId'] as num?)?.toInt(),
+  accessToken: json['accessToken'] as String?,
+  expiresAt: json['expiresAt'] as String?,
+);
 
 Map<String, dynamic> _$RegisterDataToJson(RegisterData instance) =>
-    <String, dynamic>{'userId': instance.userId};
+    <String, dynamic>{
+      'userId': instance.userId,
+      'accessToken': instance.accessToken,
+      'expiresAt': instance.expiresAt,
+    };

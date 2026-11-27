@@ -23,7 +23,16 @@ class Data {
   @JsonKey(name: "userId")
   int? userId;
 
-  Data({this.userId});
+  /// SEC-02: bearer token for every later request. Stored in secure storage
+  /// by SessionService; never in SharedPreferences.
+  @JsonKey(name: "accessToken")
+  String? accessToken;
+
+  /// When [accessToken] expires, ISO-8601 UTC.
+  @JsonKey(name: "expiresAt")
+  String? expiresAt;
+
+  Data({this.userId, this.accessToken, this.expiresAt});
 
   factory Data.fromJson(Map<String, dynamic> json) => _$DataFromJson(json);
 

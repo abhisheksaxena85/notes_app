@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:notes_app/data/local/database/app_database.dart';
+import 'package:notes_app/data/local/secure_storage/token_store.dart';
 import 'package:notes_app/data/local/shared_preference/preference.dart';
 import 'package:notes_app/data/network/api/api_client.dart';
 import 'package:notes_app/data/network/dio_client/dio_client.dart';
@@ -20,8 +21,16 @@ import 'package:notes_app/utils/services/reminder_scheduler.dart';
 var getIt = GetIt.instance;
 
 Future<void> configureDependencies() async {
-  /// Dio Client
-  getIt.registerLazySingleton<DioClient>(() => DioClient.create());
+  /// Access token in secure storage (SEC-02). Written only by SessionService.
+  getIt.registerLazySingleton<TokenStore>(() => TokenStore.platform());
+
+  /// Dio Client. A 401 for the current session signs the user out once.
+  getIt.registerLazySingleton<DioClient>(
+    () => DioClient.create(
+      tokenStore: getIt<TokenStore>(),
+      onUnauthorized: () => getIt<SessionService>().expire(),
+    ),
+  );
 
   /// Api Client
   getIt.registerLazySingleton<ApiClient>(
@@ -103,6 +112,7 @@ Future<void> configureDependencies() async {
       database: getIt<AppDatabase>(),
       syncService: getIt<OfflineSyncService>(),
       profileRepo: getIt<ProfileRepo>(),
+      tokenStore: getIt<TokenStore>(),
       cancelReminders: () => getIt<ReminderScheduler>().cancelAllReminders(),
     ),
   );

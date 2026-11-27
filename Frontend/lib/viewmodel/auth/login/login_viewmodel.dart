@@ -6,6 +6,7 @@ import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/data/network/dto/request/login/login_request_dto.dart';
 import 'package:notes_app/data/network/dto/response/login/login_response_dto.dart';
 import 'package:notes_app/data/repository/auth/login/login_repo.dart';
+import 'package:notes_app/data/local/secure_storage/token_store.dart';
 import 'package:notes_app/data/session/session_service.dart';
 import 'package:notes_app/utils/res/api_error.dart';
 import 'package:notes_app/utils/res/snackbar.dart';
@@ -78,7 +79,10 @@ class LoginViewmodel extends AsyncNotifier<LoginState> {
         if (userId == 0) {
           throw StateError('The server returned no user id.');
         }
-        await getIt<SessionService>().login(userId);
+        await getIt<SessionService>().login(
+          userId,
+          token: AuthToken.fromResponse(response.data?.accessToken, response.data?.expiresAt),
+        );
         if (context.mounted) {
           ScaffoldMessenger.of(context)
               .showSnackBar(successSnackBar(response.message ?? ''));
