@@ -15,11 +15,11 @@ import com.example.notes_app.tasks.dto.response.CreateTaskResponseDto;
 import com.example.notes_app.tasks.model.Priority;
 import com.example.notes_app.tasks.model.TaskModel;
 import com.example.notes_app.tasks.repository.TaskRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -116,16 +116,19 @@ public class TaskService {
         return value == null || value.isBlank() ? null : WallClock.formatTime(WallClock.parseTime("dueTime", value));
     }
 
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<List<TaskModel>>> getAllTasks(long userId) {
         List<TaskModel> tasks = taskRepository.findByUserId(userId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Tasks fetched successfully", tasks));
     }
 
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<List<TaskModel>>> getTasksByDate(long userId, String date) {
         List<TaskModel> tasks = taskRepository.findByUserIdAndDueDate(userId, date);
         return ResponseEntity.ok(new ApiResponse<>(true, "Tasks for date fetched", tasks));
     }
 
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<TaskModel>> getTaskDetails(long taskId, Long ownerId) {
         return ResponseEntity.ok(new ApiResponse<>(true, "Task details fetched", requireTask(taskId, ownerId)));
     }

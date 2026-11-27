@@ -17,11 +17,11 @@ import com.example.notes_app.reminders.model.ReminderModel;
 import com.example.notes_app.reminders.model.ReminderOutcome;
 import com.example.notes_app.reminders.model.RepeatInterval;
 import com.example.notes_app.reminders.repository.ReminderRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -127,11 +127,13 @@ public class ReminderService {
         return value == null || value.isBlank();
     }
 
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<List<ReminderModel>>> getAllReminders(long userId) {
         List<ReminderModel> reminders = reminderRepository.findByUserId(userId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Reminders fetched successfully", reminders));
     }
 
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<List<ReminderModel>>> getRemindersByDate(long userId, String date) {
         List<ReminderModel> reminders = reminderRepository.findByUserIdAndDueDate(userId, date);
         return ResponseEntity.ok(new ApiResponse<>(true, "Reminders for date fetched", reminders));

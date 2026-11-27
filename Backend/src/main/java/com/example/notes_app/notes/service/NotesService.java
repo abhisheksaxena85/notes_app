@@ -18,11 +18,11 @@ import com.example.notes_app.notes.model.NotesModel;
 import com.example.notes_app.notes.repository.NotesRepository;
 import com.example.notes_app.reminders.model.ReminderModel;
 import com.example.notes_app.tasks.model.TaskModel;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.HashMap;
@@ -62,18 +62,20 @@ public class NotesService {
         return note.orElseThrow(() -> new NotFoundException("Note not found"));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<NotesModel>> getNoteDetails(long noteId, Long ownerId){
         NotesModel currentNote = requireNote(noteId, ownerId);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponse<>(true, "Successfully fetched the details", currentNote));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<List<NotesModel>>> getNotes(long id){
-        UserModel user = requireUser(id);
+        requireUser(id);
+        // BE-05: pinned first, then newest first.
+        List<NotesModel> notes = notesRepository.findByUser_IdOrderByIsPinnedDescCreatedAtDesc(id);
         return ResponseEntity.status(HttpStatus.OK)
-                .body(new ApiResponse<>(true, "Successfully fetched notes", user.getArticles()));
+                .body(new ApiResponse<>(true, "Successfully fetched notes", notes));
     }
 
     /** Not @Transactional on purpose: see {@link IdempotentCreate}. */
@@ -189,7 +191,7 @@ public class NotesService {
      * Item counts per day of a month. Timestamps are bucketed by their day in
      * {@code tz} (an IANA zone name; UTC when absent), see {@link Timestamps}.
      */
-    @Transactional
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<CalendarSummaryResponseDto>> getCalendarSummary(long userId, int year, int month, String tz) {
         if (month < 1 || month > 12) {
             throw new BadRequestException("Month must be between 1 and 12");
@@ -246,7 +248,7 @@ public class NotesService {
     }
 
     /** Notes created on {@code date} in {@code tz} (UTC when absent). */
-    @Transactional
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<List<NotesModel>>> getNotesByDate(long userId, String date, String tz) {
         requireDate(date);
         ZoneId zone = Timestamps.zone(tz);
@@ -263,7 +265,7 @@ public class NotesService {
     }
 
     /** Everything on {@code date}, bucketed like {@link #getCalendarSummary}. */
-    @Transactional
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<DayActivityResponseDto>> getDayActivity(long userId, String date, String tz) {
         requireDate(date);
         ZoneId zone = Timestamps.zone(tz);
@@ -288,17 +290,17 @@ public class NotesService {
                 .body(new ApiResponse<>(true, "Fetched activity for date " + date, dto));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<List<NotesModel>>> searchNotes(long userId, String query) {
         List<NotesModel> results = notesRepository.searchNotes(userId, query);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponse<>(true, "Search completed", results));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<ExportNotesResponseDto>> exportNotes(long userId) {
-        UserModel user = requireUser(userId);
-        List<NotesModel> notes = user.getArticles();
+        requireUser(userId);
+        List<NotesModel> notes = notesRepository.findByUser_IdOrderByIsPinnedDescCreatedAtDesc(userId);
         ExportNotesResponseDto dto = new ExportNotesResponseDto(
                 1,
                 Timestamps.now(),

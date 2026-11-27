@@ -4,12 +4,19 @@ import com.example.notes_app.notes.model.NotesModel;
 import com.example.notes_app.reminders.model.ReminderModel;
 import com.example.notes_app.tasks.model.TaskModel;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
+// BE-05: no @Data. Its toString/equals/hashCode would follow the two-way
+// relations (user -> notes -> user ...) and the lazy collections. Entities keep
+// identity equality.
+@Getter
+@Setter
+@ToString
 @Entity
 // The unique index is created by Flyway migration V2 on existing databases; the
 // name must match so Hibernate's ddl-auto=update sees it and doesn't add another.
@@ -28,6 +35,7 @@ public class UserModel {
     @Column(name = "email", length = 320)
     String email;
 
+    @ToString.Exclude
     @Column(name = "password", columnDefinition = "TEXT")
     String password;
 
@@ -37,6 +45,7 @@ public class UserModel {
     @Column(name = "mobile", columnDefinition = "TEXT")
     String mobile;
 
+    @ToString.Exclude
     @OneToMany(
             mappedBy = "user",
             cascade = CascadeType.REMOVE,
@@ -44,6 +53,7 @@ public class UserModel {
     )
     private List<NotesModel> articles = new ArrayList<>();
 
+    @ToString.Exclude
     @OneToMany(
             mappedBy = "user",
             cascade = CascadeType.REMOVE,
@@ -51,6 +61,7 @@ public class UserModel {
     )
     private List<TaskModel> tasks = new ArrayList<>();
 
+    @ToString.Exclude
     @OneToMany(
             mappedBy = "user",
             cascade = CascadeType.REMOVE,

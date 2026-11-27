@@ -10,12 +10,12 @@ import com.example.notes_app.common.exception.BadRequestException;
 import com.example.notes_app.common.exception.ConflictException;
 import com.example.notes_app.common.exception.NotFoundException;
 import com.example.notes_app.common.exception.UnauthorizedException;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -45,7 +45,7 @@ public class AuthService {
         return hash;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<UserDetailsResponseDto>> getUserDetails(UserDetailsRequestDto requestDto) {
         UserModel user = repository.findById(requestDto.getId())
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -129,12 +129,13 @@ public class AuthService {
         currentUser.setName(requestDto.getName() != null ? requestDto.getName() : currentUser.getName());
         currentUser.setMobile(requestDto.getMobile() != null ? requestDto.getMobile() : currentUser.getMobile());
         currentUser.setGender(requestDto.getGender() != null ? requestDto.getGender() : currentUser.getGender());
-        repository.save(currentUser);
+        UserModel saved = repository.save(currentUser);
+        // BE-05: the stored values, not the request (fields not sent stay as they were).
         UpdateUserResponseDto responseDto = new UpdateUserResponseDto();
-        responseDto.setUserId(requestDto.getUserId());
-        responseDto.setName(requestDto.getName());
-        responseDto.setMobile(requestDto.getMobile());
-        responseDto.setGender(requestDto.getGender());
+        responseDto.setUserId(saved.getId());
+        responseDto.setName(saved.getName());
+        responseDto.setMobile(saved.getMobile());
+        responseDto.setGender(saved.getGender());
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponse<>(true, "User details updated successfully!", responseDto));
     }
