@@ -133,51 +133,49 @@ void main() {
     });
   });
 
-  group('Task & Reminder UI Cards with Status Strip Tests', () {
-    testWidgets('TaskItemCard displays Blue strip for PENDING status',
+  group('Task & Reminder UI Cards status rules', () {
+    final palette = DaymarkPalette.light;
+
+    Widget host(Widget Function(BuildContext) child) => ScreenUtilInit(
+          designSize: const Size(412, 892),
+          builder: (context, _) => MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: Scaffold(body: Builder(builder: child)),
+          ),
+        );
+
+    /// Decorations of the animated status controls (checkbox / bell tile).
+    Iterable<BoxDecoration> statusDecorations(WidgetTester tester) => tester
+        .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+        .map((c) => c.decoration)
+        .whereType<BoxDecoration>();
+
+    bool hasRing(WidgetTester tester, Color color) => statusDecorations(tester)
+        .any((d) => d.border is Border && (d.border as Border).top.color == color);
+
+    testWidgets('a pending task has an accent ring and no strikethrough',
         (WidgetTester tester) async {
       final task = TaskItem(
         taskId: 1,
         title: 'Pending Feature',
-        // Far future: an overdue PENDING task is rendered as MISSED.
-        dueDate: '2099-11-19',
+        dueDate: '2099-11-20',
         status: 'PENDING',
         isCompleted: false,
       );
-
-      await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: const Size(412, 892),
-          builder: (context, child) => MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: Scaffold(
-              body: Builder(
-                builder: (ctx) => taskItemCard(
-                  context: ctx,
-                  task: task,
-                  onToggleComplete: (_) {},
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
+      await tester.pumpWidget(host((ctx) => taskItemCard(
+            context: ctx,
+            task: task,
+            onToggleComplete: (_) {},
+          )));
       await tester.pump();
 
-      // Verify Title text is displayed without strikethrough
       final textWidget = tester.widget<Text>(find.text('Pending Feature'));
       expect(textWidget.style?.decoration, isNull);
-
-      // Verify Blue Strip Container
-      final containers = tester.widgetList<Container>(find.byType(Container));
-      final hasBlueStrip = containers.any(
-        (c) => c.color == DaymarkPalette.light.accent,
-      );
-      expect(hasBlueStrip, isTrue);
+      expect(hasRing(tester, palette.accent), isTrue);
+      expect(find.text('Missed'), findsNothing);
     });
 
-    testWidgets(
-        'TaskItemCard displays Dark-Green strip and strikethrough for COMPLETED status',
+    testWidgets('a completed task has a success fill, strikethrough and Done',
         (WidgetTester tester) async {
       final task = TaskItem(
         taskId: 2,
@@ -186,39 +184,22 @@ void main() {
         status: 'COMPLETED',
         isCompleted: true,
       );
-
-      await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: const Size(412, 892),
-          builder: (context, child) => MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: Scaffold(
-              body: Builder(
-                builder: (ctx) => taskItemCard(
-                  context: ctx,
-                  task: task,
-                  onToggleComplete: (_) {},
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
+      await tester.pumpWidget(host((ctx) => taskItemCard(
+            context: ctx,
+            task: task,
+            onToggleComplete: (_) {},
+          )));
       await tester.pump();
 
-      // Verify Title text is strikethrough
       final textWidget = tester.widget<Text>(find.text('Completed Feature'));
       expect(textWidget.style?.decoration, TextDecoration.lineThrough);
-
-      // Verify Dark Green Strip Container
-      final containers = tester.widgetList<Container>(find.byType(Container));
-      final hasGreenStrip = containers.any(
-        (c) => c.color == DaymarkPalette.light.success,
-      );
-      expect(hasGreenStrip, isTrue);
+      expect(textWidget.style?.color, palette.muted);
+      expect(statusDecorations(tester).any((d) => d.color == palette.success), isTrue);
+      final done = tester.widget<Text>(find.text('Done'));
+      expect(done.style?.color, palette.success);
     });
 
-    testWidgets('TaskItemCard displays Red strip for MISSED status',
+    testWidgets('a missed task has a danger ring and a Missed pill',
         (WidgetTester tester) async {
       final task = TaskItem(
         taskId: 3,
@@ -227,69 +208,60 @@ void main() {
         status: 'MISSED',
         isCompleted: false,
       );
-
-      await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: const Size(412, 892),
-          builder: (context, child) => MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: Scaffold(
-              body: Builder(
-                builder: (ctx) => taskItemCard(
-                  context: ctx,
-                  task: task,
-                  onToggleComplete: (_) {},
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
+      await tester.pumpWidget(host((ctx) => taskItemCard(
+            context: ctx,
+            task: task,
+            onToggleComplete: (_) {},
+          )));
       await tester.pump();
 
-      // Verify Red Strip Container
-      final containers = tester.widgetList<Container>(find.byType(Container));
-      final hasRedStrip = containers.any(
-        (c) => c.color == DaymarkPalette.light.danger,
-      );
-      expect(hasRedStrip, isTrue);
+      expect(hasRing(tester, palette.danger), isTrue);
+      final pill = tester.widget<Text>(find.text('Missed'));
+      expect(pill.style?.color, palette.danger);
     });
 
-    testWidgets('ReminderItemCard displays Blue/Green/Red strips accurately',
+    testWidgets('reminder tiles follow pending / missed / completed',
         (WidgetTester tester) async {
-      final reminder = ReminderItem(
+      Future<void> pumpReminder(ReminderItem reminder) async {
+        await tester.pumpWidget(host((ctx) => reminderItemCard(
+              context: ctx,
+              reminder: reminder,
+              onStatusChange: (_) {},
+            )));
+        await tester.pump();
+      }
+
+      bool tile(Color fill) =>
+          statusDecorations(tester).any((d) => d.color == fill);
+
+      // Far future: an overdue PENDING reminder is rendered as MISSED.
+      await pumpReminder(ReminderItem(
         reminderId: 4,
         title: 'Doctor Appointment',
-        // Far future: an overdue PENDING reminder is rendered as MISSED.
         remindAt: '2099-11-19T14:00:00',
         dueDate: '2099-11-19',
         status: 'PENDING',
-      );
+      ));
+      expect(tile(palette.accentSoft), isTrue);
 
-      await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: const Size(412, 892),
-          builder: (context, child) => MaterialApp(
-            theme: AppTheme.lightTheme,
-            home: Scaffold(
-              body: Builder(
-                builder: (ctx) => reminderItemCard(
-                  context: ctx,
-                  reminder: reminder,
-                  onStatusChange: (_) {},
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
+      await pumpReminder(ReminderItem(
+        reminderId: 5,
+        title: 'Overdue',
+        remindAt: '2020-01-01T09:00:00',
+        dueDate: '2020-01-01',
+        status: 'PENDING',
+      ));
+      expect(tile(palette.dangerSoft), isTrue);
+      expect(find.text('Missed'), findsOneWidget);
 
-      final containers = tester.widgetList<Container>(find.byType(Container));
-      final hasBlueStrip = containers.any(
-        (c) => c.color == DaymarkPalette.light.accent,
-      );
-      expect(hasBlueStrip, isTrue);
+      await pumpReminder(ReminderItem(
+        reminderId: 6,
+        title: 'Finished',
+        remindAt: '2099-11-19T14:00:00',
+        dueDate: '2099-11-19',
+        status: 'COMPLETED',
+      ));
+      expect(tile(palette.successSoft), isTrue);
     });
   });
 

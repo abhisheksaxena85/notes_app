@@ -22,17 +22,13 @@ class SyncFailuresBanner extends ConsumerWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 14.h),
       child: Material(
-        color: palette.danger.withValues(alpha: 0.08),
+        color: palette.dangerSoft,
         borderRadius: BorderRadius.circular(14.r),
         child: InkWell(
           borderRadius: BorderRadius.circular(14.r),
           onTap: () => showSyncFailuresSheet(context),
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14.r),
-              border: Border.all(color: palette.danger.withValues(alpha: 0.35)),
-            ),
             child: Row(
               children: [
                 Icon(Icons.cloud_off_rounded, size: 18.sp, color: palette.danger),

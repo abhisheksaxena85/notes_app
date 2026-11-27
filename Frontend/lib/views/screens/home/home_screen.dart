@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:notes_app/data/di/dependency_injection.dart';
 import 'package:notes_app/data/network/dto/response/home/get_all_notes_response_dto.dart';
 import 'package:notes_app/data/network/dto/response/reminder/reminder_item.dart';
 import 'package:notes_app/data/network/dto/response/task/task_item.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
 import 'package:notes_app/utils/constants/app_icons.dart';
+import 'package:notes_app/utils/date/display_format.dart';
 import 'package:notes_app/utils/res/api_error.dart';
+import 'package:notes_app/utils/themes/daymark_text.dart';
 import 'package:notes_app/utils/services/notification_permission_service.dart';
 import 'package:notes_app/viewmodel/controllers.dart';
 import 'package:notes_app/viewmodel/home/home_viewmodel.dart';
@@ -16,18 +16,24 @@ import 'package:notes_app/views/screens/home/widgets/reminder_form_modal.dart';
 import 'package:notes_app/views/screens/home/widgets/create_task_modal.dart';
 import 'package:notes_app/views/screens/home/widgets/note_item_card.dart';
 import 'package:notes_app/views/screens/home/widgets/notes_error_widget.dart';
-import 'package:notes_app/views/screens/home/widgets/notes_header_widget.dart';
+import 'package:notes_app/views/screens/home/widgets/workspace_header.dart';
 import 'package:notes_app/views/screens/home/widgets/notes_loading_widget.dart';
 import 'package:notes_app/views/screens/home/widgets/reminder_item_card.dart';
 import 'package:notes_app/views/screens/home/widgets/sync_failures_banner.dart';
 import 'package:notes_app/views/screens/home/widgets/task_item_card.dart';
 import 'package:notes_app/views/screens/note_details/note_details_screen.dart';
 import 'package:notes_app/views/widgets/add_menu_fab.dart';
+import 'package:notes_app/views/widgets/daymark_chip.dart';
+import 'package:notes_app/views/widgets/icon_tile.dart';
+import 'package:notes_app/views/widgets/section_header.dart';
 import 'package:notes_app/views/widgets/notification_permission_prompt.dart';
 import 'package:notes_app/views/widgets/undo_delete.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.onOpenProfile});
+
+  /// The header avatar opens the Profile tab.
+  final VoidCallback? onOpenProfile;
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -196,9 +202,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final displayedTasks = _filterTasks(allTasks);
     final displayedReminders = _filterReminders(allReminders);
 
-    final int totalActiveItems = allNotes.length +
-        allTasks.where((t) => !_hiddenTasks.contains(_taskKey(t))).length +
-        allReminders.where((r) => !_hiddenReminders.contains(_reminderKey(r))).length;
+    final visibleTasks = allTasks.where((t) => !_hiddenTasks.contains(_taskKey(t)));
+    final visibleReminders = allReminders.where((r) => !_hiddenReminders.contains(_reminderKey(r)));
+    final today = DateTime.now();
+    final tasksToday = visibleTasks.where((t) {
+      final due = DisplayFormat.day(t.dueDate);
+      return due != null && DisplayFormat.sameDay(due, today);
+    }).length;
+
+    Future<void> onRefresh() => _refreshAll(context, homeNotifier);
 
     return Scaffold(
       backgroundColor: palette.background,
@@ -244,193 +256,126 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: Stack(
         children: [
           SafeArea(
-            child: Column(
-              children: [
-                // Header
-                notesHeaderWidget(
-                  context: context,
-                  noteCount: totalActiveItems,
-                  userName: userName,
-                  title: "Workspace",
-                  itemLabel: "ITEMS",
-                  onRefresh: () => _refreshAll(context, homeNotifier),
+            bottom: false,
+            child: RefreshIndicator(
+              color: palette.accent,
+              backgroundColor: palette.surface,
+              onRefresh: onRefresh,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
                 ),
-            SizedBox(height: 14.h),
-
-            // Search Bar
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.w),
-              child: Container(
-                height: 48.h,
-                decoration: BoxDecoration(
-                  color: palette.surface,
-                  borderRadius: BorderRadius.circular(16.r),
-                  border: Border.all(color: palette.line, width: 1),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 14.w),
-                child: Row(
-                  children: [
-                    AppIcons.icon(
-                      AppIcons.search,
-                      size: 16.sp,
-                      color: palette.muted,
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                    sliver: SliverList.list(
+                      children: [
+                        WorkspaceHeader(
+                          userName: userName,
+                          onAvatarTap: widget.onOpenProfile,
+                        ),
+                        const SizedBox(height: 18),
+                        WorkspaceStats(
+                          tasksToday: tasksToday,
+                          reminders: visibleReminders.length,
+                          notes: allNotes.length,
+                        ),
+                        const SizedBox(height: 14),
+                        WorkspaceSearchField(
+                          controller: _searchController,
+                          onChanged: (val) => setState(() => _searchQuery = val),
+                          onClear: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = "");
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                      ],
                     ),
-                    SizedBox(width: 10.w),
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (val) {
-                          setState(() {
-                            _searchQuery = val;
-                          });
-                        },
-                        style: GoogleFonts.inter(
-                          fontSize: 14.sp,
-                          color: palette.ink,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: "Search notes, tasks, reminders...",
-                          hintStyle: GoogleFonts.inter(
-                            fontSize: 14.sp,
-                            color: palette.muted,
-                            fontWeight: FontWeight.w400,
-                          ),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
+                  ),
+
+                  // Queued changes the server refused (retry / discard)
+                  const SliverToBoxAdapter(child: SyncFailuresBanner()),
+
+                  // REM-02: upcoming reminders that won't alert
+                  SliverToBoxAdapter(
+                    child: NotificationsOffBanner(
+                      permissions: getIt<NotificationPermissionService>(),
+                      hasUpcomingReminders: allReminders.any((r) => r.isUpcoming()),
+                    ),
+                  ),
+
+                  // Filter chips: All, Notes, Tasks, Reminders
+                  SliverToBoxAdapter(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        children: [
+                          for (final filter in _filters) ...[
+                            DaymarkChip(
+                              label: filter,
+                              selected: _selectedFilter == filter,
+                              onTap: () => setState(() => _selectedFilter = filter),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ],
                       ),
                     ),
-                    if (_searchQuery.isNotEmpty)
-                      GestureDetector(
-                        onTap: () {
-                          _searchController.clear();
-                          setState(() {
-                            _searchQuery = "";
-                          });
-                        },
-                        child: AppIcons.icon(
-                          AppIcons.close,
-                          size: 18.sp,
-                          color: palette.muted,
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 22)),
+
+                  // Unified Workspace Feed
+                  ...homeState.when(
+                    data: (_) => _buildFeed(
+                      context: context,
+                      palette: palette,
+                      notes: displayedNotes,
+                      tasks: displayedTasks,
+                      reminders: displayedReminders,
+                      onRefresh: onRefresh,
+                    ),
+                    loading: () => [
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: notesLoadingWidget(),
+                      ),
+                    ],
+                    error: (error, stack) => [
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: notesErrorWidget(
+                          message: userMessage(error),
+                          onRetry: onRefresh,
                         ),
                       ),
-                  ],
-                ),
+                    ],
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                ],
               ),
             ),
-            SizedBox(height: 14.h),
-
-            // Queued changes the server refused (retry / discard)
-            const SyncFailuresBanner(),
-
-            // REM-02: upcoming reminders that won't alert
-            NotificationsOffBanner(
-              permissions: getIt<NotificationPermissionService>(),
-              hasUpcomingReminders: allReminders.any((r) => r.isUpcoming()),
-            ),
-
-            // Segmented Filter Chips Row: All, Notes, Tasks, Reminders
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.w),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                child: Row(
-                  children: _filters.map((filter) {
-                    return Padding(
-                      padding: EdgeInsets.only(right: 8.w),
-                      child: _buildFilterChip(filter, palette),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-            SizedBox(height: 14.h),
-
-            // Unified Workspace Feed
-            Expanded(
-              child: homeState.when(
-                data: (_) {
-                  return _buildFeedList(
-                    context: context,
-                    palette: palette,
-                    notes: displayedNotes,
-                    tasks: displayedTasks,
-                    reminders: displayedReminders,
-                    onRefresh: () => _refreshAll(context, homeNotifier),
-                  );
+          ),
+          // Full-screen dismissable scrim while the add menu is open
+          if (_isSpeedDialOpen)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isSpeedDialOpen = false;
+                  });
                 },
-                loading: () => notesLoadingWidget(),
-                error: (error, stack) => notesErrorWidget(
-                  message: userMessage(error),
-                  onRetry: () => _refreshAll(context, homeNotifier),
-                ),
+                behavior: HitTestBehavior.opaque,
+                child: ColoredBox(color: palette.scrim),
               ),
             ),
-          ],
-        ),
-      ),
-      // Full-screen dismissable background scrim when Speed Dial is open
-      if (_isSpeedDialOpen)
-        Positioned.fill(
-          child: GestureDetector(
-            onTap: () {
-              setState(() {
-                _isSpeedDialOpen = false;
-              });
-            },
-            behavior: HitTestBehavior.opaque,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              color: palette.scrim,
-            ),
-          ),
-        ),
-    ],
-  ),
-);
-  }
-
-  Widget _buildFilterChip(String label, DaymarkPalette palette) {
-    final isSelected = _selectedFilter == label;
-    final isDark = palette.brightness == Brightness.dark;
-
-    final bg = isSelected
-        ? (isDark ? palette.accent : palette.ink)
-        : palette.surface;
-    final fg = isSelected
-        ? (isDark ? palette.background : palette.surface)
-        : palette.muted;
-    final border = isSelected ? Colors.transparent : palette.line;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedFilter = label;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 7.h),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(15.r),
-          border: Border.all(color: border, width: 1),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 12.sp,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: fg,
-          ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildFeedList({
+  List<Widget> _buildFeed({
     required BuildContext context,
     required DaymarkPalette palette,
     required List<NoteItem> notes,
@@ -438,226 +383,183 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required List<ReminderItem> reminders,
     required Future<void> Function() onRefresh,
   }) {
-    final showNotes = _selectedFilter == "All" || _selectedFilter == "Notes";
-    final showTasks = _selectedFilter == "All" || _selectedFilter == "Tasks";
-    final showReminders = _selectedFilter == "All" || _selectedFilter == "Reminders";
+    final isAll = _selectedFilter == "All";
+    final showNotes = isAll || _selectedFilter == "Notes";
+    final showTasks = isAll || _selectedFilter == "Tasks";
+    final showReminders = isAll || _selectedFilter == "Reminders";
 
     final hasAnyItems = (showNotes && notes.isNotEmpty) ||
         (showTasks && tasks.isNotEmpty) ||
         (showReminders && reminders.isNotEmpty);
 
     if (!hasAnyItems) {
-      if (_searchQuery.isNotEmpty) {
-        return Center(
-          child: Text(
-            "No results match your search.",
-            style: GoogleFonts.inter(fontSize: 14.sp, color: palette.muted),
-          ),
-        );
-      }
-      return _buildEmptyWidget(palette, onRefresh);
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: _searchQuery.isNotEmpty
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 40),
+                  child: Text(
+                    "No results match your search.",
+                    textAlign: TextAlign.center,
+                    style: DaymarkText.custom(14, FontWeight.w400).copyWith(color: palette.muted),
+                  ),
+                )
+              : _buildEmptyWidget(palette),
+        ),
+      ];
     }
 
-    return RefreshIndicator(
-      color: palette.accent,
-      backgroundColor: palette.surface,
-      onRefresh: onRefresh,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
-        ),
-        padding: EdgeInsets.symmetric(horizontal: 20.w).copyWith(bottom: 90.h),
-        children: [
-          // Tasks Section
-          if (showTasks && tasks.isNotEmpty) ...[
-            if (_selectedFilter == "All") ...[
-              _buildSectionHeader("Tasks (${tasks.length})", palette),
-              SizedBox(height: 8.h),
-            ],
-            ...tasks.map((task) {
-              return taskItemCard(
-                context: context,
-                task: task,
-                onToggleComplete: (val) {
-                  if (task.taskId != null) {
-                    ref.read(taskController.notifier).toggleTaskStatus(
-                          task.taskId!,
-                          val,
-                        );
-                  }
-                },
-                // FE-06: tap to edit.
-                onTap: task.taskId == null
-                    ? null
-                    : () => showCreateTaskModal(context, initial: task),
-                onDelete: () => _deleteTask(task),
-                onStatusSelected: (status) {
-                  if (task.taskId != null) {
-                    ref
-                        .read(taskController.notifier)
-                        .setTaskStatus(task.taskId!, status);
-                  }
-                },
-              );
-            }),
-            if (_selectedFilter == "All") SizedBox(height: 12.h),
-          ],
+    Widget header(String title, int count, String filter) => Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: SectionHeader(
+            title: title,
+            count: count,
+            onSeeAll: isAll ? () => setState(() => _selectedFilter = filter) : null,
+          ),
+        );
 
-          // Reminders Section
-          if (showReminders && reminders.isNotEmpty) ...[
-            if (_selectedFilter == "All") ...[
-              _buildSectionHeader("Reminders (${reminders.length})", palette),
-              SizedBox(height: 8.h),
-            ],
-            ...reminders.map((reminder) {
-              return ValueListenableBuilder<NotificationStatus>(
-                valueListenable: getIt<NotificationPermissionService>().status,
-                builder: (context, alerts, _) => reminderItemCard(
-                  context: context,
-                  reminder: reminder,
-                  alerts: alerts,
-                  // REM-06: tap to edit.
-                  onTap: reminder.reminderId == null
-                      ? null
-                      : () => showReminderFormModal(context, initial: reminder),
-                  onStatusChange: (newStatus) => _applyReminderChoice(reminder, newStatus),
-                  onDelete: () => _deleteReminder(reminder),
-                  onStatusSelected: (status) => _applyReminderChoice(reminder, status),
+    final children = <Widget>[
+      // Tasks Section
+      if (showTasks && tasks.isNotEmpty) ...[
+        header("Tasks", tasks.length, "Tasks"),
+        ...tasks.map((task) {
+          return taskItemCard(
+            context: context,
+            task: task,
+            onToggleComplete: (val) {
+              if (task.taskId != null) {
+                ref.read(taskController.notifier).toggleTaskStatus(
+                      task.taskId!,
+                      val,
+                    );
+              }
+            },
+            // FE-06: tap to edit.
+            onTap: task.taskId == null
+                ? null
+                : () => showCreateTaskModal(context, initial: task),
+            onDelete: () => _deleteTask(task),
+            onStatusSelected: (status) {
+              if (task.taskId != null) {
+                ref
+                    .read(taskController.notifier)
+                    .setTaskStatus(task.taskId!, status);
+              }
+            },
+          );
+        }),
+        const SizedBox(height: 14),
+      ],
+
+      // Reminders Section
+      if (showReminders && reminders.isNotEmpty) ...[
+        header("Reminders", reminders.length, "Reminders"),
+        ...reminders.map((reminder) {
+          return ValueListenableBuilder<NotificationStatus>(
+            valueListenable: getIt<NotificationPermissionService>().status,
+            builder: (context, alerts, _) => reminderItemCard(
+              context: context,
+              reminder: reminder,
+              alerts: alerts,
+              // REM-06: tap to edit.
+              onTap: reminder.reminderId == null
+                  ? null
+                  : () => showReminderFormModal(context, initial: reminder),
+              onStatusChange: (newStatus) => _applyReminderChoice(reminder, newStatus),
+              onDelete: () => _deleteReminder(reminder),
+              onStatusSelected: (status) => _applyReminderChoice(reminder, status),
+            ),
+          );
+        }),
+        const SizedBox(height: 14),
+      ],
+
+      // Notes Section
+      if (showNotes && notes.isNotEmpty) ...[
+        header("Notes", notes.length, "Notes"),
+        ...notes.map((note) {
+          return noteItemCard(
+            context: context,
+            note: note,
+            onTap: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => NoteDetailsScreen(noteId: note.noteId),
                 ),
               );
-            }),
-            if (_selectedFilter == "All") SizedBox(height: 12.h),
-          ],
+              if (result == true && context.mounted) {
+                onRefresh();
+              }
+            },
+          );
+        }),
+      ],
+    ];
 
-          // Notes Section
-          if (showNotes && notes.isNotEmpty) ...[
-            if (_selectedFilter == "All") ...[
-              _buildSectionHeader("Notes (${notes.length})", palette),
-              SizedBox(height: 8.h),
-            ],
-            ...notes.map((note) {
-              return noteItemCard(
-                context: context,
-                note: note,
-                onTap: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => NoteDetailsScreen(noteId: note.noteId),
-                    ),
-                  );
-                  if (result == true && context.mounted) {
-                    onRefresh();
-                  }
-                },
-              );
-            }),
-          ],
-        ],
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        sliver: SliverList.list(children: children),
       ),
-    );
+    ];
   }
 
-  Widget _buildEmptyWidget(DaymarkPalette palette, Future<void> Function() onRefresh) {
+  Widget _buildEmptyWidget(DaymarkPalette palette) {
     String title;
     String subtitle;
+    String icon;
 
     switch (_selectedFilter) {
       case "Tasks":
         title = "No tasks yet";
-        subtitle = "Keep track of your to-dos.\nTap '+ Add' and choose 'New Task' to get started.";
+        subtitle = "Keep track of your to-dos.\nTap + and choose New task to get started.";
+        icon = AppIcons.task;
         break;
       case "Reminders":
         title = "No reminders yet";
-        subtitle = "Never miss what matters.\nTap '+ Add' and choose 'New Reminder' to schedule one.";
+        subtitle = "Never miss what matters.\nTap + and choose New reminder to schedule one.";
+        icon = AppIcons.reminder;
         break;
       case "Notes":
         title = "No notes yet";
-        subtitle = "Your calm space is waiting.\nTap '+ Add' and choose 'New Note' to capture your thoughts.";
+        subtitle = "Your calm space is waiting.\nTap + and choose New note to capture your thoughts.";
+        icon = AppIcons.note;
         break;
       default:
         title = "Your workspace is clear";
-        subtitle = "No notes, tasks, or reminders found.\nTap '+ Add' below to create something new.";
+        subtitle = "No notes, tasks, or reminders yet.\nTap + to create something new.";
+        icon = AppIcons.workspace;
         break;
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return RefreshIndicator(
-          onRefresh: onRefresh,
-          color: palette.accent,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 32.w),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 72.r,
-                        height: 72.r,
-                        decoration: BoxDecoration(
-                          color: palette.accentSoft,
-                          borderRadius: BorderRadius.circular(22.r),
-                          border: Border.all(color: palette.line),
-                        ),
-                        child: Center(
-                          child: AppIcons.icon(
-                            _selectedFilter == "Tasks"
-                                ? AppIcons.task
-                                : (_selectedFilter == "Reminders"
-                                    ? AppIcons.reminder
-                                    : AppIcons.note),
-                            size: 32.sp,
-                            color: palette.accent,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 20.h),
-                      Text(
-                        title,
-                        style: GoogleFonts.inter(
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.w700,
-                          color: palette.ink,
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      Text(
-                        subtitle,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w400,
-                          height: 1.5,
-                          color: palette.muted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 40, 32, 0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          IconTile(
+            icon: icon,
+            size: 56,
+            radius: 18,
+            iconSize: 26,
+            background: palette.accentSoft,
+            color: palette.accent,
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSectionHeader(String title, DaymarkPalette palette) {
-    return Text(
-      title.toUpperCase(),
-      style: GoogleFonts.inter(
-        fontSize: 11.sp,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 1.1,
-        color: palette.muted,
+          const SizedBox(height: 16),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: DaymarkText.custom(17, FontWeight.w600).copyWith(color: palette.ink),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: DaymarkText.preview.copyWith(color: palette.muted),
+          ),
+        ],
       ),
     );
   }

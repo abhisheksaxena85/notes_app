@@ -56,10 +56,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  final List<Widget> _pages = const [
-    HomeScreen(),
-    CalendarScreen(),
-    ProfileScreen(),
+  late final List<Widget> _pages = [
+    HomeScreen(onOpenProfile: () => setState(() => _currentIndex = 2)),
+    const CalendarScreen(),
+    const ProfileScreen(),
   ];
 
   @override
