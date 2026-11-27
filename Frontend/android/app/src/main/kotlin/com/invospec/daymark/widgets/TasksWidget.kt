@@ -1,4 +1,4 @@
-package com.devquorix.daymark.widgets
+package com.invospec.daymark.widgets
 
 import android.content.Context
 import android.content.Intent
@@ -38,8 +38,8 @@ import androidx.glance.semantics.contentDescription
 import androidx.glance.semantics.semantics
 import androidx.glance.text.Text
 import androidx.glance.text.TextDecoration
-import com.devquorix.daymark.MainActivity
-import com.devquorix.daymark.R
+import com.invospec.daymark.MainActivity
+import com.invospec.daymark.R
 import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 import es.antonborri.home_widget.HomeWidgetGlanceState
 import es.antonborri.home_widget.HomeWidgetGlanceStateDefinition

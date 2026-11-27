@@ -1,4 +1,4 @@
-package com.devquorix.daymark.widgets
+package com.invospec.daymark.widgets
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.android.FlutterActivityLaunchConfigs.BackgroundMode

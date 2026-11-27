@@ -1,4 +1,4 @@
-package com.devquorix.daymark.widgets
+package com.invospec.daymark.widgets
 
 import android.os.Build
 import androidx.annotation.ColorRes
@@ -32,7 +32,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import com.devquorix.daymark.R
+import com.invospec.daymark.R
 
 /**
  * Colours come from resources (values/ and values-night/colors.xml), so the widgets follow the

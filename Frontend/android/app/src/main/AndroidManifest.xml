@@ -48,7 +48,7 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:launchMode="singleTask"
-            android:taskAffinity="com.devquorix.daymark.quickadd"
+            android:taskAffinity="com.invospec.daymark.quickadd"
             android:theme="@style/QuickAddTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"

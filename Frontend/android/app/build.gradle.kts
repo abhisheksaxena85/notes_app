@@ -26,7 +26,7 @@ if (hasReleaseKeystore) {
 }
 
 android {
-    namespace = "com.devquorix.daymark"
+    namespace = "com.invospec.daymark"
     // flutter_local_notifications 23 needs compileSdk 37 or newer.
     compileSdk = maxOf(flutter.compileSdkVersion, 37)
     ndkVersion = flutter.ndkVersion
@@ -41,7 +41,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.devquorix.daymark"
+        applicationId = "com.invospec.daymark"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

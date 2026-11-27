@@ -1,4 +1,4 @@
-package com.devquorix.daymark.widgets
+package com.invospec.daymark.widgets
 
 import android.content.Context
 import android.content.SharedPreferences

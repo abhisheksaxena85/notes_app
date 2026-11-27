@@ -9,7 +9,7 @@ Backend: `__________` (URL / commit) — scenarios 7 and 11 need it reachable af
 ## Useful commands (Android)
 - Doze: `adb shell dumpsys deviceidle force-idle` (back to normal: `adb shell dumpsys deviceidle unforce`)
 - Exact alarms off (Android 14): Settings → Apps → Daymark → Alarms & reminders
-- Scheduled alarms: `adb shell dumpsys alarm | grep -A3 com.devquorix.daymark`
+- Scheduled alarms: `adb shell dumpsys alarm | grep -A3 com.invospec.daymark`
 - Offline: airplane mode, or `adb shell svc wifi disable && adb shell svc data disable`
 
 ---

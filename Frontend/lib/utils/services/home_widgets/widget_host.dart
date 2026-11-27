@@ -5,14 +5,14 @@ import 'package:flutter/foundation.dart';
 import 'package:home_widget/home_widget.dart';
 
 /// Names shared with the native widgets. Keep them in sync with
-/// android/app/src/main/kotlin/com/devquorix/daymark/widgets/ and
+/// android/app/src/main/kotlin/com/invospec/daymark/widgets/ and
 /// ios/DaymarkWidgets/.
 class DaymarkWidgets {
   /// iOS App Group shared by the Runner and the DaymarkWidgets extension.
   static const appGroupId = 'group.com.devquorix.daymark';
 
-  static const tasksAndroid = 'com.devquorix.daymark.widgets.TasksWidgetReceiver';
-  static const reminderAndroid = 'com.devquorix.daymark.widgets.NextReminderWidgetReceiver';
+  static const tasksAndroid = 'com.invospec.daymark.widgets.TasksWidgetReceiver';
+  static const reminderAndroid = 'com.invospec.daymark.widgets.NextReminderWidgetReceiver';
 
   /// WidgetKit kinds.
   static const tasksIOS = 'DaymarkTasksWidget';

@@ -1,4 +1,4 @@
-package com.devquorix.daymark
+package com.invospec.daymark
 
 import io.flutter.embedding.android.FlutterActivity
 

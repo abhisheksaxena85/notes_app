@@ -2,7 +2,7 @@
 
 The "Daymark Tasks" and "Next reminder" widgets (W-06). The Flutter side is
 `lib/utils/services/home_widgets/`; the Android widgets are in
-`android/app/src/main/kotlin/com/devquorix/daymark/widgets/`.
+`android/app/src/main/kotlin/com/invospec/daymark/widgets/`.
 
 | File | What it is |
 |---|---|
