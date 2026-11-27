@@ -13,6 +13,7 @@ import 'package:notes_app/data/network/dto/response/task/task_item.dart';
 import 'package:notes_app/data/repository/reminder/reminder_repo.dart';
 import 'package:notes_app/data/repository/task/task_repo.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/date/display_format.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
 import 'package:notes_app/views/screens/calendar/calendar_screen.dart';
 import 'package:notes_app/views/widgets/add_menu_fab.dart';
@@ -318,8 +319,8 @@ void main() {
     });
   });
 
-  group('Calendar Screen Numerical Count Badge Tests', () {
-    testWidgets('Calendar screen renders numerical badge instead of single dot',
+  group('Calendar Screen Tests', () {
+    testWidgets('Calendar screen renders day cells and switches to the week view',
         (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.625;
@@ -339,12 +340,16 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('YOUR ACTIVITY'), findsOneWidget);
       expect(find.text('Calendar'), findsOneWidget);
-      expect(
-        find.text('Badges show item count (Notes, Tasks, Reminders)'),
-        findsOneWidget,
-      );
+      final today = DateTime.now();
+      final todayLabel = '${DisplayFormat.longDate(today)}, 0 items';
+      expect(find.bySemanticsLabel(todayLabel), findsOneWidget);
+
+      // The week view keeps the selected day and shows its week.
+      await tester.tap(find.text('Week'));
+      await tester.pump();
+      expect(find.bySemanticsLabel(todayLabel), findsOneWidget);
+      expect(find.text(DisplayFormat.monthYear(today)), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 200));

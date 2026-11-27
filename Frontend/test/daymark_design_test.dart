@@ -8,6 +8,7 @@ import 'package:notes_app/data/local/database/app_database.dart';
 import 'package:notes_app/data/local/shared_preference/preference.dart';
 import 'package:notes_app/data/network/dto/response/home/get_all_notes_response_dto.dart';
 import 'package:notes_app/utils/constants/app_colors.dart';
+import 'package:notes_app/utils/date/display_format.dart';
 import 'package:notes_app/utils/services/local_reminder_service.dart';
 import 'package:notes_app/utils/themes/app_theme.dart';
 import 'package:notes_app/views/screens/calendar/calendar_screen.dart';
@@ -168,7 +169,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
-    testWidgets('Calendar screen renders activity header and month card',
+    testWidgets('Calendar screen renders the title, Month/Week control and month card',
         (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.625;
@@ -189,9 +190,11 @@ void main() {
 
       await tester.pump();
 
-      expect(find.text('YOUR ACTIVITY'), findsOneWidget);
       expect(find.text('Calendar'), findsOneWidget);
-      expect(find.text('Weekly view'), findsOneWidget);
+      expect(find.text('Month'), findsOneWidget);
+      expect(find.text('Week'), findsOneWidget);
+      expect(find.text(DisplayFormat.monthYear(DateTime.now())), findsOneWidget);
+      expect(find.text(DisplayFormat.longDate(DateTime.now())), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 100));
