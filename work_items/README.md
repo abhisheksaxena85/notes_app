@@ -83,7 +83,7 @@ Priority: **P0** = security hole or data loss, fix first · **P1** = broken beha
 | ✓ | ID | Title | Priority | Depends on |
 |---|---|---|---|---|
 | ☑ | [REPO-01](REPO-01-git-baseline-and-ignores.md) | Commit the current work, fix `.gitignore`, remove tracked junk | P1 | — |
-| ☐ | [REPO-02](REPO-02-config-docs-cleanup.md) | Bundle IDs, release signing, outdated docs, dead code | P2 | — |
+| ☑ | [REPO-02](REPO-02-config-docs-cleanup.md) | Bundle IDs, release signing, outdated docs, dead code | P2 | — |
 
 ## Suggested order
 

@@ -11,10 +11,11 @@ The application is structured into two main decoupled modules:
    - **Framework**: Flutter (Dart 3.x) with Riverpod (`AsyncNotifier`) state management.
    - **Offline Persistence**: SQLite via [Drift](https://drift.simonbinder.eu/) with atomic pending-upload queues for offline writes and background synchronization.
    - **Design & Theme**: Pixel-accurate implementation matching Figma specifications (`412 x 892` baseline with `flutter_screenutil`), dual theme support (Warm Ivory Light / Night Charcoal Dark), SVG vector icons, and an animated splash sequence.
-   - **Local Reminders**: Strict client-side notifications/reminders via `LocalReminderService` (SharedPreferences + scheduled alerts).
+   - **Auth**: JWT access token from login/signup, kept in the platform keystore and sent as `Authorization: Bearer` on every request.
+   - **Reminders**: local OS notifications (`flutter_local_notifications`), see below.
 2. **Backend (`/Backend`)**:
    - **Framework**: Spring Boot 4.1.1 on Java 17 with Spring Data JPA.
-   - **Database**: MySQL 8.x (`notes_application` database).
+   - **Database**: MySQL 8.x, schema changes through Flyway.
    - **Layering**: Classic enterprise pattern (`Controller` ➔ `Service` ➔ `Repository` ➔ `Model`/`DTO`).
 
 ---
@@ -23,23 +24,23 @@ The application is structured into two main decoupled modules:
 
 ### 1. Backend Setup & Run
 
-Ensure MySQL is running on `localhost:3306` with database `notes_application`.
+Tests run on an in-memory H2 database. Running the app locally needs MySQL on `localhost:3306` and the `dev` profile; set `DB_PASSWORD` (and optionally `DB_USER`, `JWT_SECRET`) in the environment or in `Backend/.env` (gitignored). See `Backend/src/main/resources/application-dev.properties`.
 
 ```bash
 cd ../Backend
 
-# Verify and execute tests
-mvn test
+# Run the tests
+./mvnw test
 
-# Start the Spring Boot application on port 8080
-mvn spring-boot:run
+# Start the API on port 8080 with the dev profile
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 The backend provides Swagger/OpenAPI documentation at `http://localhost:8080/swagger-ui.html`.
 
 ### 2. Frontend Configuration & Run
 
-By default, the Flutter client connects to `http://localhost:8080` (or `http://10.0.2.2:8080` on Android emulator). You can override this using `--dart-define`:
+By default the app talks to the production backend (`ApiConfig` in `lib/data/network/config/api_config.dart`). Point it at a local backend with `--dart-define=API_BASE_URL=...`:
 
 ```bash
 cd Frontend
@@ -50,8 +51,11 @@ flutter pub get
 # Generate Drift database and JSON serialization code
 dart run build_runner build --delete-conflicting-outputs
 
-# Run on macOS / Chrome / iOS Simulator
+# Run against production
 flutter run
+
+# Run on macOS / iOS Simulator against a local backend
+flutter run --dart-define=API_BASE_URL=http://localhost:8080
 
 # Run on Android Emulator (points to host machine localhost)
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
@@ -64,6 +68,19 @@ flutter run --dart-define=API_BASE_URL=http://<YOUR_IP>:8080
 
 Generated Dart files (`*.g.dart` from Drift and `json_serializable`) **are committed** to the repository, so a fresh clone builds without running codegen first. Whenever you change a Drift table or an annotated DTO, re-run `dart run build_runner build --delete-conflicting-outputs` and commit the regenerated `*.g.dart` files in the same commit as the source change.
 
+### Release signing (Android)
+
+Release builds are signed with the upload key described in `android/key.properties`. That file and the keystore are gitignored and must never be committed.
+
+1. Create an upload keystore once (keep it and its passwords safe; losing it means you can't update the app on Play):
+   ```bash
+   keytool -genkey -v -keystore ~/daymark-upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+2. Copy `android/key.properties.example` to `android/key.properties` and fill in `storeFile` (absolute, or relative to `android/app`), `storePassword`, `keyAlias` and `keyPassword`.
+3. `flutter build appbundle --release`
+
+Without `android/key.properties`, release builds fall back to the debug key (Gradle prints a warning), so `flutter run --release` works locally, but those builds can't be uploaded to Play. If the file exists but a value is missing, the build stops and names it.
+
 ---
 
 ## 🧪 Testing & Verification
@@ -73,8 +90,7 @@ Both frontend and backend are equipped with automated test suites:
 ### Backend Tests
 ```bash
 cd Backend
-mvn test
-# Results: 8 tests run, 0 failures, 0 errors, 0 skipped
+./mvnw test
 ```
 
 ### Frontend Tests & Static Analysis
@@ -82,7 +98,7 @@ mvn test
 cd Frontend
 
 # Run static analysis
-flutter analyze --no-fatal-infos
+flutter analyze
 
 # Run all test suites (unit, widget, drift database, synchronization)
 flutter test

@@ -1,0 +1,6 @@
+# Copy to android/key.properties (gitignored) and fill in. Never commit the
+# real file or the keystore. See Frontend/README.md, "Release signing".
+storeFile=/absolute/path/to/upload-keystore.jks
+storePassword=CHANGE_ME
+keyAlias=upload
+keyPassword=CHANGE_ME
