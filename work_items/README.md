@@ -53,7 +53,7 @@ Priority: **P0** = security hole or data loss, fix first · **P1** = broken beha
 | ☑ | [BE-04](BE-04-reminder-service-bugs.md) | Reminder service: completed sort first, stale dueDate after edit, no validation | P1 | — |
 | ☑ | [BE-05](BE-05-entity-lombok-and-misc.md) | `@Data` on JPA entities plus small service bugs | P2 | — |
 | ☑ | [BE-06](BE-06-docker-port-and-ci.md) | CI workflow can't find the Dockerfile; container port mismatch; no tests in CI | P1 | — |
-| ☐ | [BE-07](BE-07-springdoc-boot4-compat.md) | Check springdoc 2.x works with Spring Boot 4 | P2 | — |
+| ☑ | [BE-07](BE-07-springdoc-boot4-compat.md) | Check springdoc 2.x works with Spring Boot 4 | P2 | — |
 
 ### Frontend
 | ✓ | ID | Title | Priority | Depends on |
