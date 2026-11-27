@@ -13,6 +13,9 @@ public interface NotesRepository extends JpaRepository<NotesModel, Long> {
 
     Optional<NotesModel> findByUser_IdAndClientId(long userId, String clientId);
 
+    /** SEC-01: a note only if it belongs to {@code userId}. */
+    Optional<NotesModel> findByNoteIdAndUser_Id(long noteId, long userId);
+
     @Query("SELECT n FROM NotesModel n WHERE n.user.id = :userId AND (" +
            "LOWER(n.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
            "LOWER(n.content) LIKE LOWER(CONCAT('%', :query, '%')) OR " +

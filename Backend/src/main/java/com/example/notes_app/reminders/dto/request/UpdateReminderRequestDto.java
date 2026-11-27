@@ -1,12 +1,10 @@
 package com.example.notes_app.reminders.dto.request;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class UpdateReminderRequestDto {
     private long reminderId;
     private String title;

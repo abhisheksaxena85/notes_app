@@ -50,14 +50,21 @@ public class NotesService {
                 .orElseThrow(() -> new NotFoundException("User not found"));
     }
 
-    private NotesModel requireNote(long noteId) {
-        return notesRepository.findById(noteId)
-                .orElseThrow(() -> new NotFoundException("Note not found"));
+    /**
+     * SEC-01: the note, scoped to {@code ownerId}. Another user's note is "not
+     * found". {@code ownerId == null} is a legacy request without a token
+     * (only while auth is not enforced, see CurrentUser): no owner check.
+     */
+    private NotesModel requireNote(long noteId, Long ownerId) {
+        Optional<NotesModel> note = ownerId == null
+                ? notesRepository.findById(noteId)
+                : notesRepository.findByNoteIdAndUser_Id(noteId, ownerId);
+        return note.orElseThrow(() -> new NotFoundException("Note not found"));
     }
 
     @Transactional
-    public ResponseEntity<ApiResponse<NotesModel>> getNoteDetails(long noteId){
-        NotesModel currentNote = requireNote(noteId);
+    public ResponseEntity<ApiResponse<NotesModel>> getNoteDetails(long noteId, Long ownerId){
+        NotesModel currentNote = requireNote(noteId, ownerId);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponse<>(true, "Successfully fetched the details", currentNote));
     }
@@ -98,8 +105,8 @@ public class NotesService {
     }
 
     @Transactional
-    public ResponseEntity<ApiResponse<UpdateNoteResponseDto>> updateNote(UpdateNoteRequestDto requestDto){
-        NotesModel currentNote = requireNote(requestDto.getNoteId());
+    public ResponseEntity<ApiResponse<UpdateNoteResponseDto>> updateNote(UpdateNoteRequestDto requestDto, Long ownerId){
+        NotesModel currentNote = requireNote(requestDto.getNoteId(), ownerId);
         currentNote.setTitle(requestDto.getTitle());
         currentNote.setContent(requestDto.getContent());
         currentNote.setUpdatedAt(Timestamps.now());
@@ -124,16 +131,16 @@ public class NotesService {
     }
 
     @Transactional
-    public ResponseEntity<ApiResponse<NotesModel>> deleteNote(long id){
-        NotesModel currentNote = requireNote(id);
-        notesRepository.deleteById(id);
+    public ResponseEntity<ApiResponse<NotesModel>> deleteNote(long id, Long ownerId){
+        NotesModel currentNote = requireNote(id, ownerId);
+        notesRepository.delete(currentNote);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponse<>(true, "Successfully deleted note", currentNote));
     }
 
     @Transactional
-    public ResponseEntity<ApiResponse<NotesModel>> togglePin(long noteId) {
-        NotesModel currentNote = requireNote(noteId);
+    public ResponseEntity<ApiResponse<NotesModel>> togglePin(long noteId, Long ownerId) {
+        NotesModel currentNote = requireNote(noteId, ownerId);
         currentNote.setPinned(!currentNote.isPinned());
         currentNote.setUpdatedAt(Timestamps.now());
         notesRepository.save(currentNote);

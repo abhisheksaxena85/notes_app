@@ -1,12 +1,11 @@
 package com.example.notes_app.auth.dto.request;
 
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 public class UpdateUserRequestDto {
-    @Positive(message = "User id is required")
+    /** SEC-01: optional with a token (taken from it); required from old token-less clients. */
     private long userId;
 
     @Size(max = 100, message = "Name must be at most 100 characters")

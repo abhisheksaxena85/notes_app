@@ -27,6 +27,9 @@ public class AuthService {
     @Autowired
     PasswordHashing passwordHashing;
 
+    @Autowired
+    TokenService tokenService;
+
     static final String INVALID_CREDENTIALS = "Invalid email or password";
     static final String EMAIL_IN_USE = "Email id already used by another user";
 
@@ -66,8 +69,11 @@ public class AuthService {
         if (user == null || !isValidPassword) {
             throw new UnauthorizedException(INVALID_CREDENTIALS);
         }
+        TokenService.IssuedToken token = tokenService.issue(user.getId());
         LoginResponseDto responseDto = new LoginResponseDto();
         responseDto.setUserId(user.getId());
+        responseDto.setAccessToken(token.accessToken());
+        responseDto.setExpiresAt(token.expiresAt().toString());
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponse<>(true, "User logged in successfully!", responseDto));
     }
@@ -95,8 +101,11 @@ public class AuthService {
             throw new ConflictException(EMAIL_IN_USE);
         }
 
+        TokenService.IssuedToken token = tokenService.issue(savedUser.getId());
         SignupResponseDto responseDto = new SignupResponseDto();
         responseDto.setUserId(savedUser.getId());
+        responseDto.setAccessToken(token.accessToken());
+        responseDto.setExpiresAt(token.expiresAt().toString());
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponse<>(true, "User created successfully!", responseDto));
     }

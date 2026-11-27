@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class TaskService {
@@ -32,9 +33,16 @@ public class TaskService {
     @Autowired
     private AuthRepository authRepository;
 
-    private TaskModel requireTask(long taskId) {
-        return taskRepository.findById(taskId)
-                .orElseThrow(() -> new NotFoundException("Task not found"));
+    /**
+     * SEC-01: the task, scoped to {@code ownerId}. Another user's task is "not
+     * found". {@code ownerId == null} is a legacy request without a token
+     * (only while auth is not enforced, see CurrentUser): no owner check.
+     */
+    private TaskModel requireTask(long taskId, Long ownerId) {
+        Optional<TaskModel> task = ownerId == null
+                ? taskRepository.findById(taskId)
+                : taskRepository.findByTaskIdAndUser_Id(taskId, ownerId);
+        return task.orElseThrow(() -> new NotFoundException("Task not found"));
     }
 
     /**
@@ -118,13 +126,13 @@ public class TaskService {
         return ResponseEntity.ok(new ApiResponse<>(true, "Tasks for date fetched", tasks));
     }
 
-    public ResponseEntity<ApiResponse<TaskModel>> getTaskDetails(long taskId) {
-        return ResponseEntity.ok(new ApiResponse<>(true, "Task details fetched", requireTask(taskId)));
+    public ResponseEntity<ApiResponse<TaskModel>> getTaskDetails(long taskId, Long ownerId) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "Task details fetched", requireTask(taskId, ownerId)));
     }
 
     @Transactional
-    public ResponseEntity<ApiResponse<TaskModel>> updateTask(UpdateTaskRequestDto requestDto) {
-        TaskModel task = requireTask(requestDto.getTaskId());
+    public ResponseEntity<ApiResponse<TaskModel>> updateTask(UpdateTaskRequestDto requestDto, Long ownerId) {
+        TaskModel task = requireTask(requestDto.getTaskId(), ownerId);
 
         if (requestDto.getTitle() != null) task.setTitle(requireTitle(requestDto.getTitle()));
         if (requestDto.getDescription() != null) task.setDescription(requestDto.getDescription());
@@ -144,9 +152,9 @@ public class TaskService {
     }
 
     @Transactional
-    public ResponseEntity<ApiResponse<TaskModel>> toggleStatus(long taskId, String status) {
+    public ResponseEntity<ApiResponse<TaskModel>> toggleStatus(long taskId, String status, Long ownerId) {
         ItemStatus requested = ItemStatus.parse(status);
-        TaskModel task = requireTask(taskId);
+        TaskModel task = requireTask(taskId, ownerId);
 
         // Without a status the call toggles between COMPLETED and PENDING.
         applyStatus(task, requested != null ? requested
@@ -158,11 +166,8 @@ public class TaskService {
     }
 
     @Transactional
-    public ResponseEntity<ApiResponse<Boolean>> deleteTask(long taskId) {
-        if (!taskRepository.existsById(taskId)) {
-            throw new NotFoundException("Task not found");
-        }
-        taskRepository.deleteById(taskId);
+    public ResponseEntity<ApiResponse<Boolean>> deleteTask(long taskId, Long ownerId) {
+        taskRepository.delete(requireTask(taskId, ownerId));
         return ResponseEntity.ok(new ApiResponse<>(true, "Task deleted successfully", true));
     }
 }

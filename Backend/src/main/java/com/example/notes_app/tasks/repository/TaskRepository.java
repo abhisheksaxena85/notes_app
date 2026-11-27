@@ -13,6 +13,9 @@ import java.util.Optional;
 public interface TaskRepository extends JpaRepository<TaskModel, Long> {
     Optional<TaskModel> findByUser_IdAndClientId(long userId, String clientId);
 
+    /** SEC-01: a task only if it belongs to {@code userId}. */
+    Optional<TaskModel> findByTaskIdAndUser_Id(long taskId, long userId);
+
     @Query("SELECT t FROM TaskModel t WHERE t.user.id = :userId ORDER BY t.isCompleted ASC, t.dueDate ASC, t.createdAt DESC")
     List<TaskModel> findByUserId(@Param("userId") long userId);
 

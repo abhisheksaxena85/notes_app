@@ -74,7 +74,7 @@ public class NoteContentLengthTests {
         create.setContent(longContent);
         long noteId = notesService.createNote(create).getBody().getData().getNoteId();
 
-        NotesModel saved = notesService.getNoteDetails(noteId).getBody().getData();
+        NotesModel saved = notesService.getNoteDetails(noteId, userId).getBody().getData();
         assertEquals(10_000, saved.getContent().length());
         assertEquals(NoteLimits.TITLE_MAX, saved.getTitle().length());
 
@@ -82,8 +82,8 @@ public class NoteContentLengthTests {
         update.setNoteId(noteId);
         update.setTitle("Updated");
         update.setContent("y".repeat(20_000));
-        assertTrue(notesService.updateNote(update).getBody().isSuccess());
-        assertEquals(20_000, notesService.getNoteDetails(noteId).getBody().getData().getContent().length());
+        assertTrue(notesService.updateNote(update, userId).getBody().isSuccess());
+        assertEquals(20_000, notesService.getNoteDetails(noteId, userId).getBody().getData().getContent().length());
     }
 
     @Test

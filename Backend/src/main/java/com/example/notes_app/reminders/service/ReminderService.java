@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class ReminderService {
@@ -36,9 +37,16 @@ public class ReminderService {
     @Autowired
     private AuthRepository authRepository;
 
-    private ReminderModel requireReminder(long reminderId) {
-        return reminderRepository.findById(reminderId)
-                .orElseThrow(() -> new NotFoundException("Reminder not found"));
+    /**
+     * SEC-01: the reminder, scoped to {@code ownerId}. Another user's reminder
+     * is "not found". {@code ownerId == null} is a legacy request without a
+     * token (only while auth is not enforced, see CurrentUser): no owner check.
+     */
+    private ReminderModel requireReminder(long reminderId, Long ownerId) {
+        Optional<ReminderModel> reminder = ownerId == null
+                ? reminderRepository.findById(reminderId)
+                : reminderRepository.findByReminderIdAndUser_Id(reminderId, ownerId);
+        return reminder.orElseThrow(() -> new NotFoundException("Reminder not found"));
     }
 
     /**
@@ -130,8 +138,8 @@ public class ReminderService {
     }
 
     @Transactional
-    public ResponseEntity<ApiResponse<ReminderModel>> updateReminder(UpdateReminderRequestDto requestDto) {
-        ReminderModel reminder = requireReminder(requestDto.getReminderId());
+    public ResponseEntity<ApiResponse<ReminderModel>> updateReminder(UpdateReminderRequestDto requestDto, Long ownerId) {
+        ReminderModel reminder = requireReminder(requestDto.getReminderId(), ownerId);
 
         if (requestDto.getTitle() != null) reminder.setTitle(requireTitle(requestDto.getTitle()));
         if (requestDto.getRemindAt() != null) {
@@ -170,9 +178,9 @@ public class ReminderService {
     }
 
     @Transactional
-    public ResponseEntity<ApiResponse<ReminderModel>> updateStatus(long reminderId, String status) {
+    public ResponseEntity<ApiResponse<ReminderModel>> updateStatus(long reminderId, String status, Long ownerId) {
         ItemStatus requested = ItemStatus.parse(status);
-        ReminderModel reminder = requireReminder(reminderId);
+        ReminderModel reminder = requireReminder(reminderId, ownerId);
 
         // Without a status the call toggles between COMPLETED and PENDING.
         ItemStatus newStatus = requested != null ? requested
@@ -197,13 +205,13 @@ public class ReminderService {
      * </ul>
      */
     @Transactional
-    public ResponseEntity<ApiResponse<ReminderModel>> completeOccurrence(CompleteOccurrenceRequestDto requestDto) {
+    public ResponseEntity<ApiResponse<ReminderModel>> completeOccurrence(CompleteOccurrenceRequestDto requestDto, Long ownerId) {
         LocalDateTime occurrence = WallClock.parseDateTime("occurrence", requestDto.getOccurrence());
         ReminderOutcome outcome = ReminderOutcome.parse(requestDto.getOutcome());
         if (outcome == null) {
             throw new BadRequestException("outcome is required");
         }
-        ReminderModel reminder = requireReminder(requestDto.getReminderId());
+        ReminderModel reminder = requireReminder(requestDto.getReminderId(), ownerId);
         RepeatInterval interval = reminder.getRepeatInterval() != null ? reminder.getRepeatInterval() : RepeatInterval.NONE;
 
         if (interval == RepeatInterval.NONE) {
@@ -226,11 +234,8 @@ public class ReminderService {
     }
 
     @Transactional
-    public ResponseEntity<ApiResponse<Boolean>> deleteReminder(long reminderId) {
-        if (!reminderRepository.existsById(reminderId)) {
-            throw new NotFoundException("Reminder not found");
-        }
-        reminderRepository.deleteById(reminderId);
+    public ResponseEntity<ApiResponse<Boolean>> deleteReminder(long reminderId, Long ownerId) {
+        reminderRepository.delete(requireReminder(reminderId, ownerId));
         return ResponseEntity.ok(new ApiResponse<>(true, "Reminder deleted successfully", true));
     }
 }

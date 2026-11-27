@@ -1,6 +1,7 @@
 package com.example.notes_app.tasks.controller;
 
 import com.example.notes_app.common.ApiResponse;
+import com.example.notes_app.common.CurrentUser;
 import com.example.notes_app.common.exception.BadRequestException;
 import com.example.notes_app.tasks.dto.request.CreateTaskRequestDto;
 import com.example.notes_app.tasks.dto.request.UpdateTaskRequestDto;
@@ -21,38 +22,42 @@ public class TaskController {
     @Autowired
     private TaskService taskService;
 
+    @Autowired
+    private CurrentUser currentUser;
+
     @PostMapping("/create-task")
     public ResponseEntity<ApiResponse<CreateTaskResponseDto>> createTask(@Valid @RequestBody CreateTaskRequestDto requestDto) {
+        requestDto.setUserId(currentUser.resolve(requestDto.getUserId(), "userId"));
         return taskService.createTask(requestDto);
     }
 
     @GetMapping("/get-all-tasks")
-    public ResponseEntity<ApiResponse<List<TaskModel>>> getAllTasks(@RequestParam long userId) {
-        return taskService.getAllTasks(userId);
+    public ResponseEntity<ApiResponse<List<TaskModel>>> getAllTasks(@RequestParam(required = false) Long userId) {
+        return taskService.getAllTasks(currentUser.resolve(userId, "userId"));
     }
 
     @GetMapping("/get-tasks-by-date")
     public ResponseEntity<ApiResponse<List<TaskModel>>> getTasksByDate(
-            @RequestParam long userId,
+            @RequestParam(required = false) Long userId,
             @RequestParam String date) {
-        return taskService.getTasksByDate(userId, date);
+        return taskService.getTasksByDate(currentUser.resolve(userId, "userId"), date);
     }
 
     @GetMapping("/get-task-details")
     public ResponseEntity<ApiResponse<TaskModel>> getTaskDetails(@RequestParam long id) {
-        return taskService.getTaskDetails(id);
+        return taskService.getTaskDetails(id, currentUser.ownerScope());
     }
 
     @PutMapping("/update-task")
     public ResponseEntity<ApiResponse<TaskModel>> updateTask(@RequestBody UpdateTaskRequestDto requestDto) {
-        return taskService.updateTask(requestDto);
+        return taskService.updateTask(requestDto, currentUser.ownerScope());
     }
 
     @PutMapping("/toggle-status")
     public ResponseEntity<ApiResponse<TaskModel>> toggleStatus(
             @RequestParam long taskId,
             @RequestParam(required = false) String status) {
-        return taskService.toggleStatus(taskId, status);
+        return taskService.toggleStatus(taskId, status, currentUser.ownerScope());
     }
 
     @DeleteMapping("/delete-task")
@@ -63,6 +68,6 @@ public class TaskController {
         if (targetId == null) {
             throw new BadRequestException("Task id is required");
         }
-        return taskService.deleteTask(targetId);
+        return taskService.deleteTask(targetId, currentUser.ownerScope());
     }
 }

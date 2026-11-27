@@ -121,7 +121,7 @@ public class NotesApiTests {
         testNoteId = createResp.getBody().getData().getNoteId();
         assertTrue(testNoteId > 0);
 
-        ResponseEntity<ApiResponse<NotesModel>> detailResp = notesService.getNoteDetails(testNoteId);
+        ResponseEntity<ApiResponse<NotesModel>> detailResp = notesService.getNoteDetails(testNoteId, testUserId);
         assertTrue(detailResp.getBody().isSuccess());
         assertEquals("Architecture Review", detailResp.getBody().getData().getTitle());
         assertTrue(detailResp.getBody().getData().isPinned());
@@ -131,7 +131,7 @@ public class NotesApiTests {
     @Test
     @Order(4)
     public void testTogglePinAndSearch() {
-        ResponseEntity<ApiResponse<NotesModel>> toggleResp = notesService.togglePin(testNoteId);
+        ResponseEntity<ApiResponse<NotesModel>> toggleResp = notesService.togglePin(testNoteId, testUserId);
         assertTrue(toggleResp.getBody().isSuccess());
         assertFalse(toggleResp.getBody().getData().isPinned());
 
@@ -168,10 +168,10 @@ public class NotesApiTests {
     @Test
     @Order(7)
     public void testDeleteNote() {
-        ResponseEntity<ApiResponse<NotesModel>> deleteResp = notesService.deleteNote(testNoteId);
+        ResponseEntity<ApiResponse<NotesModel>> deleteResp = notesService.deleteNote(testNoteId, testUserId);
         assertTrue(deleteResp.getBody().isSuccess());
 
-        assertThrows(NotFoundException.class, () -> notesService.getNoteDetails(testNoteId));
+        assertThrows(NotFoundException.class, () -> notesService.getNoteDetails(testNoteId, testUserId));
     }
 
     @Test
@@ -213,7 +213,7 @@ public class NotesApiTests {
         assertTrue(reminderId > 0);
 
         // 3. Toggle Task Status to COMPLETED
-        var toggleTaskResp = taskService.toggleStatus(taskId, "COMPLETED");
+        var toggleTaskResp = taskService.toggleStatus(taskId, "COMPLETED", testUserId);
         assertTrue(toggleTaskResp.getBody().isSuccess());
         assertEquals(com.example.notes_app.common.ItemStatus.COMPLETED, toggleTaskResp.getBody().getData().getStatus());
         assertTrue(toggleTaskResp.getBody().getData().isCompleted());
@@ -238,8 +238,8 @@ public class NotesApiTests {
         assertThrows(BadRequestException.class, () -> notesService.getDayActivity(testUserId, "not-a-date", ZONE));
 
         // 6. Cleanup
-        assertTrue(taskService.deleteTask(taskId).getBody().isSuccess());
-        assertTrue(reminderService.deleteReminder(reminderId).getBody().isSuccess());
+        assertTrue(taskService.deleteTask(taskId, testUserId).getBody().isSuccess());
+        assertTrue(reminderService.deleteReminder(reminderId, testUserId).getBody().isSuccess());
     }
 
     @Test
