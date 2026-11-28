@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self'; connect-src https://notesapp-production-d43adec7.up.railway.app; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="description" content="Permanently delete your Daymark account and all of its data.">
+  <title>Delete your Daymark account</title>
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="brand">
+      <img src="logo.svg" alt="" width="56" height="56">
+      <h1>Daymark</h1>
+      <p class="subtitle">Delete your account</p>
+    </header>
+
+    <!-- Step 1: sign in -->
+    <section class="card" id="form-view" aria-labelledby="form-title">
+      <h2 id="form-title" class="card-title">Sign in to continue</h2>
+      <p class="card-text">Enter the email and password you use in the Daymark app. We'll check them, then ask you to confirm before anything is deleted.</p>
+
+      <div class="notice notice-danger">
+        <svg class="notice-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4.5M12 16.8v.2M10.3 4.2 2.9 17.3A2 2 0 0 0 4.6 20.3h14.8a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/></svg>
+        <div>
+          <p class="notice-title">Deleting your account is permanent</p>
+          <p>Your profile and every note, task and reminder you've saved will be removed from our servers. This can't be undone.</p>
+        </div>
+      </div>
+
+      <!-- method="post" so a submit without JavaScript never puts the password in the URL;
+           the CSP's form-action 'none' blocks that submit entirely. -->
+      <form id="login-form" method="post" novalidate>
+        <div class="field">
+          <label for="email">Email</label>
+          <div class="input-wrap">
+            <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5h17v11h-17zM3.5 7l8.5 6.5L20.5 7"/></svg>
+            <input id="email" name="email" type="email" autocomplete="username" inputmode="email"
+                   maxlength="320" required placeholder="you@example.com" aria-describedby="email-error">
+          </div>
+          <p class="field-error" id="email-error" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 10.5h11v9h-11zM8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>
+            <input id="password" name="password" type="password" autocomplete="current-password"
+                   maxlength="72" required placeholder="Your password" aria-describedby="password-error">
+            <button type="button" class="icon-button" id="toggle-password" aria-label="Show password" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12zM9.2 12a2.8 2.8 0 1 0 5.6 0a2.8 2.8 0 1 0 -5.6 0"/></svg>
+            </button>
+          </div>
+          <p class="field-error" id="password-error" hidden></p>
+        </div>
+
+        <p class="alert" id="form-alert" role="alert" hidden></p>
+
+        <button type="submit" class="button button-primary" id="continue-button">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="button-label">Continue</span>
+        </button>
+      </form>
+    </section>
+
+    <!-- Step 3: done -->
+    <section class="card done" id="done-view" aria-labelledby="done-title" tabindex="-1" hidden>
+      <div class="done-tile" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7.5"/></svg>
+      </div>
+      <h2 id="done-title" class="card-title">Your account has been deleted</h2>
+      <p class="card-text">Your profile, notes, tasks and reminders have been removed from our servers.</p>
+      <p class="card-text">If Daymark is still installed on your phone, sign out of the app or uninstall it to remove the copy stored on that device.</p>
+    </section>
+
+    <footer class="footer">
+      <p>Changed your mind? Just close this page. Nothing is deleted until you confirm.</p>
+    </footer>
+  </main>
+
+  <!-- Step 2: final warning -->
+  <dialog class="dialog" id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+    <form method="dialog" class="dialog-body" id="confirm-form">
+      <div class="dialog-tile" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4.5 7h15M10 4h4M6.5 7l.8 12a1.5 1.5 0 0 0 1.5 1.4h6.4a1.5 1.5 0 0 0 1.5-1.4l.8-12M10 11v5.5M14 11v5.5"/></svg>
+      </div>
+      <h2 id="confirm-title" class="dialog-title">Delete your account permanently?</h2>
+      <p id="confirm-text" class="card-text">
+        This deletes the Daymark account <strong id="confirm-email"></strong> and everything in it:
+      </p>
+      <ul class="loss-list">
+        <li>Your profile: name, email, mobile number and password</li>
+        <li>All of your notes</li>
+        <li>All of your tasks</li>
+        <li>All of your reminders</li>
+      </ul>
+      <p class="warning-line">This can't be undone, and we can't recover your data afterwards.</p>
+
+      <label class="check">
+        <input type="checkbox" id="confirm-check">
+        <span>I understand that my account and all of its data will be permanently deleted.</span>
+      </label>
+
+      <p class="alert" id="confirm-alert" role="alert" hidden></p>
+
+      <div class="dialog-actions">
+        <button type="button" class="button button-outline" id="cancel-button">Cancel</button>
+        <button type="button" class="button button-danger" id="delete-button" disabled>
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="button-label">Delete account</span>
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
