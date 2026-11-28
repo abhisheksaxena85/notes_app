@@ -46,7 +46,9 @@ public class CorsTests {
     @Test
     public void deleteFromPagesOriginWorksAndCarriesCorsHeaders() throws Exception {
         TestUsers.User user = TestUsers.signUp(mockMvc, jsonMapper);
-        mockMvc.perform(user.auth(delete("/auth/delete-user")).header(HttpHeaders.ORIGIN, PAGES_ORIGIN))
+        // The page's request, same as the app's ApiClient.deleteUser: ?id=<userId> plus the bearer token.
+        mockMvc.perform(user.auth(delete("/auth/delete-user").param("id", Long.toString(user.id())))
+                        .header(HttpHeaders.ORIGIN, PAGES_ORIGIN))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, PAGES_ORIGIN));
         // The token's user is gone.
